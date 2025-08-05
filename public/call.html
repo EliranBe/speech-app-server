@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Agora Secure Call</title>
+</head>
+<body>
+  <h1>🎥 בדיקת Agora SDK</h1>
+  <div id="status">מחכה להתחברות...</div>
+
+  <script src="https://cdn.agora.io/sdk/release/AgoraRTC_N-4.20.0.js"></script>
+  <script>
+    let APP_ID = "";
+    const CHANNEL_NAME = "test-room";
+
+    // 1️⃣ בקשת APP_ID בצורה בטוחה מהשרת
+    fetch('/appId')
+      .then(res => res.json())
+      .then(data => {
+        APP_ID = data.appId;
+        startCall(); // לאחר קבלת APP_ID – מתחילים את השיחה
+      });
+
+    async function startCall() {
+      const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+
+      document.getElementById("status").innerText = "מתחבר לערוץ...";
+
+      // 2️⃣ בקשת Token דינמית מהשרת (כמו שכבר בנינו)
+      const tokenRes = await fetch(`/rtc/${CHANNEL_NAME}/publisher/uid/0`);
+      const tokenData = await tokenRes.json();
+
+      await client.join(APP_ID, CHANNEL_NAME, tokenData.rtcToken, null);
+
+      document.getElementById("status").innerText = "✅ מחובר";
+
+      // התחברות לווידאו/אודיו
+      const localTrack = await AgoraRTC.createMicrophoneAndCameraTracks();
+      await client.publish(localTrack);
+    }
+  </script>
+</body>
+</html>
