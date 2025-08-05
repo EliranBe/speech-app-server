@@ -27,7 +27,7 @@
       document.getElementById("status").innerText = "מתחבר לערוץ...";
 
       // 2️⃣ בקשת Token דינמית מהשרת (כמו שכבר בנינו)
-      const tokenRes = await fetch(`/rtc/${CHANNEL_NAME}/publisher/uid/0`);
+      const tokenRes = await fetch(`/rte-token?channelName=${CHANNEL_NAME}`);
       const tokenData = await tokenRes.json();
 
       await client.join(APP_ID, CHANNEL_NAME, tokenData.rtcToken, null);
