@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🎤 Live Mic Test</title>
+</head>
+<body>
+  <h1>🎤 בדיקת מיקרופון</h1>
+  <button id="startBtn">התחל הקלטה</button>
+  <button id="stopBtn" disabled>עצור הקלטה</button>
+  <p id="status">מצב: ממתין...</p>
+
+  <script>
+    let mediaRecorder;
+    let audioChunks = [];
+
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const status = document.getElementById('status');
+
+    startBtn.onclick = async () => {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      audioChunks = [];
+
+      mediaRecorder.ondataavailable = event => {
+        if (event.data.size > 0) {
+          audioChunks.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstart = () => {
+        status.textContent = 'מצב: מקליט 🎙️';
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+      };
+
+      mediaRecorder.onstop = () => {
+        status.textContent = 'מצב: הופסק ⏹️';
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+
+        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+        const formData = new FormData();
+        formData.append('audio', audioBlob, 'recorded.wav');
+
+        fetch('/upload', {
+          method: 'POST',
+          body: formData
+        }).then(res => {
+          status.textContent = res.ok ? 'נשלח בהצלחה ✅' : 'שגיאה בשליחה ❌';
+        });
+      };
+
+      mediaRecorder.start();
+    };
+
+    stopBtn.onclick = () => {
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+      }
+    };
+  </script>
+</body>
+</html>
