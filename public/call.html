@@ -4,11 +4,15 @@
   <meta charset="UTF-8">
   <title>Agora Secure Call</title>
   <style>
-    #local-player {
+    .video-container {
+      display: flex;
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .video-box {
       width: 400px;
       height: 300px;
       background-color: #000;
-      margin-top: 20px;
     }
     video {
       width: 100%;
@@ -19,15 +23,19 @@
 <body>
   <h1>🎥 בדיקת Agora SDK</h1>
   <div id="status">מחכה להתחברות...</div>
-  <div id="local-player"></div>
+
+  <div class="video-container">
+    <div id="local-player" class="video-box"></div>
+    <div id="remote-player" class="video-box"></div>
+  </div>
 
   <script src="https://cdn.agora.io/sdk/release/AgoraRTC_N-4.20.0.js"></script>
   <script>
     let APP_ID = "";
     const CHANNEL_NAME = "test-room";
+    let client;
 
     window.onload = () => {
-      // בקשת APP_ID מהשרת
       fetch('/appId')
         .then(res => res.json())
         .then(data => {
@@ -37,11 +45,10 @@
     };
 
     async function startCall() {
-      const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+      client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
 
       document.getElementById("status").innerText = "מתחבר לערוץ...";
 
-      // בקשת Token דינמית מהשרת
       const tokenRes = await fetch(`/rte-token?channelName=${CHANNEL_NAME}`);
       const tokenData = await tokenRes.json();
 
@@ -49,14 +56,31 @@
 
       document.getElementById("status").innerText = "✅ מחובר";
 
-      // התחברות לווידאו/אודיו
+      // יצירת ערוצים למיקרופון ומצלמה
       const [microphoneTrack, cameraTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
 
       // הצגת הווידאו המקומי
-      const localPlayerContainer = document.getElementById("local-player");
-      cameraTrack.play(localPlayerContainer); // הצגה בתוך הדיב
+      cameraTrack.play("local-player");
 
+      // פרסום הוידאו והשמע
       await client.publish([microphoneTrack, cameraTrack]);
+
+      // הצגת משתתף מרוחק
+      client.on("user-published", async (user, mediaType) => {
+        await client.subscribe(user, mediaType);
+
+        if (mediaType === 'video') {
+          user.videoTrack.play("remote-player");
+        }
+        if (mediaType === 'audio') {
+          user.audioTrack.play();
+        }
+      });
+
+      client.on("user-unpublished", (user) => {
+        console.log("👋 משתמש עזב:", user.uid);
+        // ניתן לנקות את האלמנט של המשתמש שיצא
+      });
     }
   </script>
 </body>
