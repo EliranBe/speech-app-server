@@ -1,64 +1,55 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="he">
 <head>
-  <meta charset="UTF-8">
-  <title>🎤 Live Mic Test</title>
+  <meta charset="UTF-8" />
+  <title>🎤 בדיקת מיקרופון</title>
 </head>
 <body>
   <h1>🎤 בדיקת מיקרופון</h1>
-  <button id="startBtn">התחל הקלטה</button>
-  <button id="stopBtn" disabled>עצור הקלטה</button>
-  <p id="status">מצב: ממתין...</p>
+  <button id="start">התחל הקלטה</button>
+  <button id="stop" disabled>עצור הקלטה</button>
+  <p id="status">⬅️ לחץ על "התחל הקלטה"</p>
 
   <script>
-    let mediaRecorder;
-    let audioChunks = [];
-
-    const startBtn = document.getElementById('startBtn');
-    const stopBtn = document.getElementById('stopBtn');
+    const startBtn = document.getElementById('start');
+    const stopBtn = document.getElementById('stop');
     const status = document.getElementById('status');
 
-    startBtn.onclick = async () => {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorder = new MediaRecorder(stream);
-      audioChunks = [];
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
 
-      mediaRecorder.ondataavailable = event => {
-        if (event.data.size > 0) {
-          audioChunks.push(event.data);
-        }
-      };
+    recognition.lang = 'he-IL';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
 
-      mediaRecorder.onstart = () => {
-        status.textContent = 'מצב: מקליט 🎙️';
-        startBtn.disabled = true;
-        stopBtn.disabled = false;
-      };
+    recognition.onstart = () => {
+      status.textContent = "🎙️ מקשיב...";
+    };
 
-      mediaRecorder.onstop = () => {
-        status.textContent = 'מצב: הופסק ⏹️';
-        startBtn.disabled = false;
-        stopBtn.disabled = true;
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      console.log("תמלול מהדיבור:", transcript);
+      status.textContent = `📝 תמלול: ${transcript}`;
+    };
 
-        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-        const formData = new FormData();
-        formData.append('audio', audioBlob, 'recorded.wav');
+    recognition.onerror = (event) => {
+      console.error("שגיאה בזיהוי דיבור:", event.error);
+      status.textContent = "❌ שגיאה בזיהוי דיבור";
+    };
 
-        fetch('/upload', {
-          method: 'POST',
-          body: formData
-        }).then(res => {
-          status.textContent = res.ok ? 'נשלח בהצלחה ✅' : 'שגיאה בשליחה ❌';
-        });
-      };
+    recognition.onend = () => {
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+    };
 
-      mediaRecorder.start();
+    startBtn.onclick = () => {
+      recognition.start();
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
     };
 
     stopBtn.onclick = () => {
-      if (mediaRecorder && mediaRecorder.state === 'recording') {
-        mediaRecorder.stop();
-      }
+      recognition.stop();
     };
   </script>
 </body>
