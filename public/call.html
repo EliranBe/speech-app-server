@@ -3,30 +3,45 @@
 <head>
   <meta charset="UTF-8">
   <title>Agora Secure Call</title>
+  <style>
+    #local-player {
+      width: 400px;
+      height: 300px;
+      background-color: #000;
+      margin-top: 20px;
+    }
+    video {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
 </head>
 <body>
   <h1>🎥 בדיקת Agora SDK</h1>
   <div id="status">מחכה להתחברות...</div>
+  <div id="local-player"></div>
 
   <script src="https://cdn.agora.io/sdk/release/AgoraRTC_N-4.20.0.js"></script>
   <script>
     let APP_ID = "";
     const CHANNEL_NAME = "test-room";
 
-    // 1️⃣ בקשת APP_ID בצורה בטוחה מהשרת
-    fetch('/appId')
-      .then(res => res.json())
-      .then(data => {
-        APP_ID = data.appId;
-        startCall(); // לאחר קבלת APP_ID – מתחילים את השיחה
-      });
+    window.onload = () => {
+      // בקשת APP_ID מהשרת
+      fetch('/appId')
+        .then(res => res.json())
+        .then(data => {
+          APP_ID = data.appId;
+          startCall();
+        });
+    };
 
     async function startCall() {
       const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
 
       document.getElementById("status").innerText = "מתחבר לערוץ...";
 
-      // 2️⃣ בקשת Token דינמית מהשרת (כמו שכבר בנינו)
+      // בקשת Token דינמית מהשרת
       const tokenRes = await fetch(`/rte-token?channelName=${CHANNEL_NAME}`);
       const tokenData = await tokenRes.json();
 
@@ -35,8 +50,13 @@
       document.getElementById("status").innerText = "✅ מחובר";
 
       // התחברות לווידאו/אודיו
-      const localTrack = await AgoraRTC.createMicrophoneAndCameraTracks();
-      await client.publish(localTrack);
+      const [microphoneTrack, cameraTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
+
+      // הצגת הווידאו המקומי
+      const localPlayerContainer = document.getElementById("local-player");
+      cameraTrack.play(localPlayerContainer); // הצגה בתוך הדיב
+
+      await client.publish([microphoneTrack, cameraTrack]);
     }
   </script>
 </body>
