@@ -118,6 +118,7 @@
       cameraTrack.play("local-player");
       await client.publish([microphoneTrack, cameraTrack]);
 
+      // 🧠 כאשר משתמש אחר מפרסם מדיה
       client.on("user-published", async (user, mediaType) => {
         await client.subscribe(user, mediaType);
 
@@ -127,6 +128,15 @@
         if (mediaType === 'audio') {
           user.audioTrack.play();
         }
+      });
+
+      // 🧠 אם אנחנו מתחברים באיחור – נתחבר למדיה שכבר משודרת
+      client.remoteUsers.forEach(async (user) => {
+        await client.subscribe(user, "video");
+        user.videoTrack?.play("remote-player");
+
+        await client.subscribe(user, "audio");
+        user.audioTrack?.play();
       });
     }
 
