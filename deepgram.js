@@ -26,12 +26,14 @@ function startWebSocketServer(server) {
 
     // ⏺️ קבלת תוצאות מ־Deepgram ושליחה ללקוח
     deepgramLive.on('transcriptReceived', (data) => {
-  const transcript = data.channel.alternatives[0]?.transcript;
-  const isFinal = data.is_final;
+      const transcript = data.channel.alternatives[0]?.transcript;
+const isFinal = data.is_final;
 
-  if (transcript) {
-    ws.send(JSON.stringify({ transcript, is_final: isFinal }));
-  }
+if (transcript) {
+  console.log(`📝 Transcript (${isFinal ? 'final' : 'interim'}):`, transcript);
+  ws.send(JSON.stringify({ transcript, is_final: isFinal }));
+}
+}
 });
 
     // ⏹️ אם Deepgram חווה בעיה
