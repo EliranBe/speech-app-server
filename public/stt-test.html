@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>STT Test</title>
+</head>
+<body>
+  <h1>🎤 STT Microphone Test</h1>
+  <button id="start">Start</button>
+  <button id="stop">Stop</button>
+
+  <script>
+    let ws;
+    let mediaRecorder;
+
+    document.getElementById("start").onclick = async () => {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+
+      ws = new WebSocket(`wss://${window.location.host}`);
+      ws.binaryType = "arraybuffer";
+
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        console.log("📝 Transcription:", data.transcript);
+      };
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) {
+          event.data.arrayBuffer().then(buffer => ws.send(buffer));
+        }
+      };
+
+      mediaRecorder.start(250); // שולח כל רבע שניה
+      console.log("🎙️ Recording started");
+    };
+
+    document.getElementById("stop").onclick = () => {
+      mediaRecorder?.stop();
+      ws?.close();
+      console.log("🛑 Recording stopped");
+    };
+  </script>
+</body>
+</html>
