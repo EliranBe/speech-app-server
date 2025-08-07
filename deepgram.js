@@ -26,11 +26,13 @@ function startWebSocketServer(server) {
 
     // ⏺️ קבלת תוצאות מ־Deepgram ושליחה ללקוח
     deepgramLive.on('transcriptReceived', (data) => {
-      const transcript = data.channel.alternatives[0]?.transcript;
-      if (transcript) {
-        ws.send(JSON.stringify({ transcript }));
-      }
-    });
+  const transcript = data.channel.alternatives[0]?.transcript;
+  const isFinal = data.is_final;
+
+  if (transcript) {
+    ws.send(JSON.stringify({ transcript, is_final: isFinal }));
+  }
+});
 
     // ⏹️ אם Deepgram חווה בעיה
     deepgramLive.on('error', (error) => {
