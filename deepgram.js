@@ -33,7 +33,6 @@ if (transcript) {
   console.log(`📝 Transcript (${isFinal ? 'final' : 'interim'}):`, transcript);
   ws.send(JSON.stringify({ transcript, is_final: isFinal }));
 }
-}
 });
 
     // ⏹️ אם Deepgram חווה בעיה
