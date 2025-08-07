@@ -45,8 +45,15 @@
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
         if (data.transcript) {
-          document.getElementById("output").innerText = data.transcript;
-        }
+  const isFinal = data.is_final;
+  const output = document.getElementById("output");
+  output.innerText = data.transcript;
+
+  // אם זה תמלול זמני – נשתמש בקו תחתון
+  if (!isFinal) {
+    output.innerText += ' ⏳';
+  }
+}
       };
     };
   </script>
