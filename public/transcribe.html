@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🎤 Real-Time STT</title>
+</head>
+<body>
+  <h1>🎧 Transcription Test</h1>
+  <button id="start">Start Transcription</button>
+  <p><strong>Transcript:</strong> <span id="output">...</span></p>
+
+  <script>
+    let ws;
+    let mediaRecorder;
+
+    document.getElementById("start").onclick = async () => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        return;
+      }
+
+      ws = new WebSocket(`wss://${location.host}`);
+
+      ws.onopen = async () => {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) {
+            event.data.arrayBuffer().then(buffer => ws.send(buffer));
+          }
+        };
+
+        mediaRecorder.start(250); // כל 250ms שליחת אודיו
+      };
+
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.transcript) {
+          document.getElementById("output").innerText = data.transcript;
+        }
+      };
+    };
+  </script>
+</body>
+</html>
