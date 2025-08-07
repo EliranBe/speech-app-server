@@ -20,8 +20,7 @@ function startWebSocketServer(server) {
       language: 'en',
       punctuate: true,
       interim_results: true,
-      //no_delay: true,
-      utterance_end_ms: 250,
+      utterance_end_ms: 2000,
     });
 
     // ✅ KeepAlive - שליחת הודעה ריקה כל 15 שניות לשמירה על חיבור
@@ -31,15 +30,19 @@ function startWebSocketServer(server) {
       }
     }, 15000); // 15 שניות
 
-    deepgramLive.on('transcriptReceived', (data) => {
-      const transcript = data.channel.alternatives[0]?.transcript;
-      const isFinal = data.is_final;
+   deepgramLive.on('transcriptReceived', (data) => {
+  console.log("📥 Raw response from Deepgram:");
+  console.dir(data, { depth: null });
 
-      if (transcript && transcript.trim() !== "") {
-        console.log(`📝 Transcript (${isFinal ? 'final' : 'interim'}):`, transcript);
-        ws.send(JSON.stringify({ transcript, is_final: isFinal }));
-      }
-    });
+  const transcript = data.channel.alternatives[0]?.transcript;
+  const isFinal = data.is_final;
+
+  if (transcript && transcript.trim() !== "") {
+    console.log(`📝 Transcript (${isFinal ? 'final' : 'interim'}):`, transcript);
+    ws.send(JSON.stringify({ transcript, is_final: isFinal }));
+  }
+});
+
 
     deepgramLive.on('error', (error) => {
       console.error("Deepgram Error:", error);
