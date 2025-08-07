@@ -20,29 +20,31 @@ function startWebSocketServer(server) {
       language: 'en',
       punctuate: true,
       interim_results: true,
+      smart_format: true,
+      encoding: 'linear16',          // ⚠️ חשוב
+      sample_rate: 16000,            // ⚠️ חובה בהתאמה ל־linear16
       utterance_end_ms: 2000,
     });
 
-    // ✅ KeepAlive - שליחת הודעה ריקה כל 15 שניות לשמירה על חיבור
+    // ✅ KeepAlive - שליחת הודעה ריקה כל 15 שניות
     const keepAliveInterval = setInterval(() => {
       if (ws.readyState === ws.OPEN) {
         ws.send(JSON.stringify({ type: 'keepalive' }));
       }
-    }, 15000); // 15 שניות
+    }, 15000);
 
-   deepgramLive.on('transcriptReceived', (data) => {
-  console.log("📥 Raw response from Deepgram:");
-  console.dir(data, { depth: null });
+    deepgramLive.on('transcriptReceived', (data) => {
+      console.log("📥 Raw response from Deepgram:");
+      console.dir(data, { depth: null });
 
-  const transcript = data.channel.alternatives[0]?.transcript;
-  const isFinal = data.is_final;
+      const transcript = data.channel.alternatives[0]?.transcript;
+      const isFinal = data.is_final;
 
-  if (transcript && transcript.trim() !== "") {
-    console.log(`📝 Transcript (${isFinal ? 'final' : 'interim'}):`, transcript);
-    ws.send(JSON.stringify({ transcript, is_final: isFinal }));
-  }
-});
-
+      if (transcript && transcript.trim() !== "") {
+        console.log(`📝 Transcript (${isFinal ? 'final' : 'interim'}):`, transcript);
+        ws.send(JSON.stringify({ transcript, is_final: isFinal }));
+      }
+    });
 
     deepgramLive.on('error', (error) => {
       console.error("Deepgram Error:", error);
@@ -52,7 +54,7 @@ function startWebSocketServer(server) {
     ws.on('close', () => {
       console.log("❌ Client disconnected");
       deepgramLive.finish();
-      clearInterval(keepAliveInterval); // 🧹 ניקוי ה-interval
+      clearInterval(keepAliveInterval);
     });
 
     ws.on('message', (message) => {
