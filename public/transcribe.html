@@ -1,61 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>🎤 Real-Time STT</title>
+  <meta charset="UTF-8">
+  <title>🎤 Real-Time STT</title>
 </head>
 <body>
-  <h1>🎧 Transcription Test</h1>
-  <button id="start">Start Transcription</button>
-  <p><strong>Transcript:</strong> <span id="output">...</span></p>
+  <h1>🎧 Transcription Test</h1>
+  <button id="start">Start Transcription</button>
+  <p><strong>Transcript:</strong> <span id="output">...</span></p>
 
-  <script>
-    let ws;
-    let mediaRecorder;
+  <script>
+    let ws;
+    let mediaRecorder;
 
-    document.getElementById("start").onclick = async () => {
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        return;
-      }
+    document.getElementById("start").onclick = async () => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        return;
+      }
 
-      ws = new WebSocket(`wss://${location.host}`);
+      ws = new WebSocket(`wss://${location.host}`);
 
-      ws.onopen = async () => {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      ws.onopen = async () => {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-        if (!window.MediaRecorder) {
-          alert("MediaRecorder not supported in this browser.");
-          return;
-        }
+        if (!window.MediaRecorder) {
+          alert("MediaRecorder not supported in this browser.");
+          return;
+        }
 
-        mediaRecorder = new MediaRecorder(stream); // ← בלי mimeType
+        mediaRecorder = new MediaRecorder(stream); // ← בלי mimeType
 
-        mediaRecorder.ondataavailable = (event) => {
-          if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) {
-            console.log("🎧 Sending audio chunk:", event.data);
-            event.data.arrayBuffer().then(buffer => ws.send(buffer));
-          } else {
-            console.warn("🚫 No audio or WebSocket closed");
-          }
-        };
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) {
+            console.log("🎧 Sending audio chunk:", event.data);
+            event.data.arrayBuffer().then(buffer => ws.send(buffer));
+          } else {
+            console.warn("🚫 No audio or WebSocket closed");
+          }
+        };
 
-        mediaRecorder.start(250); // כל 250ms שליחת אודיו
-      };
+        mediaRecorder.start(250); // כל 250ms שליחת אודיו
+      };
 
-      ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (data.transcript) {
-  const isFinal = data.is_final;
-  const output = document.getElementById("output");
-  output.innerText = data.transcript;
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.transcript) {
+          const isFinal = data.is_final;
+          const output = document.getElementById("output");
 
-  // אם זה תמלול זמני – נשתמש בקו תחתון
-  if (!isFinal) {
-    output.innerText += ' ⏳';
-  }
-}
-      };
-    };
-  </script>
+          // אם זמני – הצג עם סימון; אם סופי – הצג נקי
+          output.innerText = isFinal
+            ? data.transcript
+            : data.transcript + ' ⏳';
+        }
+      };
+    };
+  </script>
 </body>
 </html>
