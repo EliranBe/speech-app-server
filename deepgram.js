@@ -20,7 +20,16 @@ function startWebSocketServer(server) {
       language: 'en',
       punctuate: true,
       interim_results: true,
+      no_delay: true,
+      utterance_end_ms: 250,
     });
+
+    // ✅ KeepAlive - שליחת הודעה ריקה כל 15 שניות לשמירה על חיבור
+    const keepAliveInterval = setInterval(() => {
+      if (ws.readyState === ws.OPEN) {
+        ws.send(JSON.stringify({ type: 'keepalive' }));
+      }
+    }, 15000); // 15 שניות
 
     deepgramLive.on('transcriptReceived', (data) => {
       const transcript = data.channel.alternatives[0]?.transcript;
@@ -40,6 +49,7 @@ function startWebSocketServer(server) {
     ws.on('close', () => {
       console.log("❌ Client disconnected");
       deepgramLive.finish();
+      clearInterval(keepAliveInterval); // 🧹 ניקוי ה-interval
     });
 
     ws.on('message', (message) => {
