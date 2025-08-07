@@ -22,11 +22,17 @@
 
       ws.onopen = async () => {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+
+        if (!window.MediaRecorder) {
+          alert("MediaRecorder not supported in this browser.");
+          return;
+        }
+
+        mediaRecorder = new MediaRecorder(stream); // ← בלי mimeType
 
         mediaRecorder.ondataavailable = (event) => {
           if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) {
-            console.log("🎧 Sending audio chunk:", event.data); // ✅ נוספה שורת בדיקה
+            console.log("🎧 Sending audio chunk:", event.data);
             event.data.arrayBuffer().then(buffer => ws.send(buffer));
           } else {
             console.warn("🚫 No audio or WebSocket closed");
