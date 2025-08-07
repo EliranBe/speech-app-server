@@ -20,7 +20,7 @@ function startWebSocketServer(server) {
       language: 'en',
       punctuate: true,
       interim_results: true,
-      no_delay: true,
+      //no_delay: true,
       utterance_end_ms: 250,
     });
 
