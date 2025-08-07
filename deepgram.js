@@ -21,7 +21,7 @@ function startWebSocketServer(server) {
       model: 'nova-3',
       language: 'en', // אין תמיכה בעברית - נתמכות: en, es, fr, etc.
       punctuate: true,
-      interim_results: false,
+      interim_results: true,
     });
 
     // ⏺️ קבלת תוצאות מ־Deepgram ושליחה ללקוח
