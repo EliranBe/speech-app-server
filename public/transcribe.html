@@ -26,7 +26,10 @@
 
         mediaRecorder.ondataavailable = (event) => {
           if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) {
+            console.log("🎧 Sending audio chunk:", event.data); // ✅ נוספה שורת בדיקה
             event.data.arrayBuffer().then(buffer => ws.send(buffer));
+          } else {
+            console.warn("🚫 No audio or WebSocket closed");
           }
         };
 
