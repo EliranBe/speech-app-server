@@ -30,7 +30,6 @@
         return;
       }
 
-      // ✅ מומלץ להכניס כאן את ה-URL המלא במקום location.host
       ws = new WebSocket("wss://speech-app-server.onrender.com");
 
       ws.onopen = async () => {
@@ -55,7 +54,7 @@
           }
         };
 
-        mediaRecorder.start(100); // 🔁 שליחת אודיו כל 100ms
+        mediaRecorder.start(100); // שליחת אודיו כל 100ms
         log("📡 MediaRecorder started: 100ms intervals");
       };
 
