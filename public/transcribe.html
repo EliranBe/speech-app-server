@@ -3,6 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <title>🎤 Realtime STT Debug</title>
+  <style>
+    body { font-family: monospace; background: #f4f4f4; padding: 20px; }
+    #log { background: #fff; padding: 10px; border: 1px solid #ccc; height: 400px; overflow-y: scroll; white-space: pre-wrap; }
+  </style>
 </head>
 <body>
   <h1>🔊 Debug: Does Interim Transcript Work?</h1>
@@ -10,49 +14,68 @@
   <pre id="log"></pre>
 
   <script>
+    const logEl = document.getElementById("log");
+
     const log = msg => {
       console.log(msg);
-      document.getElementById("log").textContent += msg + "\n";
+      logEl.textContent += msg + "\n";
+      logEl.scrollTop = logEl.scrollHeight;
     };
 
     let ws;
-    document.getElementById("start").onclick = async () => {
-      if (ws && ws.readyState === WebSocket.OPEN) return;
 
-      ws = new WebSocket(`wss://${location.host}`);
+    document.getElementById("start").onclick = async () => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        log("⚠️ WebSocket already open");
+        return;
+      }
+
+      // ✅ מומלץ להכניס כאן את ה-URL המלא במקום location.host
+      ws = new WebSocket("wss://speech-app-server.onrender.com");
+
       ws.onopen = async () => {
-        log("WebSocket opened; requesting microphone...");
+        log("✅ WebSocket opened");
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
         if (!window.MediaRecorder) {
-          alert("MediaRecorder unsupported");
+          alert("MediaRecorder unsupported in this browser.");
           return;
         }
 
-        // Use Opus codec explicitly
         const options = { mimeType: 'audio/webm;codecs=opus' };
-        log("Using MediaRecorder options: " + JSON.stringify(options));
+        log("🎙️ Using MediaRecorder options: " + JSON.stringify(options));
 
         const mediaRecorder = new MediaRecorder(stream, options);
 
         mediaRecorder.ondataavailable = async event => {
           if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) {
-            log("  ⬆ Sending audio chunk (" + event.data.size + " bytes)");
+            log("⬆ Sending audio chunk (" + event.data.size + " bytes)");
             const buffer = await event.data.arrayBuffer();
             ws.send(buffer);
           }
         };
 
-        mediaRecorder.start(100);
-        log("MediaRecorder started, chunks every 100ms");
+        mediaRecorder.start(100); // 🔁 שליחת אודיו כל 100ms
+        log("📡 MediaRecorder started: 100ms intervals");
       };
 
       ws.onmessage = event => {
-        log("  ⬇ Raw server message:");
-        log(event.data);
+        try {
+          const parsed = JSON.parse(event.data);
+          const type = parsed.is_final ? "✅ Final" : "⏳ Interim";
+          log(`⬇ ${type}: ${parsed.transcript}`);
+        } catch (e) {
+          log("⚠️ Non-JSON message: " + event.data);
+        }
       };
-      ws.onclose = () => log("WebSocket closed");
-      ws.onerror = err => log("WebSocket error: " + err);
+
+      ws.onerror = err => {
+        log("❌ WebSocket error: " + err.message);
+      };
+
+      ws.onclose = () => {
+        log("🔌 WebSocket closed");
+      };
     };
   </script>
 </body>
