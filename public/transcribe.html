@@ -2,63 +2,57 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>🎤 Real-Time STT</title>
+  <title>🎤 Realtime STT Debug</title>
 </head>
 <body>
-  <h1>🎧 Transcription Test</h1>
-  <button id="start">Start Transcription</button>
-  <p><strong>Transcript:</strong> <span id="output">...</span></p>
+  <h1>🔊 Debug: Does Interim Transcript Work?</h1>
+  <button id="start">Start Debug</button>
+  <pre id="log"></pre>
 
   <script>
-    let ws;
-    let mediaRecorder;
+    const log = msg => {
+      console.log(msg);
+      document.getElementById("log").textContent += msg + "\n";
+    };
 
+    let ws;
     document.getElementById("start").onclick = async () => {
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        return;
-      }
+      if (ws && ws.readyState === WebSocket.OPEN) return;
 
       ws = new WebSocket(`wss://${location.host}`);
-
       ws.onopen = async () => {
+        log("WebSocket opened; requesting microphone...");
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
         if (!window.MediaRecorder) {
-          alert("MediaRecorder not supported in this browser.");
+          alert("MediaRecorder unsupported");
           return;
         }
 
-        // ✅ משתמשים בפורמט תקני ל־Deepgram
-        mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+        // Use Opus codec explicitly
+        const options = { mimeType: 'audio/webm;codecs=opus' };
+        log("Using MediaRecorder options: " + JSON.stringify(options));
 
-        mediaRecorder.ondataavailable = (event) => {
+        const mediaRecorder = new MediaRecorder(stream, options);
+
+        mediaRecorder.ondataavailable = async event => {
           if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) {
-            console.log("🎧 Sending audio chunk to server...");
-            event.data.arrayBuffer().then(buffer => ws.send(buffer));
-          } else {
-            console.warn("🚫 No audio or WebSocket closed");
+            log("  ⬆ Sending audio chunk (" + event.data.size + " bytes)");
+            const buffer = await event.data.arrayBuffer();
+            ws.send(buffer);
           }
         };
 
-        // ✅ שליחה כל 100ms (Latency נמוך)
         mediaRecorder.start(100);
+        log("MediaRecorder started, chunks every 100ms");
       };
 
-      ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (data.transcript) {
-          const isFinal = data.is_final;
-          const output = document.getElementById("output");
-
-          // ⏳ תמלול זמני או סופי
-          output.innerText = isFinal
-            ? data.transcript
-            : data.transcript + ' ⏳';
-
-          // ✅ הדפסה גם ל־Console
-          console.log(`📡 ${isFinal ? 'Final' : 'Interim'}: ${data.transcript}`);
-        }
+      ws.onmessage = event => {
+        log("  ⬇ Raw server message:");
+        log(event.data);
       };
+      ws.onclose = () => log("WebSocket closed");
+      ws.onerror = err => log("WebSocket error: " + err);
     };
   </script>
 </body>
