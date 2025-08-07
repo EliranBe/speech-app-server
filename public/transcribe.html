@@ -28,18 +28,20 @@
           return;
         }
 
-        mediaRecorder = new MediaRecorder(stream); // ← בלי mimeType
+        // ✅ משתמשים בפורמט תקני ל־Deepgram
+        mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
 
         mediaRecorder.ondataavailable = (event) => {
           if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) {
-            console.log("🎧 Sending audio chunk:", event.data);
+            console.log("🎧 Sending audio chunk to server...");
             event.data.arrayBuffer().then(buffer => ws.send(buffer));
           } else {
             console.warn("🚫 No audio or WebSocket closed");
           }
         };
 
-        mediaRecorder.start(250); // כל 250ms שליחת אודיו
+        // ✅ שליחה כל 100ms (Latency נמוך)
+        mediaRecorder.start(100);
       };
 
       ws.onmessage = (event) => {
