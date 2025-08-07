@@ -21,12 +21,11 @@ function startWebSocketServer(server) {
       punctuate: true,
       interim_results: true,
       smart_format: true,
-      encoding: 'linear16',          // ⚠️ חשוב
-      sample_rate: 16000,            // ⚠️ חובה בהתאמה ל־linear16
+      // אין צורך ב־encoding/sample_rate כאשר משתמשים ב־opus
       utterance_end_ms: 2000,
     });
 
-    // ✅ KeepAlive - שליחת הודעה ריקה כל 15 שניות
+    // KeepAlive כל 15 שניות
     const keepAliveInterval = setInterval(() => {
       if (ws.readyState === ws.OPEN) {
         ws.send(JSON.stringify({ type: 'keepalive' }));
