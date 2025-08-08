@@ -22,6 +22,8 @@ function startWebSocketServer(server) {
       language: 'en', // חשוב: עברית אינה נתמכת כרגע
       punctuate: true,
       interim_results: true,
+      encoding: 'webm',      // הוסף encoding
+      sample_rate: 48000,    // הוסף sample_rate מתאים לדפדפן
     });
 
     // קבלת תמלול ושליחה ללקוח
