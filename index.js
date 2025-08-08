@@ -41,8 +41,8 @@ app.get('/rte-token', (req, res) => {
   const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
 
   const token = RtcTokenBuilder.buildTokenWithUid(
-    process.env.APP_ID,
-    process.env.APP_CERTIFICATE,
+    process.env.AGORA_APP_ID,
+    process.env.AGORA_APP_CERTIFICATE,
     channelName,
     uid,
     role,
