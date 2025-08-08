@@ -23,6 +23,7 @@
 
     let ws, audioContext, processor, source;
 
+    // פונקציה להמרת float32 ל-Int16PCM
     function floatTo16BitPCM(buffer) {
       const l = buffer.length;
       const buf = new Int16Array(l);
@@ -45,32 +46,37 @@
       ws.onopen = async () => {
         log("✅ WebSocket opened");
 
-        audioContext = new AudioContext({ sampleRate: 16000 });
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        source = audioContext.createMediaStreamSource(stream);
-        processor = audioContext.createScriptProcessor(4096, 1, 1);
+        try {
+          audioContext = new AudioContext({ sampleRate: 16000 });
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          source = audioContext.createMediaStreamSource(stream);
+          processor = audioContext.createScriptProcessor(4096, 1, 1);
 
-        processor.onaudioprocess = e => {
-          const floatData = e.inputBuffer.getChannelData(0);
-          const int16Data = floatTo16BitPCM(floatData);
-          if (ws.readyState === WebSocket.OPEN) {
-            ws.send(int16Data);
-            log(`⬆ Sent audio chunk (${int16Data.byteLength} bytes)`);
-          }
-        };
+          processor.onaudioprocess = e => {
+            const floatData = e.inputBuffer.getChannelData(0);
+            const int16Data = floatTo16BitPCM(floatData);
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(int16Data);
+              log(`⬆ Sent audio chunk (${int16Data.byteLength} bytes)`);
+            }
+          };
 
-        source.connect(processor);
-        processor.connect(audioContext.destination);
+          source.connect(processor);
+          processor.connect(audioContext.destination);
 
-        log("🎙️ Audio streaming started");
+          log("🎙️ Audio streaming started");
+        } catch (err) {
+          log("❌ Error accessing microphone or AudioContext: " + err.message);
+        }
       };
 
       ws.onmessage = event => {
         try {
           const data = JSON.parse(event.data);
           if (data.type === "keepalive") return;
+          const transcript = data.channel.alternatives[0].transcript;
           const prefix = data.is_final ? "✅ Final" : "⏳ Interim";
-          log(`${prefix}: ${data.channel.alternatives[0].transcript}`);
+          log(`${prefix}: ${transcript}`);
         } catch (e) {
           log("⚠️ Non-JSON message: " + event.data);
         }
