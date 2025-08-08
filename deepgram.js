@@ -7,7 +7,7 @@ if (!deepgramApiKey) {
   throw new Error("Missing DEEPGRAM_API_KEY in environment variables");
 }
 
-// ✅ יצירת לקוח חדש לפי גרסה 3
+// יצירת לקוח Deepgram גרסה 3
 const deepgram = createClient(deepgramApiKey);
 
 function startWebSocketServer(server) {
@@ -16,36 +16,36 @@ function startWebSocketServer(server) {
   wss.on('connection', async (ws) => {
     console.log("🔗 Client connected to WebSocket");
 
-    // ✅ יצירת סטרים חדש עם פרמטרים
+    // יצירת סטרים חדש עם interim_results true לקבלת תמלול בזמן אמת
     const deepgramLive = await deepgram.listen.live({
       model: 'nova-3',
-      language: 'en', // אין תמיכה בעברית - נתמכות: en, es, fr, etc.
+      language: 'en', // חשוב: עברית אינה נתמכת כרגע
       punctuate: true,
-      interim_results: false,
+      interim_results: true,
     });
 
-    // ⏺️ קבלת תוצאות מ־Deepgram ושליחה ללקוח
+    // קבלת תמלול ושליחה ללקוח
     deepgramLive.on('transcriptReceived', (data) => {
       const transcript = data.channel.alternatives[0]?.transcript;
+      const isFinal = data.is_final || false;
       if (transcript) {
-        ws.send(JSON.stringify({ transcript }));
+        ws.send(JSON.stringify({ transcript, isFinal }));
+        console.log(`📢 Transcript${isFinal ? ' (final)' : ' (interim)'}: ${transcript}`);
       }
     });
 
-    // ⏹️ אם Deepgram חווה בעיה
     deepgramLive.on('error', (error) => {
       console.error("Deepgram Error:", error);
       ws.close();
     });
 
-    // ⛔ סיום סטרים כשנסגר WebSocket
     ws.on('close', () => {
       console.log("❌ Client disconnected");
       deepgramLive.finish();
     });
 
-    // 🎙️ שליחת אודיו מהלקוח ל־Deepgram
     ws.on('message', (message) => {
+      console.log('Received audio chunk, size:', message.length);
       deepgramLive.send(message);
     });
   });
