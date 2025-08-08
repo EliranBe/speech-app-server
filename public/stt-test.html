@@ -9,6 +9,9 @@
   <button id="start">Start</button>
   <button id="stop">Stop</button>
 
+  <!-- תיבת תמלול -->
+  <div id="transcript" style="white-space: pre-wrap; border: 1px solid #ccc; padding: 10px; margin-top: 20px; height: 150px; overflow-y: auto;"></div>
+
   <script>
     let ws;
     let mediaRecorder;
@@ -20,9 +23,24 @@
       ws = new WebSocket(`wss://${window.location.host}`);
       ws.binaryType = "arraybuffer";
 
+      ws.onopen = () => {
+        console.log("WebSocket connection opened");
+      };
+
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
         console.log("📝 Transcription:", data.transcript);
+
+        const transcriptDiv = document.getElementById('transcript');
+        transcriptDiv.textContent += data.transcript + "\n";
+      };
+
+      ws.onerror = (error) => {
+        console.error("WebSocket error:", error);
+      };
+
+      ws.onclose = () => {
+        console.log("WebSocket connection closed");
       };
 
       mediaRecorder.ondataavailable = (event) => {
