@@ -9,7 +9,7 @@
   </style>
 </head>
 <body>
-  <h1>🔊 Debug: Does Interim Transcript Work?</h1>
+  <h1>🔊 Debug: Interim Transcript Test</h1>
   <button id="start">Start Debug</button>
   <pre id="log"></pre>
 
@@ -48,7 +48,6 @@
 
         mediaRecorder.ondataavailable = async event => {
           if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) {
-            log("⬆ Sending audio chunk (" + event.data.size + " bytes)");
             const buffer = await event.data.arrayBuffer();
             ws.send(buffer);
           }
@@ -61,8 +60,11 @@
       ws.onmessage = event => {
         try {
           const parsed = JSON.parse(event.data);
+
+          if (parsed.type === 'keepalive') return;
+
           const type = parsed.is_final ? "✅ Final" : "⏳ Interim";
-          log(`⬇ ${type}: ${parsed.transcript}`);
+          log(`⬇ ${type}: "${parsed.transcript}"`);
         } catch (e) {
           log("⚠️ Non-JSON message: " + event.data);
         }
