@@ -9,37 +9,38 @@
   <button id="start">Start</button>
   <button id="stop">Stop</button>
 
-  <!-- תיבת תמלול -->
   <div id="transcript" style="white-space: pre-wrap; border: 1px solid #ccc; padding: 10px; margin-top: 20px; height: 150px; overflow-y: auto;"></div>
 
   <script>
     let ws;
-    let mediaRecorder;
+    let audioContext;
+    let processor;
+    let source;
+    let stream;
 
     document.getElementById("start").onclick = async () => {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      const preferredMimeType = 'audio/webm;codecs=opus';
-      const mimeTypeToUse = MediaRecorder.isTypeSupported(preferredMimeType) ? preferredMimeType : '';
+      audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+      source = audioContext.createMediaStreamSource(stream);
 
-      mediaRecorder = new MediaRecorder(stream, mimeTypeToUse ? { mimeType: mimeTypeToUse } : undefined);
-      console.log("MediaRecorder mimeType:", mediaRecorder.mimeType);
-      if (!mimeTypeToUse) {
-        console.warn(`⚠️ Preferred MIME type "${preferredMimeType}" is not supported, using default`);
-      }
+      processor = audioContext.createScriptProcessor(4096, 1, 1);
+      source.connect(processor);
+      processor.connect(audioContext.destination);
 
       ws = new WebSocket(`wss://${window.location.host}`);
       ws.binaryType = "arraybuffer";
 
       ws.onopen = () => {
         console.log("WebSocket connection opened");
+        // שולח הודעת התחלה לשרת
+        ws.send(JSON.stringify({ event: "start" }));
       };
 
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
           console.log("📝 Transcription:", data.transcript);
-
           const transcriptDiv = document.getElementById('transcript');
           transcriptDiv.textContent += data.transcript + (data.isFinal ? " ✔️\n" : " …\n");
           transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
@@ -48,27 +49,27 @@
         }
       };
 
-      ws.onerror = (error) => {
-        console.error("WebSocket error:", error);
-      };
+      ws.onerror = (error) => console.error("WebSocket error:", error);
+      ws.onclose = () => console.log("WebSocket connection closed");
 
-      ws.onclose = () => {
-        console.log("WebSocket connection closed");
-      };
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) {
-          console.log("Sending data chunk of type:", event.data.type);
-          event.data.arrayBuffer().then(buffer => ws.send(buffer));
+      // המרה ושליחה בפורמט PCM16 16kHz
+      processor.onaudioprocess = (e) => {
+        if (ws.readyState !== WebSocket.OPEN) return;
+        const inputData = e.inputBuffer.getChannelData(0);
+        const pcm16 = new Int16Array(inputData.length);
+        for (let i = 0; i < inputData.length; i++) {
+          pcm16[i] = Math.max(-1, Math.min(1, inputData[i])) * 0x7FFF;
         }
+        ws.send(pcm16.buffer);
       };
 
-      mediaRecorder.start(250); // שולח כל רבע שניה
-      console.log("🎙️ Recording started");
+      console.log("🎙️ Recording started (PCM16, 16kHz)");
     };
 
     document.getElementById("stop").onclick = () => {
-      mediaRecorder?.stop();
+      processor?.disconnect();
+      source?.disconnect();
+      stream?.getTracks().forEach(track => track.stop());
       ws?.close();
       console.log("🛑 Recording stopped");
     };
