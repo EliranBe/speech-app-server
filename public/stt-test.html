@@ -18,7 +18,9 @@
 
     document.getElementById("start").onclick = async () => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+      
+      console.log("MediaRecorder mimeType:", mediaRecorder.mimeType);
 
       ws = new WebSocket(`wss://${window.location.host}`);
       ws.binaryType = "arraybuffer";
@@ -50,6 +52,7 @@
 
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) {
+          console.log("Sending data chunk of type:", event.data.type);
           event.data.arrayBuffer().then(buffer => ws.send(buffer));
         }
       };
