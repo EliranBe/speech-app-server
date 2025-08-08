@@ -12,7 +12,7 @@ function startWebSocketServer(server) {
     console.log('🔗 Client connected');
 
     const deepgramSocket = new (require('ws'))(
-      'wss://api.deepgram.com/v1/listen?punctuate=true&interim_results=true&language=en&encoding=linear16&sample_rate=16000',
+      'wss://api.deepgram.com/v1/listen?language=en&interim_results=true&punctuate=true&encoding=linear16&sample_rate=16000',
       {
         headers: {
           Authorization: `Token ${deepgramApiKey}`,
@@ -37,12 +37,12 @@ function startWebSocketServer(server) {
       });
 
       deepgramSocket.on('error', (e) => {
-        console.error('❌ Deepgram WebSocket error:', e);
+        console.error('❌ Deepgram WS error:', e);
         wsClient.close();
       });
 
       deepgramSocket.on('close', () => {
-        console.log('🔌 Deepgram WebSocket closed');
+        console.log('🔌 Deepgram WS closed');
         wsClient.close();
       });
     });
@@ -53,12 +53,8 @@ function startWebSocketServer(server) {
     });
 
     wsClient.on('message', (msg) => {
-      console.log(`➡️ Received audio chunk (${msg.byteLength} bytes) from client`);
       if (deepgramSocket.readyState === deepgramSocket.OPEN) {
         deepgramSocket.send(msg);
-        console.log(`⬆ Sent audio chunk (${msg.byteLength} bytes) to Deepgram`);
-      } else {
-        console.warn('⚠️ Deepgram socket not open; cannot send audio');
       }
     });
 
@@ -70,7 +66,7 @@ function startWebSocketServer(server) {
     });
 
     wsClient.on('error', (e) => {
-      console.error('❌ Client WebSocket error:', e);
+      console.error('❌ Client WS error:', e);
       try {
         wsClient.close();
       } catch {}
