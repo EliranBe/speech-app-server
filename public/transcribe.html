@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>🎤 Realtime STT Debug with PCM streaming</title>
+  <title>🎤 Realtime STT Debug with PCM streaming & debug</title>
   <style>
     body { font-family: monospace; background: #f4f4f4; padding: 20px; }
     #log { background: #fff; padding: 10px; border: 1px solid #ccc; height: 400px; overflow-y: scroll; white-space: pre-wrap; }
   </style>
 </head>
 <body>
-  <h1>🔊 Realtime STT with Interim (PCM streaming)</h1>
+  <h1>🔊 Realtime STT Debug (with detailed logs)</h1>
   <button id="start">Start Streaming</button>
   <pre id="log"></pre>
 
@@ -26,7 +26,6 @@
     let processor;
     let source;
 
-    // המרה מפורמט float32 ל- Int16 PCM
     function convertFloat32ToInt16(buffer) {
       const l = buffer.length;
       const buf = new Int16Array(l);
@@ -43,55 +42,64 @@
         return;
       }
 
-      // פתח WebSocket ישיר אל שרת ה־Node (שיפתח Deepgram)
-      ws = new WebSocket('wss://speech-app-server.onrender.com');
+      try {
+        ws = new WebSocket('wss://speech-app-server.onrender.com');
+        ws.binaryType = 'arraybuffer';
 
-      ws.binaryType = 'arraybuffer';
+        ws.onopen = async () => {
+          log('✅ WebSocket opened');
+          try {
+            audioContext = new AudioContext({ sampleRate: 16000 });
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            source = audioContext.createMediaStreamSource(stream);
 
-      ws.onopen = async () => {
-        log('✅ WebSocket opened');
-        audioContext = new AudioContext({ sampleRate: 16000 }); // Deepgram ממליץ 16kHz
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        source = audioContext.createMediaStreamSource(stream);
+            processor = audioContext.createScriptProcessor(4096, 1, 1);
 
-        processor = audioContext.createScriptProcessor(4096, 1, 1);
+            processor.onaudioprocess = (e) => {
+              const floatData = e.inputBuffer.getChannelData(0);
+              const int16Data = convertFloat32ToInt16(floatData);
+              if (ws.readyState === WebSocket.OPEN) {
+                ws.send(int16Data);
+                log(`⬆ Sent audio chunk (${int16Data.byteLength} bytes)`);
+              } else {
+                log('⚠️ WebSocket not open while sending audio');
+              }
+            };
 
-        processor.onaudioprocess = (e) => {
-          const floatData = e.inputBuffer.getChannelData(0);
-          const int16Data = convertFloat32ToInt16(floatData);
-          if (ws.readyState === WebSocket.OPEN) {
-            ws.send(int16Data);
+            source.connect(processor);
+            processor.connect(audioContext.destination);
+
+            log('🎙️ AudioContext and processor started');
+          } catch (err) {
+            log('❌ Error accessing microphone or AudioContext: ' + err.message);
           }
         };
 
-        source.connect(processor);
-        processor.connect(audioContext.destination);
+        ws.onmessage = (event) => {
+          try {
+            const msg = JSON.parse(event.data);
+            if (msg.type === 'keepalive') return;
 
-        log('🎙️ AudioContext and processor started');
-      };
+            const type = msg.is_final ? '✅ Final' : '⏳ Interim';
+            log(`⬇ ${type}: "${msg.transcript}"`);
+          } catch (e) {
+            log('⚠️ Non-JSON message: ' + event.data);
+          }
+        };
 
-      ws.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data);
-          if (msg.type === 'keepalive') return;
+        ws.onerror = (err) => {
+          log('❌ WebSocket error: ' + err.message);
+        };
 
-          const type = msg.is_final ? '✅ Final' : '⏳ Interim';
-          log(`⬇ ${type}: "${msg.transcript}"`);
-        } catch (e) {
-          log('⚠️ Non-JSON message: ' + event.data);
-        }
-      };
-
-      ws.onerror = (err) => {
-        log('❌ WebSocket error: ' + err.message);
-      };
-
-      ws.onclose = () => {
-        log('🔌 WebSocket closed');
-        if (processor) processor.disconnect();
-        if (source) source.disconnect();
-        if (audioContext) audioContext.close();
-      };
+        ws.onclose = () => {
+          log('🔌 WebSocket closed');
+          if (processor) processor.disconnect();
+          if (source) source.disconnect();
+          if (audioContext) audioContext.close();
+        };
+      } catch (err) {
+        log('❌ Exception in startStreaming: ' + err.message);
+      }
     }
 
     document.getElementById('start').onclick = startStreaming;
