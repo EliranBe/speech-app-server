@@ -28,11 +28,16 @@
       };
 
       ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        console.log("📝 Transcription:", data.transcript);
+        try {
+          const data = JSON.parse(event.data);
+          console.log("📝 Transcription:", data.transcript);
 
-        const transcriptDiv = document.getElementById('transcript');
-        transcriptDiv.textContent += data.transcript + "\n";
+          const transcriptDiv = document.getElementById('transcript');
+          transcriptDiv.textContent += data.transcript + (data.isFinal ? " ✔️\n" : " …\n");
+          transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
+        } catch (e) {
+          console.error("Error parsing message:", e);
+        }
       };
 
       ws.onerror = (error) => {
