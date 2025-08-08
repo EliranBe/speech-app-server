@@ -1,92 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Realtime STT with Interim Results</title>
-  <style>
-    body { font-family: monospace; background: #f4f4f4; padding: 20px; }
-    #log { background: #fff; padding: 10px; border: 1px solid #ccc; height: 400px; overflow-y: scroll; white-space: pre-wrap; }
-  </style>
+  <meta charset="UTF-8">
+  <title>🎤 Real-Time STT</title>
 </head>
 <body>
-  <h1>Realtime STT with Interim Results</h1>
-  <button id="start">Start</button>
-  <pre id="log"></pre>
+  <h1>🎧 Transcription Test</h1>
+  <button id="start">Start Transcription</button>
+  <p><strong>Transcript:</strong> <span id="output">...</span></p>
 
   <script>
-    const logEl = document.getElementById('log');
-    const log = (msg) => {
-      console.log(msg);
-      logEl.textContent += msg + "\n";
-      logEl.scrollTop = logEl.scrollHeight;
-    };
+    let ws;
+    let mediaRecorder;
 
-    let ws, audioContext, processor, source;
-
-    // פונקציה להמרת float32 ל-Int16PCM
-    function floatTo16BitPCM(buffer) {
-      const l = buffer.length;
-      const buf = new Int16Array(l);
-      for (let i = 0; i < l; i++) {
-        let s = Math.max(-1, Math.min(1, buffer[i]));
-        buf[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
-      }
-      return buf.buffer;
-    }
-
-    async function start() {
+    document.getElementById("start").onclick = async () => {
       if (ws && ws.readyState === WebSocket.OPEN) {
-        log("WebSocket already open");
         return;
       }
 
-      ws = new WebSocket("wss://speech-app-server.onrender.com");
-      ws.binaryType = "arraybuffer";
+      ws = new WebSocket(`wss://${location.host}`);
 
       ws.onopen = async () => {
-        log("✅ WebSocket opened");
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
 
-        try {
-          audioContext = new AudioContext({ sampleRate: 16000 });
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          source = audioContext.createMediaStreamSource(stream);
-          processor = audioContext.createScriptProcessor(4096, 1, 1);
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) {
+            event.data.arrayBuffer().then(buffer => ws.send(buffer));
+          }
+        };
 
-          processor.onaudioprocess = e => {
-            const floatData = e.inputBuffer.getChannelData(0);
-            const int16Data = floatTo16BitPCM(floatData);
-            if (ws.readyState === WebSocket.OPEN) {
-              ws.send(int16Data);
-              log(`⬆ Sent audio chunk (${int16Data.byteLength} bytes)`);
-            }
-          };
-
-          source.connect(processor);
-          processor.connect(audioContext.destination);
-
-          log("🎙️ Audio streaming started");
-        } catch (err) {
-          log("❌ Error accessing microphone or AudioContext: " + err.message);
-        }
+        mediaRecorder.start(250); // כל 250ms שליחת אודיו
       };
 
-      ws.onmessage = event => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.type === "keepalive") return;
-          const transcript = data.channel.alternatives[0].transcript;
-          const prefix = data.is_final ? "✅ Final" : "⏳ Interim";
-          log(`${prefix}: ${transcript}`);
-        } catch (e) {
-          log("⚠️ Non-JSON message: " + event.data);
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.transcript) {
+          document.getElementById("output").innerText = data.transcript;
         }
       };
-
-      ws.onerror = err => log("❌ WS error: " + err.message);
-      ws.onclose = () => log("🔌 WS closed");
-    }
-
-    document.getElementById("start").onclick = start;
+    };
   </script>
 </body>
 </html>
