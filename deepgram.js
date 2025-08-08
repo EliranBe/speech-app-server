@@ -1,3 +1,4 @@
+// deepgram.js
 const { WebSocketServer } = require('ws');
 
 const deepgramApiKey = process.env.DEEPGRAM_API_KEY;
@@ -11,6 +12,7 @@ function startWebSocketServer(server) {
   wss.on('connection', (wsClient) => {
     console.log('🔗 Client connected');
 
+    // התחברות ישירה ל-Deepgram עם פרמטרים ל-interim results ועוד
     const deepgramSocket = new (require('ws'))(
       'wss://api.deepgram.com/v1/listen?language=en&interim_results=true&punctuate=true&encoding=linear16&sample_rate=16000',
       {
@@ -26,7 +28,7 @@ function startWebSocketServer(server) {
       deepgramSocket.on('message', (data) => {
         try {
           const msg = JSON.parse(data);
-          console.log('📥 Deepgram message:', msg);
+          console.log('📥 Deepgram message:', JSON.stringify(msg, null, 2));
 
           if (wsClient.readyState === wsClient.OPEN) {
             wsClient.send(data);
@@ -55,6 +57,8 @@ function startWebSocketServer(server) {
     wsClient.on('message', (msg) => {
       if (deepgramSocket.readyState === deepgramSocket.OPEN) {
         deepgramSocket.send(msg);
+      } else {
+        console.warn('⚠️ Deepgram socket not open, cannot send audio');
       }
     });
 
