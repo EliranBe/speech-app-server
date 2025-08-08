@@ -2,31 +2,28 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>🎤 Realtime STT Debug with PCM streaming & debug</title>
+  <title>Realtime STT with Interim Results</title>
   <style>
     body { font-family: monospace; background: #f4f4f4; padding: 20px; }
     #log { background: #fff; padding: 10px; border: 1px solid #ccc; height: 400px; overflow-y: scroll; white-space: pre-wrap; }
   </style>
 </head>
 <body>
-  <h1>🔊 Realtime STT Debug (with detailed logs)</h1>
-  <button id="start">Start Streaming</button>
+  <h1>Realtime STT with Interim Results</h1>
+  <button id="start">Start</button>
   <pre id="log"></pre>
 
   <script>
     const logEl = document.getElementById('log');
     const log = (msg) => {
       console.log(msg);
-      logEl.textContent += msg + '\n';
+      logEl.textContent += msg + "\n";
       logEl.scrollTop = logEl.scrollHeight;
     };
 
-    let ws;
-    let audioContext;
-    let processor;
-    let source;
+    let ws, audioContext, processor, source;
 
-    function convertFloat32ToInt16(buffer) {
+    function floatTo16BitPCM(buffer) {
       const l = buffer.length;
       const buf = new Int16Array(l);
       for (let i = 0; i < l; i++) {
@@ -36,73 +33,54 @@
       return buf.buffer;
     }
 
-    async function startStreaming() {
+    async function start() {
       if (ws && ws.readyState === WebSocket.OPEN) {
-        log('⚠️ WebSocket already open');
+        log("WebSocket already open");
         return;
       }
 
-      try {
-        ws = new WebSocket('wss://speech-app-server.onrender.com');
-        ws.binaryType = 'arraybuffer';
+      ws = new WebSocket("wss://speech-app-server.onrender.com");
+      ws.binaryType = "arraybuffer";
 
-        ws.onopen = async () => {
-          log('✅ WebSocket opened');
-          try {
-            audioContext = new AudioContext({ sampleRate: 16000 });
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            source = audioContext.createMediaStreamSource(stream);
+      ws.onopen = async () => {
+        log("✅ WebSocket opened");
 
-            processor = audioContext.createScriptProcessor(4096, 1, 1);
+        audioContext = new AudioContext({ sampleRate: 16000 });
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        source = audioContext.createMediaStreamSource(stream);
+        processor = audioContext.createScriptProcessor(4096, 1, 1);
 
-            processor.onaudioprocess = (e) => {
-              const floatData = e.inputBuffer.getChannelData(0);
-              const int16Data = convertFloat32ToInt16(floatData);
-              if (ws.readyState === WebSocket.OPEN) {
-                ws.send(int16Data);
-                log(`⬆ Sent audio chunk (${int16Data.byteLength} bytes)`);
-              } else {
-                log('⚠️ WebSocket not open while sending audio');
-              }
-            };
-
-            source.connect(processor);
-            processor.connect(audioContext.destination);
-
-            log('🎙️ AudioContext and processor started');
-          } catch (err) {
-            log('❌ Error accessing microphone or AudioContext: ' + err.message);
+        processor.onaudioprocess = e => {
+          const floatData = e.inputBuffer.getChannelData(0);
+          const int16Data = floatTo16BitPCM(floatData);
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(int16Data);
+            log(`⬆ Sent audio chunk (${int16Data.byteLength} bytes)`);
           }
         };
 
-        ws.onmessage = (event) => {
-          try {
-            const msg = JSON.parse(event.data);
-            if (msg.type === 'keepalive') return;
+        source.connect(processor);
+        processor.connect(audioContext.destination);
 
-            const type = msg.is_final ? '✅ Final' : '⏳ Interim';
-            log(`⬇ ${type}: "${msg.transcript}"`);
-          } catch (e) {
-            log('⚠️ Non-JSON message: ' + event.data);
-          }
-        };
+        log("🎙️ Audio streaming started");
+      };
 
-        ws.onerror = (err) => {
-          log('❌ WebSocket error: ' + err.message);
-        };
+      ws.onmessage = event => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === "keepalive") return;
+          const prefix = data.is_final ? "✅ Final" : "⏳ Interim";
+          log(`${prefix}: ${data.channel.alternatives[0].transcript}`);
+        } catch (e) {
+          log("⚠️ Non-JSON message: " + event.data);
+        }
+      };
 
-        ws.onclose = () => {
-          log('🔌 WebSocket closed');
-          if (processor) processor.disconnect();
-          if (source) source.disconnect();
-          if (audioContext) audioContext.close();
-        };
-      } catch (err) {
-        log('❌ Exception in startStreaming: ' + err.message);
-      }
+      ws.onerror = err => log("❌ WS error: " + err.message);
+      ws.onclose = () => log("🔌 WS closed");
     }
 
-    document.getElementById('start').onclick = startStreaming;
+    document.getElementById("start").onclick = start;
   </script>
 </body>
 </html>
