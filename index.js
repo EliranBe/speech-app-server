@@ -21,9 +21,9 @@ if (!process.env.DEEPGRAM_PROJECT_ID) {
 app.use(cors());
 app.use(express.static('public')); // מאפשר גישה ל-call.html ולשאר קבצים בתיקיית public
 
-// ✅ החזרת APP_ID בצורה בטוחה
+// ✅ החזרת AGORA_APP_ID בצורה בטוחה
 app.get('/appId', (req, res) => {
-  res.json({ appId: process.env.APP_ID });
+  res.json({ appId: process.env.AGORA_APP_ID });
 });
 
 // ✅ הפקת Token מאובטח לפי בקשה מהדפדפן
