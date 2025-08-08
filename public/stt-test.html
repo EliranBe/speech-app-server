@@ -18,9 +18,15 @@
 
     document.getElementById("start").onclick = async () => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
-      
+
+      const preferredMimeType = 'audio/webm;codecs=opus';
+      const mimeTypeToUse = MediaRecorder.isTypeSupported(preferredMimeType) ? preferredMimeType : '';
+
+      mediaRecorder = new MediaRecorder(stream, mimeTypeToUse ? { mimeType: mimeTypeToUse } : undefined);
       console.log("MediaRecorder mimeType:", mediaRecorder.mimeType);
+      if (!mimeTypeToUse) {
+        console.warn(`⚠️ Preferred MIME type "${preferredMimeType}" is not supported, using default`);
+      }
 
       ws = new WebSocket(`wss://${window.location.host}`);
       ws.binaryType = "arraybuffer";
