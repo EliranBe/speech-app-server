@@ -6,12 +6,10 @@ require('dotenv').config();
 const http = require('http');
 const server = http.createServer(app);
 
-const { RtcTokenBuilder, RtcRole } = require('agora-access-token');
-
 const port = process.env.PORT || 3000;
 
 if (!process.env.DEEPGRAM_API_KEY) {
-  throw new Error("Missing DEEPGRAM_API_KEY in environment variables");
+  throw new Error('Missing DEEPGRAM_API_KEY in environment variables');
 }
 
 app.use(cors());
@@ -25,5 +23,5 @@ const startWebSocketServer = require('./deepgram');
 startWebSocketServer(server);
 
 server.listen(port, () => {
-  console.log(`🚀 Server is running on port ${port}`);
+  console.log(`🚀 Server listening on port ${port}`);
 });
