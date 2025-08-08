@@ -7,7 +7,6 @@ if (!deepgramApiKey) {
   throw new Error("Missing DEEPGRAM_API_KEY in environment variables");
 }
 
-// יצירת לקוח Deepgram גרסה 3
 const deepgram = createClient(deepgramApiKey);
 
 function startWebSocketServer(server) {
@@ -16,19 +15,16 @@ function startWebSocketServer(server) {
   wss.on('connection', async (ws) => {
     console.log("🔗 Client connected to WebSocket");
 
-    // יצירת סטרים חדש עם interim_results true לקבלת תמלול בזמן אמת
     const deepgramLive = await deepgram.listen.live({
       model: 'nova-3',
-      language: 'en', // חשוב: עברית אינה נתמכת כרגע
+      language: 'en',
       punctuate: true,
       interim_results: true,
-      encoding: 'webm',      // הוסף encoding
-      sample_rate: 48000,    // הוסף sample_rate מתאים לדפדפן
+      // encoding ו sample_rate הוסרו
     });
 
-    // קבלת תמלול ושליחה ללקוח
     deepgramLive.on('transcriptReceived', (data) => {
-      console.log('🛎️ Deepgram transcriptReceived data:', JSON.stringify(data)); // לוג מפורט
+      console.log('🛎️ Deepgram transcriptReceived data:', JSON.stringify(data));
       const transcript = data.channel.alternatives[0]?.transcript;
       const isFinal = data.is_final || false;
       if (transcript) {
