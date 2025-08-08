@@ -26,11 +26,12 @@ function startWebSocketServer(server) {
 
     // קבלת תמלול ושליחה ללקוח
     deepgramLive.on('transcriptReceived', (data) => {
+      console.log('🛎️ Deepgram transcriptReceived data:', JSON.stringify(data)); // לוג מפורט
       const transcript = data.channel.alternatives[0]?.transcript;
       const isFinal = data.is_final || false;
       if (transcript) {
         ws.send(JSON.stringify({ transcript, isFinal }));
-        console.log(`📢 Transcript${isFinal ? ' (final)' : ' (interim)'}: ${transcript}`); // <-- כאן ההדפסה
+        console.log(`📢 Transcript${isFinal ? ' (final)' : ' (interim)'}: ${transcript}`);
       }
     });
 
