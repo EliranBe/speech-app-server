@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>STT Test</title>
+  <title>STT Test - Opus 48kHz</title>
 </head>
 <body>
-  <h1>🎤 STT Microphone Test</h1>
+  <h1>🎤 STT Microphone Test (Opus 48kHz)</h1>
   <button id="start">Start</button>
   <button id="stop">Stop</button>
 
@@ -13,28 +13,17 @@
 
   <script>
     let ws;
-    let audioContext;
-    let processor;
-    let source;
+    let mediaRecorder;
     let stream;
 
     document.getElementById("start").onclick = async () => {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-      audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-      source = audioContext.createMediaStreamSource(stream);
-
-      processor = audioContext.createScriptProcessor(4096, 1, 1);
-      source.connect(processor);
-      processor.connect(audioContext.destination);
 
       ws = new WebSocket(`wss://${window.location.host}`);
       ws.binaryType = "arraybuffer";
 
       ws.onopen = () => {
         console.log("WebSocket connection opened");
-        // שולח הודעת התחלה לשרת
-        ws.send(JSON.stringify({ event: "start" }));
       };
 
       ws.onmessage = (event) => {
@@ -52,23 +41,23 @@
       ws.onerror = (error) => console.error("WebSocket error:", error);
       ws.onclose = () => console.log("WebSocket connection closed");
 
-      // המרה ושליחה בפורמט PCM16 16kHz
-      processor.onaudioprocess = (e) => {
-        if (ws.readyState !== WebSocket.OPEN) return;
-        const inputData = e.inputBuffer.getChannelData(0);
-        const pcm16 = new Int16Array(inputData.length);
-        for (let i = 0; i < inputData.length; i++) {
-          pcm16[i] = Math.max(-1, Math.min(1, inputData[i])) * 0x7FFF;
-        }
-        ws.send(pcm16.buffer);
-      };
+      // 🎙️ שימוש ב-MediaRecorder לשליחת אודיו בפורמט Opus 48kHz
+      mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" });
 
-      console.log("🎙️ Recording started (PCM16, 16kHz)");
+      mediaRecorder.addEventListener("dataavailable", (e) => {
+        if (e.data.size > 0 && ws.readyState === WebSocket.OPEN) {
+          e.data.arrayBuffer().then(buffer => {
+            ws.send(buffer);
+          });
+        }
+      });
+
+      mediaRecorder.start(250); // שליחה כל רבע שניה
+      console.log("🎙️ Recording started (Opus, 48kHz)");
     };
 
     document.getElementById("stop").onclick = () => {
-      processor?.disconnect();
-      source?.disconnect();
+      mediaRecorder?.stop();
       stream?.getTracks().forEach(track => track.stop());
       ws?.close();
       console.log("🛑 Recording stopped");
