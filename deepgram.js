@@ -19,6 +19,8 @@ function startWebSocketServer(server) {
       language: 'en',
       punctuate: true,
       interim_results: true,
+      encoding: 'opus',          // ✅ הוספת פורמט האודיו
+      sample_rate: 48000         // ✅ קצב דגימה תואם ל-MediaRecorder
     });
 
     deepgramLive.on('open', () => {
@@ -46,7 +48,9 @@ function startWebSocketServer(server) {
 
     ws.on('message', (message) => {
       console.log('Received audio chunk, size:', message.length);
-      deepgramLive.send(message);
+      if (deepgramLive.getReadyState() === WebSocket.OPEN) { // ✅ הגנה אם החיבור עדיין פתוח
+        deepgramLive.send(message);
+      }
     });
 
     ws.on('close', () => {
