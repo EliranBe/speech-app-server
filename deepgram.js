@@ -1,5 +1,5 @@
 const { WebSocketServer } = require('ws');
-const { Deepgram } = require('@deepgram/sdk');
+const { createClient } = require('@deepgram/sdk');
 
 const deepgramApiKey = process.env.DEEPGRAM_API_KEY;
 
@@ -7,42 +7,46 @@ if (!deepgramApiKey) {
   throw new Error("Missing DEEPGRAM_API_KEY in environment variables");
 }
 
-const deepgram = new Deepgram(deepgramApiKey);
+// ✅ יצירת לקוח חדש לפי גרסה 3
+const deepgram = createClient(deepgramApiKey);
 
 function startWebSocketServer(server) {
   const wss = new WebSocketServer({ server });
 
-  wss.on('connection', (ws) => {
+  wss.on('connection', async (ws) => {
     console.log("🔗 Client connected to WebSocket");
 
-    // יצירת חיבור ל־Deepgram דרך WebSocket
-    const deepgramSocket = deepgram.transcription.live({
+    // ✅ יצירת סטרים חדש עם פרמטרים
+    const deepgramLive = await deepgram.listen.live({
+      model: 'nova-3',
+      language: 'en', // אין תמיכה בעברית - נתמכות: en, es, fr, etc.
       punctuate: true,
       interim_results: false,
-      language: 'he' // ניתן לשנות בהתאם לשפה הרצויה
     });
 
-    // קבלת תוצאות מ־Deepgram והדפסה לקונסול
-    deepgramSocket.on('transcriptReceived', (data) => {
-      const result = JSON.parse(data);
-      const transcript = result.channel?.alternatives[0]?.transcript;
+    // ⏺️ קבלת תוצאות מ־Deepgram ושליחה ללקוח
+    deepgramLive.on('transcriptReceived', (data) => {
+      const transcript = data.channel.alternatives[0]?.transcript;
       if (transcript) {
-        console.log("🗣️ Deepgram STT:", transcript);
-        // לא נשלח ללקוח כרגע
+        ws.send(JSON.stringify({ transcript }));
       }
     });
 
-    // קבלת אודיו מהלקוח ושליחתו ל־Deepgram
-    ws.on('message', (message) => {
-      if (deepgramSocket.getReadyState() === 1) {
-        deepgramSocket.send(message);
-      }
+    // ⏹️ אם Deepgram חווה בעיה
+    deepgramLive.on('error', (error) => {
+      console.error("Deepgram Error:", error);
+      ws.close();
     });
 
-    // ניקוי כשנסגר
+    // ⛔ סיום סטרים כשנסגר WebSocket
     ws.on('close', () => {
       console.log("❌ Client disconnected");
-      deepgramSocket.finish();
+      deepgramLive.finish();
+    });
+
+    // 🎙️ שליחת אודיו מהלקוח ל־Deepgram
+    ws.on('message', (message) => {
+      deepgramLive.send(message);
     });
   });
 }
