@@ -2,7 +2,6 @@ const { WebSocketServer } = require('ws');
 const { createClient } = require('@deepgram/sdk');
 
 const deepgramApiKey = process.env.DEEPGRAM_API_KEY;
-
 if (!deepgramApiKey) {
   throw new Error("Missing DEEPGRAM_API_KEY in environment variables");
 }
@@ -20,7 +19,19 @@ function startWebSocketServer(server) {
       language: 'en',
       punctuate: true,
       interim_results: true,
-      // encoding ו sample_rate הוסרו
+    });
+
+    deepgramLive.on('open', () => {
+      console.log("🔵 Deepgram connection opened");
+    });
+
+    deepgramLive.on('close', () => {
+      console.log("🔴 Deepgram connection closed");
+    });
+
+    deepgramLive.on('error', (error) => {
+      console.error("Deepgram Error:", error);
+      ws.close();
     });
 
     deepgramLive.on('transcriptReceived', (data) => {
@@ -33,19 +44,14 @@ function startWebSocketServer(server) {
       }
     });
 
-    deepgramLive.on('error', (error) => {
-      console.error("Deepgram Error:", error);
-      ws.close();
+    ws.on('message', (message) => {
+      console.log('Received audio chunk, size:', message.length);
+      deepgramLive.send(message);
     });
 
     ws.on('close', () => {
       console.log("❌ Client disconnected");
       deepgramLive.finish();
-    });
-
-    ws.on('message', (message) => {
-      console.log('Received audio chunk, size:', message.length);
-      deepgramLive.send(message);
     });
   });
 }
