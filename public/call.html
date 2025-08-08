@@ -85,7 +85,7 @@
 
   <script src="https://cdn.agora.io/sdk/release/AgoraRTC_N-4.20.0.js"></script>
   <script>
-    let APP_ID = "";
+    let AGORA_APP_ID = "";
     const CHANNEL_NAME = "test-room";
     let client;
     let microphoneTrack, cameraTrack;
@@ -96,7 +96,7 @@
       fetch('/appId')
         .then(res => res.json())
         .then(data => {
-          APP_ID = data.appId;
+          AGORA_APP_ID = data.appId;
           startCall();
         });
     };
@@ -109,7 +109,7 @@
       const tokenRes = await fetch(`/rte-token?channelName=${CHANNEL_NAME}`);
       const tokenData = await tokenRes.json();
 
-      await client.join(APP_ID, CHANNEL_NAME, tokenData.rtcToken, null);
+      await client.join(AGORA_APP_ID, CHANNEL_NAME, tokenData.rtcToken, null);
 
       document.getElementById("status").innerText = "✅ מחובר";
 
