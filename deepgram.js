@@ -14,17 +14,30 @@ function startWebSocketServer(server) {
   wss.on('connection', async (ws) => {
     console.log("🔗 Client connected to WebSocket");
 
-    const deepgramLive = await deepgram.listen.live({
-      model: 'nova-3',
-      language: 'en',
-      punctuate: true,
-      interim_results: true,
-      encoding: 'opus',          // ✅ הוספת פורמט האודיו
-      sample_rate: 48000         // ✅ קצב דגימה תואם ל-MediaRecorder
-    });
+    // 🎯 הגדרת קידוד וקצב דגימה לפי מה שהלקוח משתמש
+    // אם הלקוח שולח MediaRecorder ב-webm/opus -> encoding: 'opus', sample_rate: 48000
+    // אם שולח PCM16 -> encoding: 'linear16', sample_rate: 16000
+    const audioEncoding = process.env.AUDIO_ENCODING || 'linear16';
+    const sampleRate = parseInt(process.env.SAMPLE_RATE || (audioEncoding === 'opus' ? 48000 : 16000), 10);
+
+    let deepgramLive;
+    try {
+      deepgramLive = await deepgram.listen.live({
+        model: 'nova-3',
+        language: 'en',
+        punctuate: true,
+        interim_results: true,
+        encoding: audioEncoding,
+        sample_rate: sampleRate
+      });
+    } catch (err) {
+      console.error("❌ Failed to connect to Deepgram:", err);
+      ws.close();
+      return;
+    }
 
     deepgramLive.on('open', () => {
-      console.log("🔵 Deepgram connection opened");
+      console.log(`🔵 Deepgram connection opened (${audioEncoding}, ${sampleRate}Hz)`);
     });
 
     deepgramLive.on('close', () => {
@@ -37,25 +50,30 @@ function startWebSocketServer(server) {
     });
 
     deepgramLive.on('transcriptReceived', (data) => {
-      console.log('🛎️ Deepgram transcriptReceived data:', JSON.stringify(data));
-      const transcript = data.channel.alternatives[0]?.transcript;
-      const isFinal = data.is_final || false;
-      if (transcript) {
-        ws.send(JSON.stringify({ transcript, isFinal }));
-        console.log(`📢 Transcript${isFinal ? ' (final)' : ' (interim)'}: ${transcript}`);
+      try {
+        const transcript = data.channel.alternatives[0]?.transcript;
+        const isFinal = data.is_final || false;
+        if (transcript) {
+          ws.send(JSON.stringify({ transcript, isFinal }));
+          console.log(`📢 Transcript${isFinal ? ' (final)' : ' (interim)'}: ${transcript}`);
+        }
+      } catch (err) {
+        console.error("⚠️ Error parsing Deepgram transcript:", err);
       }
     });
 
     ws.on('message', (message) => {
       console.log('Received audio chunk, size:', message.length);
-      if (deepgramLive.getReadyState() === WebSocket.OPEN) { // ✅ הגנה אם החיבור עדיין פתוח
+      if (deepgramLive && deepgramLive.getReadyState() === WebSocket.OPEN) {
         deepgramLive.send(message);
       }
     });
 
     ws.on('close', () => {
       console.log("❌ Client disconnected");
-      deepgramLive.finish();
+      if (deepgramLive) {
+        deepgramLive.finish();
+      }
     });
   });
 }
