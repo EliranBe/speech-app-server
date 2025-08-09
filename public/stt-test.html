@@ -19,7 +19,7 @@
     document.getElementById("start").onclick = async () => {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      ws = new WebSocket(wss://${window.location.host});
+      ws = new WebSocket(`wss://${window.location.host}`);
       ws.binaryType = "arraybuffer";
 
       ws.onopen = () => {
@@ -41,7 +41,6 @@
       ws.onerror = (error) => console.error("WebSocket error:", error);
       ws.onclose = () => console.log("WebSocket connection closed");
 
-      // 🎙️ שימוש ב-MediaRecorder לשליחת אודיו בפורמט Opus 48kHz
       mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" });
 
       mediaRecorder.addEventListener("dataavailable", (e) => {
