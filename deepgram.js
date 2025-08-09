@@ -14,8 +14,7 @@ function startWebSocketServer(server) {
   wss.on('connection', async (ws) => {
     console.log("🔗 Client connected to WebSocket");
 
-    // הגדרת פורמט האודיו לפי containerized WebM/Opus
-    const isContainerized = true;
+    const isContainerized = true; // audio/webm;codecs=opus
     const audioEncoding = process.env.AUDIO_ENCODING || 'linear16';
     const sampleRate = parseInt(process.env.SAMPLE_RATE || 16000, 10);
 
@@ -25,7 +24,7 @@ function startWebSocketServer(server) {
         model: 'nova-3',
         language: 'en',
         punctuate: true,
-        interim_results: true,
+        interim_results: true
       };
 
       if (!isContainerized) {
@@ -39,7 +38,7 @@ function startWebSocketServer(server) {
 
     } catch (err) {
       console.error("❌ Failed to connect to Deepgram:", err);
-      // כאן לא סוגרים את ה-ws אוטומטית, תן ללקוח להחליט
+      ws.close();
       return;
     }
 
@@ -48,13 +47,12 @@ function startWebSocketServer(server) {
     });
 
     deepgramLive.on('close', (code, reason) => {
-      console.log(`🔴 Deepgram connection closed. Code: ${code}, Reason: ${reason}`);
-      // אפשר לשקול להודיע ללקוח כאן או לנקות משאבים
+      console.log(`🔴 Deepgram connection closed. Code: ${code}, Reason: ${reason ? reason.toString() : 'No reason provided'}`);
     });
 
     deepgramLive.on('error', (error) => {
-      console.error("Deepgram Error:", error);
-      // אל תסגור אוטומטית את ה-ws
+      console.error("❗ Deepgram Error:", error);
+      ws.close();
     });
 
     deepgramLive.on('transcriptReceived', (data) => {
@@ -71,12 +69,11 @@ function startWebSocketServer(server) {
     });
 
     ws.on('message', (message) => {
-      console.log('Received audio chunk, size:', message.length);
       if (deepgramLive && deepgramLive.getReadyState() === WebSocket.OPEN) {
         deepgramLive.send(message);
-        console.log('Sent audio chunk to Deepgram');
+        console.log("Sent audio chunk to Deepgram");
       } else {
-        console.warn('⚠️ Deepgram WebSocket not open, cannot send audio chunk');
+        console.warn("⚠️ Deepgram WebSocket not open, cannot send audio chunk");
       }
     });
 
@@ -85,10 +82,6 @@ function startWebSocketServer(server) {
       if (deepgramLive) {
         deepgramLive.finish();
       }
-    });
-
-    ws.on('error', (err) => {
-      console.error('WebSocket client error:', err);
     });
   });
 }
