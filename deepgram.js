@@ -24,7 +24,7 @@ function startWebSocketServer(server) {
     try {
       deepgramLive = await deepgram.listen.live({
         model: 'nova-3',
-        language: 'en',
+        language: 'multi',
         punctuate: true,
         interim_results: true,
         encoding: audioEncoding,
