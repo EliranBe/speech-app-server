@@ -1,57 +1,41 @@
 const { WebSocketServer } = require('ws');
-const { createClient } = require('@deepgram/sdk');
 
 const deepgramApiKey = process.env.DEEPGRAM_API_KEY;
 if (!deepgramApiKey) {
   throw new Error("Missing DEEPGRAM_API_KEY in environment variables");
 }
 
-const deepgram = createClient(deepgramApiKey);
-
 function startWebSocketServer(server) {
   const wss = new WebSocketServer({ server });
 
-  wss.on('connection', async (ws) => {
+  wss.on('connection', (ws) => {
     console.log("🔗 Client connected to WebSocket");
 
-    // 🎯 הגדרת קידוד וקצב דגימה לפי מה שהלקוח משתמש
-    // אם הלקוח שולח MediaRecorder ב-webm/opus -> encoding: 'opus', sample_rate: 48000
-    // אם שולח PCM16 -> encoding: 'linear16', sample_rate: 16000
     const audioEncoding = process.env.AUDIO_ENCODING || 'linear16';
     const sampleRate = parseInt(process.env.SAMPLE_RATE || (audioEncoding === 'opus' ? 48000 : 16000), 10);
 
-    let deepgramLive;
-    try {
-      deepgramLive = await deepgram.listen.live({
-        model: 'nova-3',
-        language: 'en',
-        punctuate: true,
-        interim_results: true,
-        encoding: audioEncoding,
-        sample_rate: sampleRate
-      });
-    } catch (err) {
-      console.error("❌ Failed to connect to Deepgram:", err);
-      ws.close();
-      return;
-    }
+    const wsUrl = `wss://api.deepgram.com/v1/listen?access_token=${deepgramApiKey}&encoding=${audioEncoding}&sample_rate=${sampleRate}`;
 
-    deepgramLive.on('open', () => {
+    const deepgramSocket = new (require('ws'))(wsUrl);
+
+    deepgramSocket.on('open', () => {
       console.log(`🔵 Deepgram connection opened (${audioEncoding}, ${sampleRate}Hz)`);
     });
 
-    deepgramLive.on('close', () => {
+    deepgramSocket.on('close', () => {
       console.log("🔴 Deepgram connection closed");
+      ws.close();
     });
 
-    deepgramLive.on('error', (error) => {
+    deepgramSocket.on('error', (error) => {
       console.error("Deepgram Error:", error);
       ws.close();
     });
 
-    deepgramLive.on('transcriptReceived', (data) => {
+    deepgramSocket.on('message', (message) => {
       try {
-        const transcript = data.channel.alternatives[0]?.transcript;
+        const data = JSON.parse(message);
+        const transcript = data.channel?.alternatives?.[0]?.transcript;
         const isFinal = data.is_final || false;
         if (transcript) {
           ws.send(JSON.stringify({ transcript, isFinal }));
@@ -64,16 +48,14 @@ function startWebSocketServer(server) {
 
     ws.on('message', (message) => {
       console.log('Received audio chunk, size:', message.length);
-      if (deepgramLive && deepgramLive.getReadyState() === WebSocket.OPEN) {
-        deepgramLive.send(message);
+      if (deepgramSocket.readyState === deepgramSocket.OPEN) {
+        deepgramSocket.send(message);
       }
     });
 
     ws.on('close', () => {
       console.log("❌ Client disconnected");
-      if (deepgramLive) {
-        deepgramLive.finish();
-      }
+      deepgramSocket.close();
     });
   });
 }
