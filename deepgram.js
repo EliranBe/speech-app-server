@@ -14,22 +14,29 @@ function startWebSocketServer(server) {
   wss.on('connection', async (ws) => {
     console.log("🔗 Client connected to WebSocket");
 
-    // 🎯 הגדרת קידוד וקצב דגימה לפי מה שהלקוח משתמש
-    // אם הלקוח שולח MediaRecorder ב-webm/opus -> encoding: 'opus', sample_rate: 48000
-    // אם שולח PCM16 -> encoding: 'linear16', sample_rate: 16000
+    // קביעה ידנית של פורמט האודיו - כאן אנחנו יודעים מהדפדפן שזה webm/opus
+    const isContainerized = true; // כי זה audio/webm;codecs=opus
     const audioEncoding = process.env.AUDIO_ENCODING || 'linear16';
-    const sampleRate = parseInt(process.env.SAMPLE_RATE || (audioEncoding === 'opus' ? 48000 : 16000), 10);
+    const sampleRate = parseInt(process.env.SAMPLE_RATE || 16000, 10);
 
     let deepgramLive;
     try {
-      deepgramLive = await deepgram.listen.live({
+      const options = {
         model: 'nova-3',
         language: 'en',
         punctuate: true,
-        interim_results: true,
-        encoding: audioEncoding,
-        sample_rate: sampleRate
-      });
+        interim_results: true
+      };
+
+      if (!isContainerized) {
+        options.encoding = audioEncoding;
+        options.sample_rate = sampleRate;
+      } else {
+        console.log("📦 Using containerized audio (WebM/Opus) — skipping encoding/sample_rate");
+      }
+
+      deepgramLive = await deepgram.listen.live(options);
+
     } catch (err) {
       console.error("❌ Failed to connect to Deepgram:", err);
       ws.close();
@@ -37,7 +44,7 @@ function startWebSocketServer(server) {
     }
 
     deepgramLive.on('open', () => {
-      console.log(`🔵 Deepgram connection opened (${audioEncoding}, ${sampleRate}Hz)`);
+      console.log("🔵 Deepgram connection opened");
     });
 
     deepgramLive.on('close', () => {
@@ -63,7 +70,6 @@ function startWebSocketServer(server) {
     });
 
     ws.on('message', (message) => {
-      console.log('Received audio chunk, size:', message.length);
       if (deepgramLive && deepgramLive.getReadyState() === WebSocket.OPEN) {
         deepgramLive.send(message);
       }
