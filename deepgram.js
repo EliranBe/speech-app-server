@@ -37,7 +37,7 @@ function startWebSocketServer(server) {
     }
 
     deepgramLive.on('open', () => {
-      console.log(🔵 Deepgram connection opened (${audioEncoding}, ${sampleRate}Hz));
+    console.log(`🔵 Deepgram connection opened (${audioEncoding}, ${sampleRate}Hz)`);
     });
 
     deepgramLive.on('close', () => {
