@@ -40,6 +40,27 @@ function startWebSocketServer(server) {
 
     deepgramLive.on('open', () => {
       console.log(`🔵 Deepgram connection opened (${audioEncoding}, ${sampleRate}Hz)`);
+
+      // שליחת KeepAlive כל 3 שניות
+      const KEEP_ALIVE_INTERVAL = 3000;
+      const keepAliveInterval = setInterval(() => {
+        if (deepgramLive.getReadyState() === WebSocket.OPEN) {
+          deepgramLive.send(JSON.stringify({ type: "KeepAlive" }));
+          console.log("⏸️ Sent KeepAlive message to Deepgram");
+        }
+      }, KEEP_ALIVE_INTERVAL);
+
+      // ניקוי המחזור כשחיבור נסגר
+      deepgramLive.on('close', () => {
+        clearInterval(keepAliveInterval);
+        console.log("🔴 Deepgram connection closed, stopped KeepAlive");
+      });
+
+      // ניקוי המחזור במקרה של שגיאה
+      deepgramLive.on('error', (err) => {
+        clearInterval(keepAliveInterval);
+        console.error("Deepgram connection error:", err);
+      });
     });
 
     deepgramLive.on('close', () => {
