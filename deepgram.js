@@ -28,7 +28,7 @@ function startWebSocketServer(server) {
         language: 'multi',
         punctuate: true,
         interim_results: true,
-        endpointing: 100,
+        endpointing: 500,
         vad_events: true
       };
 
