@@ -29,7 +29,8 @@ function startWebSocketServer(server) {
         interim_results: true,
         encoding: audioEncoding,
         sample_rate: sampleRate,
-        endpointing: 100
+        endpointing: 100,
+        vad_events: true
       });
     } catch (err) {
       console.error("❌ Failed to connect to Deepgram:", err);
