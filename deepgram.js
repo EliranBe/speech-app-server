@@ -22,16 +22,23 @@ function startWebSocketServer(server) {
 
     let deepgramLive;
     try {
-      deepgramLive = await deepgram.listen.live({
+      // הכנת האופציות ל-Deepgram
+      const options = {
         model: 'nova-3',
         language: 'multi',
         punctuate: true,
         interim_results: true,
-        encoding: audioEncoding,
-        sample_rate: sampleRate,
         endpointing: 100,
         vad_events: true
-      });
+      };
+
+      // אם זה לא containerized audio (opus), נוסיף encoding ו-sample_rate
+      if (audioEncoding !== 'opus') {
+        options.encoding = audioEncoding;
+        options.sample_rate = sampleRate;
+      }
+
+      deepgramLive = await deepgram.listen.live(options);
     } catch (err) {
       console.error("❌ Failed to connect to Deepgram:", err);
       ws.close();
