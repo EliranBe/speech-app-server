@@ -21,9 +21,9 @@ if (!process.env.DEEPGRAM_PROJECT_ID) {
 app.use(cors());
 app.use(express.static('public')); // מאפשר גישה ל-call.html ולשאר קבצים בתיקיית public
 
-// ✅ החזרת APP_ID בצורה בטוחה
+// ✅ החזרת APP_ID בצורה בטוחה (משתמש ב-AGORA_APP_ID)
 app.get('/appId', (req, res) => {
-  res.json({ appId: process.env.APP_ID });
+  res.json({ appId: process.env.AGORA_APP_ID });
 });
 
 // ✅ הפקת Token מאובטח לפי בקשה מהדפדפן, עם לוגים לניתוח בעיות
@@ -43,11 +43,11 @@ app.get('/rte-token', (req, res) => {
     const currentTimestamp = Math.floor(Date.now() / 1000);
     const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
 
-    console.log(`[LOG] Generating token with APP_ID: ${process.env.APP_ID ? 'SET' : 'MISSING'}, APP_CERTIFICATE: ${process.env.APP_CERTIFICATE ? 'SET' : 'MISSING'}`);
+    console.log(`[LOG] Generating token with APP_ID: ${process.env.AGORA_APP_ID ? 'SET' : 'MISSING'}, APP_CERTIFICATE: ${process.env.AGORA_APP_CERTIFICATE ? 'SET' : 'MISSING'}`);
 
     const token = RtcTokenBuilder.buildTokenWithUid(
-      process.env.APP_ID,
-      process.env.APP_CERTIFICATE,
+      process.env.AGORA_APP_ID,
+      process.env.AGORA_APP_CERTIFICATE,
       channelName,
       uid,
       role,
