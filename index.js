@@ -26,30 +26,40 @@ app.get('/appId', (req, res) => {
   res.json({ appId: process.env.APP_ID });
 });
 
-// ✅ הפקת Token מאובטח לפי בקשה מהדפדפן
+// ✅ הפקת Token מאובטח לפי בקשה מהדפדפן, עם לוגים לניתוח בעיות
 app.get('/rte-token', (req, res) => {
   const channelName = req.query.channelName;
+  console.log(`[LOG] /rte-token requested with channelName: ${channelName}`);
+
   if (!channelName) {
+    console.log('[ERROR] Missing channelName in request');
     return res.status(400).json({ error: 'channelName is required' });
   }
 
-  const uid = 0;
-  const role = RtcRole.PUBLISHER;
-  const expirationTimeInSeconds = 3600;
+  try {
+    const uid = 0;
+    const role = RtcRole.PUBLISHER;
+    const expirationTimeInSeconds = 3600;
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+    const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
 
-  const currentTimestamp = Math.floor(Date.now() / 1000);
-  const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
+    console.log(`[LOG] Generating token with APP_ID: ${process.env.APP_ID ? 'SET' : 'MISSING'}, APP_CERTIFICATE: ${process.env.APP_CERTIFICATE ? 'SET' : 'MISSING'}`);
 
-  const token = RtcTokenBuilder.buildTokenWithUid(
-    process.env.APP_ID,
-    process.env.APP_CERTIFICATE,
-    channelName,
-    uid,
-    role,
-    privilegeExpiredTs
-  );
+    const token = RtcTokenBuilder.buildTokenWithUid(
+      process.env.APP_ID,
+      process.env.APP_CERTIFICATE,
+      channelName,
+      uid,
+      role,
+      privilegeExpiredTs
+    );
 
-  res.json({ rtcToken: token });
+    console.log('[LOG] Token generated successfully');
+    res.json({ rtcToken: token });
+  } catch (err) {
+    console.error('[ERROR] Failed to generate token:', err);
+    res.status(500).json({ error: 'Failed to generate token' });
+  }
 });
 
 // 🛠️ נקודת בדיקה
