@@ -37,7 +37,7 @@ function startWebSocketServer(server) {
     }
 
     deepgramLive.on('open', () => {
-    console.log(`🔵 Deepgram connection opened (${audioEncoding}, ${sampleRate}Hz)`);
+      console.log(`🔵 Deepgram connection opened (${audioEncoding}, ${sampleRate}Hz)`);
     });
 
     deepgramLive.on('close', () => {
@@ -55,7 +55,7 @@ function startWebSocketServer(server) {
         const isFinal = data.is_final || false;
         if (transcript) {
           ws.send(JSON.stringify({ transcript, isFinal }));
-          console.log(📢 Transcript${isFinal ? ' (final)' : ' (interim)'}: ${transcript});
+          console.log(`📢 Transcript${isFinal ? ' (final)' : ' (interim)'}: ${transcript}`);
         }
       } catch (err) {
         console.error("⚠️ Error parsing Deepgram transcript:", err);
