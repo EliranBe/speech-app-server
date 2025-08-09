@@ -1,9 +1,9 @@
 {
   "name": "speech-app-server",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "remote-stream.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node remote-stream.js"
   },
   "dependencies": {
     "express": "^4.18.2",
