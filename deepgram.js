@@ -1,13 +1,3 @@
-const { WebSocketServer } = require('ws');
-const { createClient, LiveTranscriptionEvents } = require('@deepgram/sdk');
-
-const deepgramApiKey = process.env.DEEPGRAM_API_KEY;
-if (!deepgramApiKey) {
-  throw new Error("Missing DEEPGRAM_API_KEY in environment variables");
-}
-
-const deepgram = createClient(deepgramApiKey);
-
 function startWebSocketServer(server) {
   const wss = new WebSocketServer({ server });
 
@@ -18,6 +8,9 @@ function startWebSocketServer(server) {
     const sampleRate = 48000;
 
     let deepgramLive;
+    let keepAliveInterval;
+    let clientDisconnected = false;  // מצב שמראה אם הלקוח התנתק
+
     try {
       const options = {
         model: 'nova-3',
@@ -35,17 +28,15 @@ function startWebSocketServer(server) {
       return;
     }
 
-    // חיבור לאירועים של Deepgram
     deepgramLive.on(LiveTranscriptionEvents.Open, () => {
       console.log(`🔵 Deepgram connection opened (${audioEncoding}, ${sampleRate}Hz)`);
 
-      const KEEP_ALIVE_INTERVAL = 3000;
-      const keepAliveInterval = setInterval(() => {
+      keepAliveInterval = setInterval(() => {
         if (deepgramLive.getReadyState() === WebSocket.OPEN) {
           deepgramLive.send(JSON.stringify({ type: "KeepAlive" }));
           console.log("⏸️ Sent KeepAlive message to Deepgram");
         }
-      }, KEEP_ALIVE_INTERVAL);
+      }, 3000);
 
       deepgramLive.on(LiveTranscriptionEvents.Close, () => {
         clearInterval(keepAliveInterval);
@@ -58,7 +49,6 @@ function startWebSocketServer(server) {
       });
     });
 
-    // מאזין לאירוע התמלול הנכון
     deepgramLive.on(LiveTranscriptionEvents.Transcript, (data) => {
       try {
         const transcript = data.channel.alternatives[0]?.transcript;
@@ -73,6 +63,9 @@ function startWebSocketServer(server) {
     });
 
     ws.on('message', (message) => {
+      // אם הלקוח התנתק, לא שולחים עוד
+      if (clientDisconnected) return;
+
       console.log('Received audio chunk, size:', message.length);
       if (deepgramLive && deepgramLive.getReadyState() === WebSocket.OPEN) {
         deepgramLive.send(message);
@@ -81,11 +74,11 @@ function startWebSocketServer(server) {
 
     ws.on('close', () => {
       console.log("❌ Client disconnected");
-      if (deepgramLive) {
+      clientDisconnected = true;
+
+      if (deepgramLive && deepgramLive.getReadyState() === WebSocket.OPEN) {
         deepgramLive.finish();
       }
     });
   });
 }
-
-module.exports = startWebSocketServer;
