@@ -70,7 +70,8 @@ function startWebSocketServer(server) {
       ws.close();
     });
 
-    deepgramLive.on('transcriptReceived', (data) => {
+    // 🔹 שינוי כאן: שימוש בשם האירוע הנכון "Transcript" במקום "transcriptReceived"
+    deepgramLive.on('Transcript', (data) => {
       try {
         const transcript = data.channel.alternatives[0]?.transcript;
         const isFinal = data.is_final || false;
