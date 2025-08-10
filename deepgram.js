@@ -1,17 +1,26 @@
+const { WebSocketServer } = require('ws');
+const { createClient } = require('@deepgram/sdk');
+
+const deepgramApiKey = process.env.DEEPGRAM_API_KEY;
+if (!deepgramApiKey) {
+  throw new Error("Missing DEEPGRAM_API_KEY in environment variables");
+}
+
+const deepgram = createClient(deepgramApiKey);
+
 function startWebSocketServer(server) {
   const wss = new WebSocketServer({ server });
 
   wss.on('connection', async (ws) => {
     console.log("🔗 Client connected to WebSocket");
 
+    // קובע מראש לקודד ב־Opus, 48kHz
     const audioEncoding = 'opus';
     const sampleRate = 48000;
 
     let deepgramLive;
-    let keepAliveInterval;
-    let clientDisconnected = false;  // מצב שמראה אם הלקוח התנתק
-
     try {
+      // הכנת האופציות ל-Deepgram
       const options = {
         model: 'nova-3',
         language: 'multi',
@@ -19,6 +28,7 @@ function startWebSocketServer(server) {
         interim_results: true,
         endpointing: 500,
         vad_events: true
+        // כששולחים Opus לא צריך לציין encoding ו־sample_rate
       };
 
       deepgramLive = await deepgram.listen.live(options);
@@ -28,34 +38,46 @@ function startWebSocketServer(server) {
       return;
     }
 
-    deepgramLive.on(LiveTranscriptionEvents.Open, () => {
-      console.log(`🔵 Deepgram connection opened (${audioEncoding}, ${sampleRate}Hz)`);
+    deepgramLive.on('open', () => {
+      console.log(🔵 Deepgram connection opened (${audioEncoding}, ${sampleRate}Hz));
 
-      keepAliveInterval = setInterval(() => {
+      // שליחת KeepAlive כל 3 שניות
+      const KEEP_ALIVE_INTERVAL = 3000;
+      const keepAliveInterval = setInterval(() => {
         if (deepgramLive.getReadyState() === WebSocket.OPEN) {
           deepgramLive.send(JSON.stringify({ type: "KeepAlive" }));
           console.log("⏸️ Sent KeepAlive message to Deepgram");
         }
-      }, 3000);
+      }, KEEP_ALIVE_INTERVAL);
 
-      deepgramLive.on(LiveTranscriptionEvents.Close, () => {
+      deepgramLive.on('close', () => {
         clearInterval(keepAliveInterval);
         console.log("🔴 Deepgram connection closed, stopped KeepAlive");
       });
 
-      deepgramLive.on(LiveTranscriptionEvents.Error, (err) => {
+      deepgramLive.on('error', (err) => {
         clearInterval(keepAliveInterval);
         console.error("Deepgram connection error:", err);
       });
     });
 
-    deepgramLive.on(LiveTranscriptionEvents.Transcript, (data) => {
+    deepgramLive.on('close', () => {
+      console.log("🔴 Deepgram connection closed");
+    });
+
+    deepgramLive.on('error', (error) => {
+      console.error("Deepgram Error:", error);
+      ws.close();
+    });
+
+    // 🔹 שינוי כאן: שימוש בשם האירוע הנכון "Transcript" במקום "transcriptReceived"
+    deepgramLive.on('Transcript', (data) => {
       try {
         const transcript = data.channel.alternatives[0]?.transcript;
         const isFinal = data.is_final || false;
         if (transcript) {
           ws.send(JSON.stringify({ transcript, isFinal }));
-          console.log(`📢 Transcript${isFinal ? ' (final)' : ' (interim)'}: ${transcript}`);
+          console.log(📢 Transcript${isFinal ? ' (final)' : ' (interim)'}: ${transcript});
         }
       } catch (err) {
         console.error("⚠️ Error parsing Deepgram transcript:", err);
@@ -63,9 +85,6 @@ function startWebSocketServer(server) {
     });
 
     ws.on('message', (message) => {
-      // אם הלקוח התנתק, לא שולחים עוד
-      if (clientDisconnected) return;
-
       console.log('Received audio chunk, size:', message.length);
       if (deepgramLive && deepgramLive.getReadyState() === WebSocket.OPEN) {
         deepgramLive.send(message);
@@ -74,11 +93,11 @@ function startWebSocketServer(server) {
 
     ws.on('close', () => {
       console.log("❌ Client disconnected");
-      clientDisconnected = true;
-
-      if (deepgramLive && deepgramLive.getReadyState() === WebSocket.OPEN) {
+      if (deepgramLive) {
         deepgramLive.finish();
       }
     });
   });
 }
+
+module.exports = startWebSocketServer;
