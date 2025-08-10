@@ -14,11 +14,9 @@ function startWebSocketServer(server) {
   wss.on('connection', async (ws) => {
     console.log("🔗 Client connected to WebSocket");
 
-    // 🎯 הגדרת קידוד וקצב דגימה לפי מה שהלקוח משתמש
-    // אם הלקוח שולח MediaRecorder ב-webm/opus -> encoding: 'opus', sample_rate: 48000
-    // אם שולח PCM16 -> encoding: 'linear16', sample_rate: 16000
-    const audioEncoding = process.env.AUDIO_ENCODING || 'linear16';
-    const sampleRate = parseInt(process.env.SAMPLE_RATE || (audioEncoding === 'opus' ? 48000 : 16000), 10);
+    // קובע מראש לקודד ב־Opus, 48kHz
+    const audioEncoding = 'opus';
+    const sampleRate = 48000;
 
     let deepgramLive;
     try {
@@ -30,13 +28,8 @@ function startWebSocketServer(server) {
         interim_results: true,
         endpointing: 500,
         vad_events: true
+        // כששולחים Opus לא צריך לציין encoding ו־sample_rate
       };
-
-      // אם זה לא containerized audio (opus), נוסיף encoding ו-sample_rate
-      if (audioEncoding !== 'opus') {
-        options.encoding = audioEncoding;
-        options.sample_rate = sampleRate;
-      }
 
       deepgramLive = await deepgram.listen.live(options);
     } catch (err) {
@@ -57,13 +50,11 @@ function startWebSocketServer(server) {
         }
       }, KEEP_ALIVE_INTERVAL);
 
-      // ניקוי המחזור כשחיבור נסגר
       deepgramLive.on('close', () => {
         clearInterval(keepAliveInterval);
         console.log("🔴 Deepgram connection closed, stopped KeepAlive");
       });
 
-      // ניקוי המחזור במקרה של שגיאה
       deepgramLive.on('error', (err) => {
         clearInterval(keepAliveInterval);
         console.error("Deepgram connection error:", err);
