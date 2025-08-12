@@ -19,7 +19,7 @@ function startWebSocketServer(server) {
     let deepgram = deepgramClient.listen.live({
       model: 'nova-3',
       smart_format: true,
-      language: 'multi',
+      language: 'en-US',
       punctuate: true,
       interim_results: true,
       endpointing: 500,
@@ -38,13 +38,11 @@ function startWebSocketServer(server) {
       console.log("deepgram: connected");
     });
 
-    deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
-      console.log("deepgram: transcript received");
-      const transcript = data.channel.alternatives[0]?.transcript || '';
-      const isFinal = data.is_final || false;
-      ws.send(JSON.stringify({ transcript, isFinal }));
-      console.log(`📢 Transcript${isFinal ? ' (final)' : ' (interim)'}: ${transcript}`);
-    });
+deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
+  console.log("deepgram: transcript received");
+  console.log("ws: transcript sent to client");
+  ws.send(JSON.stringify(data));
+});
 
     deepgram.addListener(LiveTranscriptionEvents.Close, () => {
       console.log("deepgram: disconnected");
