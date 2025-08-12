@@ -14,7 +14,7 @@ app.get('/generate-token', (req, res) => {
 
   const channelName = req.query.channel;
   const uid = req.query.uid || 0;
-  const role = RtcRole.SUBSCRIBER;
+  const role = RtcRole.PUBLISHER;
   const expirationTimeInSeconds = 3600;
 
   if (!channelName) {
