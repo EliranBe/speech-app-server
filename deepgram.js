@@ -99,9 +99,3 @@ deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
 }
 
 module.exports = startWebSocketServer;
-
-
-// הפעלת השרת
-server.listen(port, () => {
-  console.log(🚀 Server is running on port ${port});
-});
