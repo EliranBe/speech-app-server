@@ -8,92 +8,92 @@ if (!deepgramApiKey) {
 
 const deepgramClient = createClient(deepgramApiKey);
 
-let keepAlive;
-
 function startWebSocketServer(server) {
   const wss = new WebSocketServer({ server });
 
   wss.on('connection', (ws) => {
     console.log("🔗 Client connected to WebSocket");
 
-    let deepgram = deepgramClient.listen.live({
-      model: 'nova-3',
-      smart_format: true,
-      language: 'en-US',
-      punctuate: true,
-      interim_results: true,
-      endpointing: 500,
-      vad_events: true
-    });
+    let deepgram;
+    let keepAlive;
 
-    if (keepAlive) clearInterval(keepAlive);
-    keepAlive = setInterval(() => {
-      if (deepgram.getReadyState && deepgram.getReadyState() === WebSocket.OPEN) {
-        console.log("deepgram: keepalive");
-        deepgram.keepAlive();
-      }
-    }, 10 * 1000);
+    const connectDeepgram = () => {
+      if (keepAlive) clearInterval(keepAlive);
 
-    deepgram.addListener(LiveTranscriptionEvents.Open, () => {
-      console.log("deepgram: connected");
-    });
+      deepgram = deepgramClient.listen.live({
+        model: 'nova-3',
+        smart_format: true,
+        language: 'en-US',
+        punctuate: true,
+        interim_results: true,
+        endpointing: 0, // כדי לא לנתק בסוף משפט
+        vad_events: true
+      });
 
-deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
-  console.log("deepgram: transcript received");
-  console.log("ws: transcript sent to client");
-  ws.send(JSON.stringify(data));
-});
+      keepAlive = setInterval(() => {
+        if (deepgram.getReadyState && deepgram.getReadyState() === WebSocket.OPEN) {
+          console.log("deepgram: keepalive");
+          deepgram.keepAlive();
+        }
+      }, 10 * 1000);
 
-    deepgram.addListener(LiveTranscriptionEvents.Close, () => {
-      console.log("deepgram: disconnected");
-      clearInterval(keepAlive);
-      deepgram.finish();
-    });
+      deepgram.addListener(LiveTranscriptionEvents.Open, () => {
+        console.log("deepgram: connected");
+      });
 
-    deepgram.addListener(LiveTranscriptionEvents.Error, (error) => {
-      console.log("deepgram: error received");
-      console.error(error);
-      // אל תסגור את ה-ws כאן - תן ללוגיקה ב-ws.on('message') לנסות reconnect
-    });
+      deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
+        console.log("deepgram: transcript received");
+        ws.send(JSON.stringify(data));
+      });
 
-    deepgram.addListener(LiveTranscriptionEvents.Warning, (warning) => {
-      console.log("deepgram: warning received");
-      console.warn(warning);
-    });
+      deepgram.addListener(LiveTranscriptionEvents.Close, () => {
+        console.log("deepgram: disconnected");
+        clearInterval(keepAlive);
+        console.log("deepgram: reconnecting...");
+        connectDeepgram(); // מייד פותח חיבור חדש
+      });
 
-    deepgram.addListener(LiveTranscriptionEvents.Metadata, (data) => {
-      console.log("deepgram: metadata received");
-      ws.send(JSON.stringify({ metadata: data }));
-    });
+      deepgram.addListener(LiveTranscriptionEvents.Error, (error) => {
+        console.error("deepgram: error received", error);
+      });
+
+      deepgram.addListener(LiveTranscriptionEvents.Warning, (warning) => {
+        console.warn("deepgram: warning received", warning);
+      });
+
+      deepgram.addListener(LiveTranscriptionEvents.Metadata, (data) => {
+        console.log("deepgram: metadata received");
+        ws.send(JSON.stringify({ metadata: data }));
+      });
+    };
+
+    // הפעלה ראשונה של החיבור
+    connectDeepgram();
 
     ws.on('message', (message) => {
       console.log('Received audio chunk, size:', message.length);
       if (deepgram.getReadyState && deepgram.getReadyState() === WebSocket.OPEN) {
         deepgram.send(message);
-      } else if (deepgram.getReadyState && deepgram.getReadyState() >= 2) {
-        console.log("deepgram connection closing/closed, reconnecting...");
-        deepgram.finish();
-        deepgram.removeAllListeners();
-        deepgram = deepgramClient.listen.live({
-          model: 'nova-3',
-          smart_format: true,
-          language: 'multi',
-          punctuate: true,
-          interim_results: true,
-          endpointing: 500,
-          vad_events: true
-        });
       } else {
-        console.log("deepgram connection not open, can't send data");
+        console.log("deepgram connection not open, reconnecting before sending...");
+        connectDeepgram();
+        // שליחה מחדש של החבילה אחרי חיבור
+        setTimeout(() => {
+          if (deepgram.getReadyState && deepgram.getReadyState() === WebSocket.OPEN) {
+            deepgram.send(message);
+          }
+        }, 500);
       }
     });
 
     ws.on('close', () => {
       console.log("❌ Client disconnected");
       clearInterval(keepAlive);
-      deepgram.finish();
-      deepgram.removeAllListeners();
-      deepgram = null; // חשוב לאפס את המשתנה אחרי סגירה
+      if (deepgram) {
+        deepgram.finish();
+        deepgram.removeAllListeners();
+        deepgram = null;
+      }
     });
   });
 }
