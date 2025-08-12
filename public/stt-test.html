@@ -20,36 +20,87 @@
       height: 150px;
       overflow-y: auto;
     }
+    #status {
+      margin-top: 10px;
+      font-weight: bold;
+      color: #444;
+    }
   </style>
 </head>
 <body>
   <h1>🎤 STT Microphone Test (Opus 48kHz)</h1>
   <button id="start">Start</button>
-  <button id="stop">Stop</button>
+  <button id="stop" disabled>Stop</button>
 
   <div id="transcript"></div>
+  <div id="status"></div>
 
   <script>
     let ws;
     let mediaRecorder;
     let stream;
+    let reconnectTimeout = null;
     const transcriptDiv = document.getElementById('transcript');
+    const statusDiv = document.getElementById('status');
+    const startBtn = document.getElementById('start');
+    const stopBtn = document.getElementById('stop');
 
-    document.getElementById("start").onclick = async () => {
+    function logStatus(message) {
+      console.log(message);
+      statusDiv.textContent = message;
+    }
+
+    async function startRecording() {
       try {
         stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" });
       } catch (error) {
         console.error("Error accessing microphone:", error);
+        logStatus("❌ Error accessing microphone");
         throw error;
-        return;
+      }
+
+      setupWebSocket();
+
+      mediaRecorder.onstart = () => {
+        logStatus("🎙️ Microphone opened");
+        document.body.classList.add("recording");
+      };
+
+      mediaRecorder.onstop = () => {
+        logStatus("🛑 Microphone closed");
+        document.body.classList.remove("recording");
+      };
+
+      mediaRecorder.addEventListener("dataavailable", (e) => {
+        if (e.data.size > 0 && ws && ws.readyState === WebSocket.OPEN) {
+          e.data.arrayBuffer().then(buffer => {
+            ws.send(buffer);
+          });
+        }
+      });
+
+      mediaRecorder.start(250); // שליחה כל רבע שניה
+      logStatus("🎙️ Recording started (Opus, 48kHz)");
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+    }
+
+    function setupWebSocket() {
+      if (ws) {
+        ws.close();
+        ws = null;
       }
 
       ws = new WebSocket(`wss://${window.location.host}`);
       ws.binaryType = "arraybuffer";
 
       ws.onopen = () => {
-        console.log("✅ WebSocket connection opened");
+        logStatus("✅ WebSocket connection opened");
+        if (reconnectTimeout) {
+          clearTimeout(reconnectTimeout);
+          reconnectTimeout = null;
+        }
       };
 
       ws.onmessage = (event) => {
@@ -70,39 +121,45 @@
 
       ws.onerror = (error) => {
         console.error("⚠️ WebSocket error:", error);
+        logStatus("⚠️ WebSocket error occurred");
       };
 
       ws.onclose = (event) => {
-        console.log(`🔌 WebSocket connection closed (code: ${event.code}, reason: ${event.reason || 'No reason'})`);
-      };
-
-      mediaRecorder.onstart = () => {
-        console.log("🎙️ Microphone opened");
-        document.body.classList.add("recording");
-      };
-
-      mediaRecorder.onstop = () => {
-        console.log("🛑 Microphone closed");
-        document.body.classList.remove("recording");
-      };
-
-      mediaRecorder.addEventListener("dataavailable", (e) => {
-        if (e.data.size > 0 && ws.readyState === WebSocket.OPEN) {
-          e.data.arrayBuffer().then(buffer => {
-            ws.send(buffer);
-          });
+        logStatus(`🔌 WebSocket connection closed (code: ${event.code}, reason: ${event.reason || 'No reason'})`);
+        if (mediaRecorder && mediaRecorder.state === "recording") {
+          // אם ההקלטה עדיין פעילה, נסה reconnect
+          if (!reconnectTimeout) {
+            reconnectTimeout = setTimeout(() => {
+              logStatus("🔄 Reconnecting WebSocket...");
+              setupWebSocket();
+            }, 2000); // מחכה 2 שניות ואז מנסה להתחבר מחדש
+          }
         }
-      });
+      };
+    }
 
-      mediaRecorder.start(250); // שליחה כל רבע שניה
-      console.log("🎙️ Recording started (Opus, 48kHz)");
-    };
-
-    document.getElementById("stop").onclick = () => {
+    function stopRecording() {
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+        reconnectTimeout = null;
+      }
       mediaRecorder?.stop();
       stream?.getTracks().forEach(track => track.stop());
-      ws?.close();
-      console.log("🛑 Recording stopped");
+      if (ws) {
+        ws.close();
+        ws = null;
+      }
+      logStatus("🛑 Recording stopped");
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+    }
+
+    startBtn.onclick = () => {
+      startRecording().catch(() => {});
+    };
+
+    stopBtn.onclick = () => {
+      stopRecording();
     };
   </script>
 </body>
