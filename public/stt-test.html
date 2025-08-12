@@ -3,6 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <title>STT Test - Opus 48kHz</title>
+  <style>
+    body.recording {
+      background-color: #fffae6; /* רקע עדין להדגשת מצב הקלטה */
+    }
+  </style>
 </head>
 <body>
   <h1>🎤 STT Microphone Test (Opus 48kHz)</h1>
@@ -15,9 +20,17 @@
     let ws;
     let mediaRecorder;
     let stream;
+    const transcriptDiv = document.getElementById('transcript');
 
     document.getElementById("start").onclick = async () => {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" });
+      } catch (error) {
+        console.error("Error accessing microphone:", error);
+        throw error;
+        return;
+      }
 
       ws = new WebSocket(`wss://${window.location.host}`);
       ws.binaryType = "arraybuffer";
@@ -27,16 +40,16 @@
       };
 
       ws.onmessage = (event) => {
+        if (event.data === "") return; // התעלמות מהודעות ריקות
         try {
           const data = JSON.parse(event.data);
-          // שינוי כאן: קריאה נכונה לטקסט מתוך אובייקט data
           const transcript = data.channel?.alternatives?.[0]?.transcript || '';
           const isFinal = data.is_final || false;
-          console.log("📝 Transcription:", transcript);
-
-          const transcriptDiv = document.getElementById('transcript');
-          transcriptDiv.textContent += transcript + (isFinal ? " ✔️\n" : " …\n");
-          transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
+          if (transcript) {
+            console.log("📝 Transcription:", transcript);
+            transcriptDiv.textContent += transcript + (isFinal ? " ✔️\n" : " …\n");
+            transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
+          }
         } catch (e) {
           console.error("Error parsing message:", e);
         }
@@ -45,7 +58,15 @@
       ws.onerror = (error) => console.error("WebSocket error:", error);
       ws.onclose = () => console.log("WebSocket connection closed");
 
-      mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" });
+      mediaRecorder.onstart = () => {
+        console.log("🎙️ Microphone opened");
+        document.body.classList.add("recording");
+      };
+
+      mediaRecorder.onstop = () => {
+        console.log("🛑 Microphone closed");
+        document.body.classList.remove("recording");
+      };
 
       mediaRecorder.addEventListener("dataavailable", (e) => {
         if (e.data.size > 0 && ws.readyState === WebSocket.OPEN) {
