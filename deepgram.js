@@ -28,8 +28,10 @@ function startWebSocketServer(server) {
 
     if (keepAlive) clearInterval(keepAlive);
     keepAlive = setInterval(() => {
-      console.log("deepgram: keepalive");
-      deepgram.keepAlive();
+      if (deepgram.getReadyState && deepgram.getReadyState() === WebSocket.OPEN) {
+        console.log("deepgram: keepalive");
+        deepgram.keepAlive();
+      }
     }, 10 * 1000);
 
     deepgram.addListener(LiveTranscriptionEvents.Open, () => {
@@ -38,7 +40,6 @@ function startWebSocketServer(server) {
 
     deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
       console.log("deepgram: transcript received");
-      // שולח ל־client רק את הטקסט מהתמלול
       const transcript = data.channel.alternatives[0]?.transcript || '';
       const isFinal = data.is_final || false;
       ws.send(JSON.stringify({ transcript, isFinal }));
@@ -54,7 +55,7 @@ function startWebSocketServer(server) {
     deepgram.addListener(LiveTranscriptionEvents.Error, (error) => {
       console.log("deepgram: error received");
       console.error(error);
-      ws.close();
+      // אל תסגור את ה-ws כאן - תן ללוגיקה ב-ws.on('message') לנסות reconnect
     });
 
     deepgram.addListener(LiveTranscriptionEvents.Warning, (warning) => {
@@ -69,9 +70,9 @@ function startWebSocketServer(server) {
 
     ws.on('message', (message) => {
       console.log('Received audio chunk, size:', message.length);
-      if (deepgram.getReadyState() === WebSocket.OPEN) {
+      if (deepgram.getReadyState && deepgram.getReadyState() === WebSocket.OPEN) {
         deepgram.send(message);
-      } else if (deepgram.getReadyState() >= 2) {
+      } else if (deepgram.getReadyState && deepgram.getReadyState() >= 2) {
         console.log("deepgram connection closing/closed, reconnecting...");
         deepgram.finish();
         deepgram.removeAllListeners();
@@ -94,6 +95,7 @@ function startWebSocketServer(server) {
       clearInterval(keepAlive);
       deepgram.finish();
       deepgram.removeAllListeners();
+      deepgram = null; // חשוב לאפס את המשתנה אחרי סגירה
     });
   });
 }
