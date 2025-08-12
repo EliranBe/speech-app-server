@@ -10,7 +10,7 @@ const { RtcTokenBuilder, RtcRole } = require('agora-access-token');
 
 const port = process.env.PORT || 3000;
 
-// 🔐 בדיקה שה־API Key של Deepgram קיים
+// בדיקה ש־API Key של Deepgram קיים
 if (!process.env.DEEPGRAM_API_KEY) {
   throw new Error("Missing DEEPGRAM_API_KEY in environment variables");
 }
@@ -19,20 +19,17 @@ if (!process.env.DEEPGRAM_PROJECT_ID) {
 }
 
 app.use(cors());
-app.use(express.static('public')); // מאפשר גישה ל-call.html ולשאר קבצים בתיקיית public
+app.use(express.static('public')); // מאפשר גישה לקבצי HTML כמו stt-test.html
 
-// ✅ החזרת APP_ID בצורה בטוחה (משתמש ב-AGORA_APP_ID)
+// החזרת APP_ID בצורה בטוחה
 app.get('/appId', (req, res) => {
   res.json({ appId: process.env.AGORA_APP_ID });
 });
 
-// ✅ הפקת Token מאובטח לפי בקשה מהדפדפן, עם לוגים לניתוח בעיות
+// הפקת Token מאובטח לפי בקשה מהדפדפן
 app.get('/rte-token', (req, res) => {
   const channelName = req.query.channelName;
-  console.log(`[LOG] /rte-token requested with channelName: ${channelName}`);
-
   if (!channelName) {
-    console.log('[ERROR] Missing channelName in request');
     return res.status(400).json({ error: 'channelName is required' });
   }
 
@@ -43,8 +40,6 @@ app.get('/rte-token', (req, res) => {
     const currentTimestamp = Math.floor(Date.now() / 1000);
     const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
 
-    console.log(`[LOG] Generating token with APP_ID: ${process.env.AGORA_APP_ID ? 'SET' : 'MISSING'}, APP_CERTIFICATE: ${process.env.AGORA_APP_CERTIFICATE ? 'SET' : 'MISSING'}`);
-
     const token = RtcTokenBuilder.buildTokenWithUid(
       process.env.AGORA_APP_ID,
       process.env.AGORA_APP_CERTIFICATE,
@@ -54,24 +49,23 @@ app.get('/rte-token', (req, res) => {
       privilegeExpiredTs
     );
 
-    console.log('[LOG] Token generated successfully');
     res.json({ rtcToken: token });
   } catch (err) {
-    console.error('[ERROR] Failed to generate token:', err);
+    console.error('Failed to generate token:', err);
     res.status(500).json({ error: 'Failed to generate token' });
   }
 });
 
-// 🛠️ נקודת בדיקה
+// נקודת כניסה בסיסית לשרת
 app.get('/', (req, res) => {
   res.send('🎉 השרת פועל בהצלחה!');
 });
 
-// ✅ הוספת Deepgram WebSocket
+// חיבור WebSocket לשרת HTTP
 const startWebSocketServer = require('./deepgram');
 startWebSocketServer(server);
 
-// ✅ הפעלת השרת עם WebSocket
+// הפעלת השרת
 server.listen(port, () => {
   console.log(`🚀 Server is running on port ${port}`);
 });
