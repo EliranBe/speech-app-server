@@ -2,10 +2,23 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>STT Test - Opus 48kHz</title>
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+  />
   <style>
     body.recording {
       background-color: #fffae6; /* רקע עדין להדגשת מצב הקלטה */
+    }
+    #transcript {
+      white-space: pre-wrap;
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-top: 20px;
+      height: 150px;
+      overflow-y: auto;
     }
   </style>
 </head>
@@ -14,7 +27,7 @@
   <button id="start">Start</button>
   <button id="stop">Stop</button>
 
-  <div id="transcript" style="white-space: pre-wrap; border: 1px solid #ccc; padding: 10px; margin-top: 20px; height: 150px; overflow-y: auto;"></div>
+  <div id="transcript"></div>
 
   <script>
     let ws;
@@ -36,11 +49,11 @@
       ws.binaryType = "arraybuffer";
 
       ws.onopen = () => {
-        console.log("WebSocket connection opened");
+        console.log("✅ WebSocket connection opened");
       };
 
       ws.onmessage = (event) => {
-        if (event.data === "") return; // התעלמות מהודעות ריקות
+        if (!event.data) return; // התעלמות מהודעות ריקות
         try {
           const data = JSON.parse(event.data);
           const transcript = data.channel?.alternatives?.[0]?.transcript || '';
@@ -51,12 +64,17 @@
             transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
           }
         } catch (e) {
-          console.error("Error parsing message:", e);
+          console.error("❌ Error parsing message:", e);
         }
       };
 
-      ws.onerror = (error) => console.error("WebSocket error:", error);
-      ws.onclose = () => console.log("WebSocket connection closed");
+      ws.onerror = (error) => {
+        console.error("⚠️ WebSocket error:", error);
+      };
+
+      ws.onclose = (event) => {
+        console.log(`🔌 WebSocket connection closed (code: ${event.code}, reason: ${event.reason || 'No reason'})`);
+      };
 
       mediaRecorder.onstart = () => {
         console.log("🎙️ Microphone opened");
