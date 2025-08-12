@@ -1,8 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const app = express();
-const dotenv = require("dotenv");
-dotenv.config();
+require('dotenv').config();
 
 const http = require('http');
 const server = http.createServer(app); // נדרש בשביל WebSocket
