@@ -19,7 +19,7 @@
     document.getElementById("start").onclick = async () => {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-     ws = new WebSocket(`wss://${window.location.host}`);
+      ws = new WebSocket(`wss://${window.location.host}`);
       ws.binaryType = "arraybuffer";
 
       ws.onopen = () => {
@@ -29,9 +29,13 @@
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          console.log("📝 Transcription:", data.transcript);
+          // שינוי כאן: קריאה נכונה לטקסט מתוך אובייקט data
+          const transcript = data.channel?.alternatives?.[0]?.transcript || '';
+          const isFinal = data.is_final || false;
+          console.log("📝 Transcription:", transcript);
+
           const transcriptDiv = document.getElementById('transcript');
-          transcriptDiv.textContent += data.transcript + (data.isFinal ? " ✔️\n" : " …\n");
+          transcriptDiv.textContent += transcript + (isFinal ? " ✔️\n" : " …\n");
           transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
         } catch (e) {
           console.error("Error parsing message:", e);
