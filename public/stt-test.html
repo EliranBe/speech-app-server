@@ -92,7 +92,7 @@
         ws = null;
       }
 
-      ws = new WebSocket(wss://${window.location.host});
+      ws = new WebSocket(`wss://${window.location.host}`);
       ws.binaryType = "arraybuffer";
 
       ws.onopen = () => {
