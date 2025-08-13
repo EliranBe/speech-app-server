@@ -125,7 +125,7 @@
       };
 
       ws.onclose = (event) => {
-        logStatus(🔌 WebSocket connection closed (code: ${event.code}, reason: ${event.reason || 'No reason'}));
+        logStatus(`🔌 WebSocket connection closed (code: ${event.code}, reason: ${event.reason || 'No reason'})`);
         if (mediaRecorder && mediaRecorder.state === "recording") {
           // אם ההקלטה עדיין פעילה, נסה reconnect
           if (!reconnectTimeout) {
