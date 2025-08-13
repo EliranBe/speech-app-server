@@ -1,4 +1,3 @@
-// deepgram.js
 const { WebSocketServer } = require('ws');
 const { createClient, LiveTranscriptionEvents } = require('@deepgram/sdk');
 
@@ -9,121 +8,92 @@ if (!deepgramApiKey) {
 
 const deepgramClient = createClient(deepgramApiKey);
 
+let keepAlive;
+
 function startWebSocketServer(server) {
   const wss = new WebSocketServer({ server });
 
   wss.on('connection', (ws) => {
     console.log("🔗 Client connected to WebSocket");
 
-    let deepgram = null;
-    let dgOpen = false;
-    let keepAliveTimer = null;
-
-    // נאגר כאן אודיו אם ה־DG לא פתוח כרגע
-    const pendingAudio = [];
-
-    // חשוב להתאים לפורמט שמגיע מהדפדפן (MediaRecorder: audio/webm;codecs=opus @48kHz)
-    const DG_OPTIONS = {
+    let deepgram = deepgramClient.listen.live({
       model: 'nova-3',
-      language: 'en-US',
       smart_format: true,
+      language: 'en-US',
       punctuate: true,
       interim_results: true,
       endpointing: 500,
-      vad_events: true,
-      encoding: 'webm',   // ✅ קריטי ל-webm/opus
-      sample_rate: 48000, // ✅ MediaRecorder בדרך כלל 48kHz
-      channels: 1
-    };
+      vad_events: true
+    });
 
-    const openDeepgram = () => {
-      deepgram = deepgramClient.listen.live(DG_OPTIONS);
+    if (keepAlive) clearInterval(keepAlive);
+    keepAlive = setInterval(() => {
+      if (deepgram.getReadyState && deepgram.getReadyState() === WebSocket.OPEN) {
+        console.log("deepgram: keepalive");
+        deepgram.keepAlive();
+      }
+    }, 10 * 1000);
 
-      deepgram.addListener(LiveTranscriptionEvents.Open, () => {
-        dgOpen = true;
+    deepgram.addListener(LiveTranscriptionEvents.Open, () => {
+      console.log("deepgram: connected");
+    });
 
-        // מרוקנים את התור שנאגר
-        while (pendingAudio.length) {
-          deepgram.send(pendingAudio.shift());
-        }
+deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
+  console.log("deepgram: transcript received");
+  console.log("ws: transcript sent to client");
+  ws.send(JSON.stringify(data));
+});
 
-        // keepAlive עדין כל 25 שניות וללא ספאם לוגים
-        clearInterval(keepAliveTimer);
-        keepAliveTimer = setInterval(() => {
-          if (deepgram && deepgram.getReadyState && deepgram.getReadyState() === WebSocket.OPEN) {
-            deepgram.keepAlive();
-          }
-        }, 25_000);
+    deepgram.addListener(LiveTranscriptionEvents.Close, () => {
+      console.log("deepgram: disconnected");
+      clearInterval(keepAlive);
+      deepgram.finish();
+    });
 
-        console.log("deepgram: connected");
-      });
+    deepgram.addListener(LiveTranscriptionEvents.Error, (error) => {
+      console.log("deepgram: error received");
+      console.error(error);
+      // אל תסגור את ה-ws כאן - תן ללוגיקה ב-ws.on('message') לנסות reconnect
+    });
 
-      deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
-        // שולחים ללקוח – כולל interim/final
-        ws.send(JSON.stringify(data));
-      });
+    deepgram.addListener(LiveTranscriptionEvents.Warning, (warning) => {
+      console.log("deepgram: warning received");
+      console.warn(warning);
+    });
 
-      deepgram.addListener(LiveTranscriptionEvents.Metadata, (data) => {
-        // שמיש לדיבוג בצד לקוח אם תרצה
-        ws.send(JSON.stringify({ metadata: data }));
-      });
-
-      deepgram.addListener(LiveTranscriptionEvents.Warning, (warning) => {
-        console.warn("deepgram: warning", warning);
-      });
-
-      deepgram.addListener(LiveTranscriptionEvents.Error, (error) => {
-        console.error("deepgram: error", error);
-        // לא סוגרים את ws של הלקוח; נאפשר ריקונקט בשליחת אודיו הבא
-        dgOpen = false;
-      });
-
-      deepgram.addListener(LiveTranscriptionEvents.Close, () => {
-        console.log("deepgram: disconnected");
-        dgOpen = false;
-        clearInterval(keepAliveTimer);
-        // לא סוגרים את ws ללקוח. נפתח מחדש כשיגיע אודיו (ראה ws.on('message'))
-      });
-    };
-
-    // פתיחת חיבור ראשוני ל-DG
-    openDeepgram();
+    deepgram.addListener(LiveTranscriptionEvents.Metadata, (data) => {
+      console.log("deepgram: metadata received");
+      ws.send(JSON.stringify({ metadata: data }));
+    });
 
     ws.on('message', (message) => {
-      // message מגיע כ-ArrayBuffer (webm/opus)
-      if (!deepgram) {
-        openDeepgram();
-      }
-
-      if (deepgram.getReadyState && deepgram.getReadyState() === WebSocket.OPEN && dgOpen) {
+      console.log('Received audio chunk, size:', message.length);
+      if (deepgram.getReadyState && deepgram.getReadyState() === WebSocket.OPEN) {
         deepgram.send(message);
+      } else if (deepgram.getReadyState && deepgram.getReadyState() >= 2) {
+        console.log("deepgram connection closing/closed, reconnecting...");
+        deepgram.finish();
+        deepgram.removeAllListeners();
+        deepgram = deepgramClient.listen.live({
+          model: 'nova-3',
+          smart_format: true,
+          language: 'multi',
+          punctuate: true,
+          interim_results: true,
+          endpointing: 500,
+          vad_events: true
+        });
       } else {
-        // נאגר עד שהחיבור ייפתח מחדש
-        pendingAudio.push(message);
-
-        // אם החיבור היה CLOSED/CLOSING – נפתח מחדש
-        if (deepgram.getReadyState && deepgram.getReadyState() >= 2) {
-          console.log("deepgram: reconnecting...");
-          try {
-            deepgram.removeAllListeners();
-            deepgram.finish();
-          } catch (_) {}
-          openDeepgram();
-        }
+        console.log("deepgram connection not open, can't send data");
       }
     });
 
     ws.on('close', () => {
       console.log("❌ Client disconnected");
-      clearInterval(keepAliveTimer);
-      try {
-        if (deepgram) {
-          deepgram.removeAllListeners();
-          deepgram.finish();
-        }
-      } catch (_) {}
-      deepgram = null;
-      dgOpen = false;
+      clearInterval(keepAlive);
+      deepgram.finish();
+      deepgram.removeAllListeners();
+      deepgram = null; // חשוב לאפס את המשתנה אחרי סגירה
     });
   });
 }
