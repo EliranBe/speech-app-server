@@ -40,10 +40,14 @@
     let mediaRecorder;
     let stream;
     let reconnectTimeout = null;
+
     const transcriptDiv = document.getElementById('transcript');
     const statusDiv = document.getElementById('status');
     const startBtn = document.getElementById('start');
     const stopBtn = document.getElementById('stop');
+
+    // תמיכה גם בפיתוח לוקאלי: ws:// כשאין https
+    const wsScheme = location.protocol === 'https:' ? 'wss' : 'ws';
 
     function logStatus(message) {
       console.log(message);
@@ -53,6 +57,7 @@
     async function startRecording() {
       try {
         stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // חשוב: זה מייצר webm/opus @48kHz שמותאם לשרת
         mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" });
       } catch (error) {
         console.error("Error accessing microphone:", error);
@@ -92,7 +97,7 @@
         ws = null;
       }
 
-      ws = new WebSocket(`wss://${window.location.host}`);
+      ws = new WebSocket(`${wsScheme}://${window.location.host}`);
       ws.binaryType = "arraybuffer";
 
       ws.onopen = () => {
@@ -104,11 +109,18 @@
       };
 
       ws.onmessage = (event) => {
-        if (!event.data) return; // התעלמות מהודעות ריקות
+        if (!event.data) return;
         try {
           const data = JSON.parse(event.data);
+
+          // אם זו רק מעטפת metadata – נשתוק ב־UI (אבל נרשום ללוג)
+          if (data.metadata) {
+            console.log("ℹ️ metadata:", data.metadata);
+            return;
+          }
+
           const transcript = data.channel?.alternatives?.[0]?.transcript || '';
-          const isFinal = data.is_final || false;
+          const isFinal = !!data.is_final;
           if (transcript) {
             console.log("📝 Transcription:", transcript);
             transcriptDiv.textContent += transcript + (isFinal ? " ✔️\n" : " …\n");
@@ -126,13 +138,13 @@
 
       ws.onclose = (event) => {
         logStatus(`🔌 WebSocket connection closed (code: ${event.code}, reason: ${event.reason || 'No reason'})`);
+        // אם עדיין מקליטים – מבצעים reconnect רגוע
         if (mediaRecorder && mediaRecorder.state === "recording") {
-          // אם ההקלטה עדיין פעילה, נסה reconnect
           if (!reconnectTimeout) {
             reconnectTimeout = setTimeout(() => {
               logStatus("🔄 Reconnecting WebSocket...");
               setupWebSocket();
-            }, 2000); // מחכה 2 שניות ואז מנסה להתחבר מחדש
+            }, 2000);
           }
         }
       };
