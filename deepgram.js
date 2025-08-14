@@ -23,7 +23,9 @@ function startWebSocketServer(server) {
       punctuate: true,
       interim_results: true,
       endpointing: 500,
-      vad_events: true
+      vad_events: true,  
+      encoding: 'linear16',
+      sample_rate: 16000
     });
 
     if (keepAlive) clearInterval(keepAlive);
@@ -77,11 +79,13 @@ deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
         deepgram = deepgramClient.listen.live({
           model: 'nova-3',
           smart_format: true,
-          language: 'multi',
+          language: 'en-US',
           punctuate: true,
           interim_results: true,
           endpointing: 500,
-          vad_events: true
+          vad_events: true,  
+          encoding: 'linear16',
+          sample_rate: 16000
         });
       } else {
         console.log("deepgram connection not open, can't send data");
