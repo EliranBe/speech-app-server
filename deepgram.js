@@ -3,7 +3,7 @@ const { createClient, LiveTranscriptionEvents } = require('@deepgram/sdk');
 
 const deepgramApiKey = process.env.DEEPGRAM_API_KEY;
 if (!deepgramApiKey) {
-  throw new Error("Missing DEEPGRAM_API_KEY in environment variables");
+  throw new Error("⚠️ Missing DEEPGRAM_API_KEY in environment variables");
 }
 
 const deepgramClient = createClient(deepgramApiKey);
@@ -37,12 +37,12 @@ function startWebSocketServer(server) {
     }, 10 * 1000);
 
     deepgram.addListener(LiveTranscriptionEvents.Open, () => {
-      console.log("deepgram: connected");
+      console.log("🔗 deepgram: connected");
     });
 
 deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
-  console.log("deepgram: transcript received");
-  console.log("ws: transcript sent to client");
+  console.log("✅ deepgram: transcript received");
+  console.log("✅ ws: transcript sent to client");
   ws.send(JSON.stringify(data));
 });
 
@@ -53,13 +53,13 @@ deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
     });
 
     deepgram.addListener(LiveTranscriptionEvents.Error, (error) => {
-      console.log("deepgram: error received");
+      console.log("⚠️ deepgram: error received");
       console.error(error);
       // אל תסגור את ה-ws כאן - תן ללוגיקה ב-ws.on('message') לנסות reconnect
     });
 
     deepgram.addListener(LiveTranscriptionEvents.Warning, (warning) => {
-      console.log("deepgram: warning received");
+      console.log("⚠️ deepgram: warning received");
       console.warn(warning);
     });
 
@@ -88,12 +88,12 @@ deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
           sample_rate: 16000
         });
       } else {
-        console.log("deepgram connection not open, can't send data");
+        console.log("⚠️ deepgram connection not open, can't send data");
       }
     });
 
     ws.on('close', () => {
-      console.log("❌ Client disconnected");
+      console.log("❌ Client disconnected from WebSocket");
       clearInterval(keepAlive);
       deepgram.finish();
       deepgram.removeAllListeners();
