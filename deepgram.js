@@ -26,8 +26,8 @@ function startWebSocketServer(server) {
       interim_results: true,
       endpointing: 500,
       vad_events: true,  
-      encoding: 'linear16',
-      sample_rate: 16000
+      encoding: 'opus',
+      sample_rate: 48000
     });
 
     if (keepAlive) clearInterval(keepAlive);
@@ -95,8 +95,8 @@ ws.on('message', (message) => {
       interim_results: true,
       endpointing: 500,
       vad_events: true,
-      encoding: 'linear16',
-      sample_rate: 16000
+      encoding: 'opus',
+      sample_rate: 48000
     });
   } else {
     console.log("⚠️ deepgram connection not open, can't send data");
