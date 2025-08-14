@@ -44,12 +44,10 @@ const ffmpeg = spawn('ffmpeg', [
 ]);
 
 ffmpeg.stdout.on('data', (pcmChunk) => {
-  if (deepgram.getReadyState && deepgram.getReadyState() === WebSocket.OPEN) {
-    // החיבור פתוח – שולחים את ה-PDM ל-Deepgram ושומרים זמן שליחה
+  if (deepgram && deepgram.getReadyState && deepgram.getReadyState() === WebSocket.OPEN) {
     lastChunkTime = Date.now();
     deepgram.send(pcmChunk);
-  } else if (deepgram.getReadyState && deepgram.getReadyState() >= 2) {
-    // החיבור נסגר/נסגר בחלקו – מבצעים reconnect
+  } else if (deepgram && deepgram.getReadyState && deepgram.getReadyState() >= 2) {
     console.log("⚠️ deepgram connection closing/closed, reconnecting...");
     deepgram.finish();
     deepgram.removeAllListeners();
@@ -64,8 +62,14 @@ ffmpeg.stdout.on('data', (pcmChunk) => {
       encoding: 'linear16',
       sample_rate: 16000
     });
+    // להחזיר גם כאן את onmessage שמדפיס את ה-✅
+    deepgram.on('message', (dgMessage) => {
+      const data = JSON.parse(dgMessage);
+      console.log(`✅ WebSocket received transcript from deepgram Latency: ${Date.now() - lastChunkTime} ms`);
+      ws.send(JSON.stringify(data));
+      console.log("✅ WebSocket sent transcript to client");
+    });
   } else {
-    // החיבור עדיין לא פתוח – ניתן להשאיר לוג או פשוט להתעלם
     console.log("⚠️ deepgram connection not open, can't send data");
   }
 });
