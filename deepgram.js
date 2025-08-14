@@ -44,8 +44,8 @@ function startWebSocketServer(server) {
 
 deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
   const latency = lastChunkTime ? (Date.now() - lastChunkTime) : null;
-  console.log("✅ deepgram: transcript received", latency ? `Latency: ${latency} ms` : '');
-  console.log("✅ ws: transcript sent to client");
+  console.log("✅ WebSocket received transcript from deepgram", latency ? `Latency: ${latency} ms` : '');
+  console.log("✅ WebSocket sent transcript to client");
   ws.send(JSON.stringify(data));
 });
 
