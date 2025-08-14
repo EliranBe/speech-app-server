@@ -1,5 +1,6 @@
 const { WebSocketServer } = require('ws');
 const { createClient, LiveTranscriptionEvents } = require('@deepgram/sdk');
+const { spawn } = require('child_process'); // הוספנו FFmpeg
 
 const deepgramApiKey = process.env.DEEPGRAM_API_KEY;
 if (!deepgramApiKey) {
@@ -9,6 +10,18 @@ if (!deepgramApiKey) {
 const deepgramClient = createClient(deepgramApiKey);
 
 let keepAlive;
+
+function convertWebmOpusToPCM16kHz() {
+  return spawn('ffmpeg', [
+    '-loglevel', 'quiet',
+    '-i', 'pipe:0',
+    '-acodec', 'pcm_s16le',
+    '-ac', '1',
+    '-ar', '16000',
+    '-f', 'wav',
+    'pipe:1'
+  ]);
+}
 
 function startWebSocketServer(server) {
   const wss = new WebSocketServer({ server });
@@ -42,12 +55,12 @@ function startWebSocketServer(server) {
       console.log("🔗 deepgram: connected");
     });
 
-deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
-  const latency = lastChunkTime ? (Date.now() - lastChunkTime) : null;
-  console.log("✅ WebSocket received transcript from deepgram", latency ? `Latency: ${latency} ms` : '');
-  console.log("✅ WebSocket sent transcript to client");
-  ws.send(JSON.stringify(data));
-});
+    deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
+      const latency = lastChunkTime ? (Date.now() - lastChunkTime) : null;
+      console.log("✅ WebSocket received transcript from deepgram", latency ? `Latency: ${latency} ms` : '');
+      console.log("✅ WebSocket sent transcript to client");
+      ws.send(JSON.stringify(data));
+    });
 
     deepgram.addListener(LiveTranscriptionEvents.Close, () => {
       console.log("deepgram: disconnected");
@@ -58,7 +71,6 @@ deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
     deepgram.addListener(LiveTranscriptionEvents.Error, (error) => {
       console.log("⚠️ deepgram: error received");
       console.error(error);
-      // אל תסגור את ה-ws כאן - תן ללוגיקה ב-ws.on('message') לנסות reconnect
     });
 
     deepgram.addListener(LiveTranscriptionEvents.Warning, (warning) => {
@@ -66,48 +78,48 @@ deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
       console.warn(warning);
     });
 
-      // 📌 Metadata: מידע על השפה והחיבור
+    // Metadata
     deepgram.addListener(LiveTranscriptionEvents.Metadata, (data) => {
-    const detectedLang = data?.detected_language || "unknown";
-    console.log(`deepgram: metadata received – Detected language: ${detectedLang}`);
+      const detectedLang = data?.detected_language || "unknown";
+      console.log(`deepgram: metadata received – Detected language: ${detectedLang}`);
       ws.send(JSON.stringify({ metadata: data }));
     });
 
-   // נוסיף משתנה שיחזיק זמני שליחה
-let lastChunkTime = null;
+    // משתנה לזמני שליחה
+    let lastChunkTime = null;
 
-ws.on('message', (message) => {
-  console.log('Received audio chunk, size:', message.length);
+    // 🎙️ Handle incoming audio chunks
+    ws.on('message', (chunk) => {
+      console.log('Received audio chunk, size:', chunk.length);
 
-  if (deepgram.getReadyState && deepgram.getReadyState() === WebSocket.OPEN) {
-    lastChunkTime = Date.now(); // שמירת הזמן שבו שלחנו
-    deepgram.send(message);
-  } else if (deepgram.getReadyState && deepgram.getReadyState() >= 2) {
-    console.log("⚠️ deepgram connection closing/closed, reconnecting...");
-    deepgram.finish();
-    deepgram.removeAllListeners();
-    deepgram = deepgramClient.listen.live({
-      model: 'nova-3',
-      smart_format: true,
-      language: 'en-US',
-      punctuate: true,
-      interim_results: true,
-      endpointing: 500,
-      vad_events: true,
-      encoding: 'linear16',
-      sample_rate: 16000
+      // המרת WebM/Opus ל-PCM16kHz
+      const ffmpeg = convertWebmOpusToPCM16kHz();
+      ffmpeg.stdin.write(chunk);
+      ffmpeg.stdin.end();
+
+      ffmpeg.stdout.on('data', (pcmChunk) => {
+        if (deepgram.getReadyState && deepgram.getReadyState() === WebSocket.OPEN) {
+          lastChunkTime = Date.now();
+          deepgram.send(pcmChunk);
+        }
+      });
+
+      ffmpeg.on('close', () => {
+        console.log("✅ Audio successfully converted to PCM 16kHz");
+        ws.send(JSON.stringify({ conversion: "success", encoding: "linear16", sample_rate: 16000 }));
+      });
+
+      ffmpeg.stderr.on('data', (err) => {
+        console.error("FFmpeg error:", err.toString());
+      });
     });
-  } else {
-    console.log("⚠️ deepgram connection not open, can't send data");
-  }
-});
 
     ws.on('close', () => {
       console.log("❌ Client disconnected from WebSocket");
       clearInterval(keepAlive);
       deepgram.finish();
       deepgram.removeAllListeners();
-      deepgram = null; // חשוב לאפס את המשתנה אחרי סגירה
+      deepgram = null;
     });
   });
 }
