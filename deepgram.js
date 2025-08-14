@@ -68,8 +68,8 @@ deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
 
       // 📌 Metadata: מידע על השפה והחיבור
     deepgram.addListener(LiveTranscriptionEvents.Metadata, (data) => {
-    detectedLanguage = data.detected_language || null; // שמירת השפה שזוהתה
-    console.log("deepgram: metadata received", data);
+    const detectedLang = data?.detected_language || "unknown";
+    console.log(`deepgram: metadata received – Detected language: ${detectedLang}`);
       ws.send(JSON.stringify({ metadata: data }));
     });
 
