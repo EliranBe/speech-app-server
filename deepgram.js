@@ -13,6 +13,8 @@ let keepAlive;
 function startWebSocketServer(server) {
   const wss = new WebSocketServer({ server });
 
+  let detectedLanguage = null; // לשמור את השפה שזוהתה
+
   wss.on('connection', (ws) => {
     console.log("🔗 Client connected to WebSocket");
 
@@ -64,8 +66,10 @@ deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
       console.warn(warning);
     });
 
+      // 📌 Metadata: מידע על השפה והחיבור
     deepgram.addListener(LiveTranscriptionEvents.Metadata, (data) => {
-      console.log("deepgram: metadata received");
+    detectedLanguage = data.detected_language || null; // שמירת השפה שזוהתה
+    console.log("deepgram: metadata received", data);
       ws.send(JSON.stringify({ metadata: data }));
     });
 
