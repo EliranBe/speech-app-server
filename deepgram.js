@@ -21,7 +21,7 @@ function startWebSocketServer(server) {
     let deepgram = deepgramClient.listen.live({
       model: 'nova-3',
       smart_format: true,
-       detect_language: true,
+      language: 'en-US',
       punctuate: true,
       interim_results: true,
       endpointing: 500,
@@ -89,7 +89,7 @@ ws.on('message', (message) => {
     deepgram = deepgramClient.listen.live({
       model: 'nova-3',
       smart_format: true,
-       detect_language: true,
+      language: 'en-US',
       punctuate: true,
       interim_results: true,
       endpointing: 500,
