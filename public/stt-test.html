@@ -107,6 +107,7 @@
         if (!event.data) return; // התעלמות מהודעות ריקות
         try {
           const data = JSON.parse(event.data);
+          console.log("RAW data from server:", data);
           const transcript = data.channel?.alternatives?.[0]?.transcript || '';
           const isFinal = data.is_final || false;
           if (transcript) {
