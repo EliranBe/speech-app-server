@@ -41,7 +41,8 @@ function startWebSocketServer(server) {
     });
 
 deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
-  console.log("✅ deepgram: transcript received");
+  const latency = lastChunkTime ? (Date.now() - lastChunkTime) : null;
+  console.log("✅ deepgram: transcript received", latency ? `Latency: ${latency} ms` : '');
   console.log("✅ ws: transcript sent to client");
   ws.send(JSON.stringify(data));
 });
@@ -68,29 +69,34 @@ deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
       ws.send(JSON.stringify({ metadata: data }));
     });
 
-    ws.on('message', (message) => {
-      console.log('Received audio chunk, size:', message.length);
-      if (deepgram.getReadyState && deepgram.getReadyState() === WebSocket.OPEN) {
-        deepgram.send(message);
-      } else if (deepgram.getReadyState && deepgram.getReadyState() >= 2) {
-        console.log("deepgram connection closing/closed, reconnecting...");
-        deepgram.finish();
-        deepgram.removeAllListeners();
-        deepgram = deepgramClient.listen.live({
-          model: 'nova-3',
-          smart_format: true,
-          language: 'en-US',
-          punctuate: true,
-          interim_results: true,
-          endpointing: 500,
-          vad_events: true,  
-          encoding: 'linear16',
-          sample_rate: 16000
-        });
-      } else {
-        console.log("⚠️ deepgram connection not open, can't send data");
-      }
+   // נוסיף משתנה שיחזיק זמני שליחה
+let lastChunkTime = null;
+
+ws.on('message', (message) => {
+  console.log('Received audio chunk, size:', message.length);
+
+  if (deepgram.getReadyState && deepgram.getReadyState() === WebSocket.OPEN) {
+    lastChunkTime = Date.now(); // שמירת הזמן שבו שלחנו
+    deepgram.send(message);
+  } else if (deepgram.getReadyState && deepgram.getReadyState() >= 2) {
+    console.log("⚠️ deepgram connection closing/closed, reconnecting...");
+    deepgram.finish();
+    deepgram.removeAllListeners();
+    deepgram = deepgramClient.listen.live({
+      model: 'nova-3',
+      smart_format: true,
+      language: 'en-US',
+      punctuate: true,
+      interim_results: true,
+      endpointing: 500,
+      vad_events: true,
+      encoding: 'linear16',
+      sample_rate: 16000
     });
+  } else {
+    console.log("⚠️ deepgram connection not open, can't send data");
+  }
+});
 
     ws.on('close', () => {
       console.log("❌ Client disconnected from WebSocket");
