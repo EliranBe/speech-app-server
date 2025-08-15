@@ -26,7 +26,7 @@ function startWebSocketServer(server) {
       interim_results: true,
       endpointing: 500,
       vad_events: true,  
-      encoding: 'linear-16',
+      encoding: 'linear16',
       sample_rate: 16000
     });
 
@@ -95,7 +95,7 @@ ws.on('message', (message) => {
       interim_results: true,
       endpointing: 500,
       vad_events: true,
-      encoding: 'linear-16',
+      encoding: 'linear16',
       sample_rate: 16000
     });
   } else {
