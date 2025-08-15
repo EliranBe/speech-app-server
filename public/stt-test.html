@@ -52,20 +52,42 @@
 
 async function startRecording() {
   try {
+    // 1️⃣ מבקשים גישה למיקרופון
     stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    
-    // בדיקת sampleRate בפועל
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const source = audioCtx.createMediaStreamSource(stream);
-    logStatus(`🎛 Detected sample rate: ${audioCtx.sampleRate} Hz`);
-    console.log(`🎛 Detected sample rate: ${audioCtx.sampleRate} Hz`);
-    
+
+    // 2️⃣ 🎛 בדיקה של sample rate וסוג קידוד
+    const audioContext = new AudioContext();
+    const source = audioContext.createMediaStreamSource(stream);
+    console.log(`🎛 Detected sample rate: ${audioContext.sampleRate} Hz`);
+
+    if (stream.getAudioTracks().length > 0) {
+      const settings = stream.getAudioTracks()[0].getSettings();
+      console.log("🎛 Track settings:", settings);
+
+      if (settings.sampleRate) {
+        console.log(`🎛 Reported sample rate from track: ${settings.sampleRate} Hz`);
+      }
+
+      if (audioContext.sampleRate >= 48000) {
+        console.log("🎙️ Likely encoding: Opus (48kHz)");
+      } else if (audioContext.sampleRate === 16000) {
+        console.log("🎙️ Likely encoding: PCM Linear16 (16kHz)");
+      } else {
+        console.log("🎙️ Encoding format uncertain — check server logs for exact codec.");
+      }
+    }
+
+    // 3️⃣ כאן אתה ממשיך עם יצירת ה-MediaRecorder
     mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+
   } catch (error) {
     console.error("Error accessing microphone:", error);
     logStatus("❌ Error accessing microphone");
     throw error;
   }
+
+}
+
 
   setupWebSocket();
 
