@@ -1,6 +1,9 @@
 const { WebSocketServer } = require('ws');
 const { createClient, LiveTranscriptionEvents } = require('@deepgram/sdk');
 
+const fs = require('fs');
+const { spawn } = require('child_process');
+
 const deepgramApiKey = process.env.DEEPGRAM_API_KEY;
 if (!deepgramApiKey) {
   throw new Error("⚠️ Missing DEEPGRAM_API_KEY in environment variables");
@@ -8,12 +11,70 @@ if (!deepgramApiKey) {
 
 const deepgramClient = createClient(deepgramApiKey);
 
+function probeFileWithFfprobe(path) {
+  const child = spawn('ffprobe', [
+    '-v', 'error',
+    '-show_streams',
+    '-of', 'json',
+    path
+  ]);
+
+  let out = '';
+  let err = '';
+
+  child.stdout.on('data', d => out += d.toString());
+  child.stderr.on('data', d => err += d.toString());
+
+  child.on('close', (code) => {
+    if (code === 0 && out) {
+      try {
+        const info = JSON.parse(out);
+        const audio = (info.streams || []).find(s => s.codec_type === 'audio');
+        if (audio) {
+          console.log(`🔎 Probe: codec=${audio.codec_name}, sample_rate=${audio.sample_rate}, channels=${audio.channels}`);
+          if (audio.codec_name === 'opus') {
+            console.log('ℹ️ Probe result: Looks like WebM/Opus from the browser (likely 48000 Hz).');
+          } else if (audio.codec_name === 'pcm_s16le') {
+            console.log('ℹ️ Probe result: Looks like linear16 PCM (likely 16000 Hz).');
+          } else {
+            console.log('ℹ️ Probe result: Audio codec is', audio.codec_name);
+          }
+        } else {
+          console.warn('⚠️ Probe: no audio stream found in first chunk.');
+        }
+      } catch (e) {
+        console.error('❌ Failed to parse ffprobe JSON output:', e, out || err);
+      }
+    } else {
+      console.warn('⚠️ ffprobe exited with code', code, 'stderr:', err);
+      // Fallback: נסה ffmpeg -i (מדפיס ל-stderr תיאור)
+      const ffm = spawn('ffmpeg', ['-i', path]);
+      let stderr = '';
+      ffm.stderr.on('data', d => stderr += d.toString());
+      ffm.on('close', () => {
+        console.log('🔎 ffmpeg probe output:\n', stderr);
+      });
+    }
+  });
+
+  child.on('error', (e) => {
+    if (e.code === 'ENOENT') {
+      console.warn('⚠️ ffprobe not found on this server. Install ffmpeg/ffprobe or use an image that includes it.');
+    } else {
+      console.error('❌ ffprobe error:', e);
+    }
+  });
+}
+
 let keepAlive;
 
 function startWebSocketServer(server) {
   const wss = new WebSocketServer({ server });
 
   let detectedLanguage = null; // לשמור את השפה שזוהתה
+
+  let firstChunkSaved = false;
+const FIRST_CHUNK_PATH = '/tmp/first_chunk.webm';
 
   wss.on('connection', (ws) => {
     console.log("🔗 Client connected to WebSocket");
