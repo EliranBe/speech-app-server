@@ -21,10 +21,10 @@ function startWebSocketServer(server) {
     let deepgram = deepgramClient.listen.live({
       model: 'nova-3',
       smart_format: true,
-      language: 'en-US',
+      language: 'multi',
       punctuate: true,
       interim_results: true,
-      endpointing: 500,
+      endpointing: 100,
       vad_events: true,  
       encoding: 'linear16',
       sample_rate: 16000
@@ -90,10 +90,10 @@ ws.on('message', (message) => {
     deepgram = deepgramClient.listen.live({
       model: 'nova-3',
       smart_format: true,
-      language: 'en-US',
+      language: 'multi',
       punctuate: true,
       interim_results: true,
-      endpointing: 500,
+      endpointing: 100,
       vad_events: true,
       encoding: 'linear16',
       sample_rate: 16000
