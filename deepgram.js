@@ -42,15 +42,15 @@ function startWebSocketServer(server) {
 
 deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
   const latency = lastChunkTime ? (Date.now() - lastChunkTime) : null;
-  
+
   // שמירה על הלוגים המקוריים
   console.log("✅ WebSocket received transcript from deepgram", latency ? `Latency: ${latency} ms` : '');
   console.log("✅ WebSocket sent transcript to client");
   ws.send(JSON.stringify(data)); // שולח את כל המידע המקורי ללקוח
 
-  // לולאה על כל אלטרנטיבה כדי להדפיס גם את השפה
+  // הדפסת התמלול והשפה בזמן אמת
   const channel = data.channel; // אובייקט אחד
-if (channel?.alternatives) {
+  if (channel?.alternatives) {
     channel.alternatives.forEach(alt => {
       const transcript = alt.transcript || '';
       const detectedLanguage = alt.language || 'unknown';
@@ -59,6 +59,7 @@ if (channel?.alternatives) {
       }
     });
   }
+});
 
     deepgram.addListener(LiveTranscriptionEvents.Close, () => {
       console.log("deepgram: disconnected");
