@@ -13,8 +13,6 @@ let keepAlive;
 function startWebSocketServer(server) {
   const wss = new WebSocketServer({ server });
 
-  let detectedLanguage = null; // לשמור את השפה שזוהתה
-
   wss.on('connection', (ws) => {
     console.log("🔗 Client connected to WebSocket");
 
@@ -42,11 +40,24 @@ function startWebSocketServer(server) {
       console.log("🔗 deepgram: connected");
     });
 
-   deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
+deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
   const latency = lastChunkTime ? (Date.now() - lastChunkTime) : null;
+  
+  // שמירה על הלוגים המקוריים
   console.log("✅ WebSocket received transcript from deepgram", latency ? `Latency: ${latency} ms` : '');
   console.log("✅ WebSocket sent transcript to client");
-  ws.send(JSON.stringify(data));
+  ws.send(JSON.stringify(data)); // שולח את כל המידע המקורי ללקוח
+
+  // לולאה על כל אלטרנטיבה כדי להדפיס גם את השפה
+  data.channel.forEach(channel => {
+    channel.alternatives.forEach(alt => {
+      const transcript = alt.transcript || '';
+      const detectedLanguage = alt.language || 'unknown';
+      if (transcript) {
+        console.log(`📝 Transcription [${detectedLanguage}]:`, transcript);
+      }
+    });
+  });
 });
 
     deepgram.addListener(LiveTranscriptionEvents.Close, () => {
