@@ -49,7 +49,8 @@ deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
   ws.send(JSON.stringify(data)); // שולח את כל המידע המקורי ללקוח
 
   // לולאה על כל אלטרנטיבה כדי להדפיס גם את השפה
-  data.channel.forEach(channel => {
+  const channel = data.channel; // אובייקט אחד
+if (channel?.alternatives) {
     channel.alternatives.forEach(alt => {
       const transcript = alt.transcript || '';
       const detectedLanguage = alt.language || 'unknown';
@@ -57,8 +58,7 @@ deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
         console.log(`📝 Transcription [${detectedLanguage}]:`, transcript);
       }
     });
-  });
-});
+  }
 
     deepgram.addListener(LiveTranscriptionEvents.Close, () => {
       console.log("deepgram: disconnected");
