@@ -129,6 +129,13 @@ async function startRecording() {
 
       ws.onmessage = (event) => {
         if (!event.data) return; // התעלמות מהודעות ריקות
+        
+          let messageData = event.data;
+
+  // אם המידע בינארי → להמיר אותו ל-string
+  if (messageData instanceof ArrayBuffer) {
+    messageData = new TextDecoder('utf-8').decode(messageData);
+  }
         try {
           const data = JSON.parse(event.data);
           console.log("RAW data from server:", data);
