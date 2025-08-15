@@ -50,41 +50,49 @@
       statusDiv.textContent = message;
     }
 
-    async function startRecording() {
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
-      } catch (error) {
-        console.error("Error accessing microphone:", error);
-        logStatus("❌ Error accessing microphone");
-        throw error;
-      }
+async function startRecording() {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    
+    // בדיקת sampleRate בפועל
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const source = audioCtx.createMediaStreamSource(stream);
+    logStatus(`🎛 Detected sample rate: ${audioCtx.sampleRate} Hz`);
+    console.log(`🎛 Detected sample rate: ${audioCtx.sampleRate} Hz`);
+    
+    mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+  } catch (error) {
+    console.error("Error accessing microphone:", error);
+    logStatus("❌ Error accessing microphone");
+    throw error;
+  }
 
-      setupWebSocket();
+  setupWebSocket();
 
-      mediaRecorder.onstart = () => {
-        logStatus("🎙️ Microphone opened");
-        document.body.classList.add("recording");
-      };
+  mediaRecorder.onstart = () => {
+    logStatus("🎙️ Microphone opened");
+    document.body.classList.add("recording");
+  };
 
-      mediaRecorder.onstop = () => {
-        logStatus("🛑 Microphone closed");
-        document.body.classList.remove("recording");
-      };
+  mediaRecorder.onstop = () => {
+    logStatus("🛑 Microphone closed");
+    document.body.classList.remove("recording");
+  };
 
-      mediaRecorder.addEventListener("dataavailable", (e) => {
-        if (e.data.size > 0 && ws && ws.readyState === WebSocket.OPEN) {
-          e.data.arrayBuffer().then(buffer => {
-            ws.send(buffer);
-          });
-        }
+  mediaRecorder.addEventListener("dataavailable", (e) => {
+    if (e.data.size > 0 && ws && ws.readyState === WebSocket.OPEN) {
+      e.data.arrayBuffer().then(buffer => {
+        ws.send(buffer);
       });
-
-      mediaRecorder.start(250); // שליחה כל רבע שניה
-      logStatus("🎙️ Recording started (Opus, 48kHz)");
-      startBtn.disabled = true;
-      stopBtn.disabled = false;
     }
+  });
+
+  mediaRecorder.start(250);
+  logStatus("🎙️ Recording started (Opus, 48kHz)");
+  startBtn.disabled = true;
+  stopBtn.disabled = false;
+}
+
 
     function setupWebSocket() {
       if (ws) {
