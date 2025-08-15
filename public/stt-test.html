@@ -52,10 +52,9 @@
 
 async function startRecording() {
   try {
-    // 1️⃣ מבקשים גישה למיקרופון
     stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-    // 2️⃣ 🎛 בדיקה של sample rate וסוג קידוד
+    // בדיקת sample rate וסוג קידוד
     const audioContext = new AudioContext();
     const source = audioContext.createMediaStreamSource(stream);
     console.log(`🎛 Detected sample rate: ${audioContext.sampleRate} Hz`);
@@ -77,17 +76,12 @@ async function startRecording() {
       }
     }
 
-    // 3️⃣ כאן אתה ממשיך עם יצירת ה-MediaRecorder
     mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
-
   } catch (error) {
     console.error("Error accessing microphone:", error);
     logStatus("❌ Error accessing microphone");
     throw error;
   }
-
-}
-
 
   setupWebSocket();
 
