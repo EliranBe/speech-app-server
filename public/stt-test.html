@@ -137,7 +137,7 @@ async function startRecording() {
     messageData = new TextDecoder('utf-8').decode(messageData);
   }
         try {
-          const data = JSON.parse(event.data);
+          const data = JSON.parse(messageData);
           console.log("RAW data from server:", data);
           const transcript = data.channel?.alternatives?.[0]?.transcript || '';
           const isFinal = data.is_final || false;
