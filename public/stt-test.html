@@ -139,8 +139,8 @@ async function startRecording() {
         try {
           const data = JSON.parse(messageData);
           console.log("RAW data from server:", data);
-          const transcript = data.channel?.alternatives?.[0]?.transcript || '';
-          const isFinal = data.is_final || false;
+          const transcript = data.channel?.alternatives?.[0]?.text || '';
+          const isFinal = data.is_final || data.speech_final || false;
           if (transcript) {
             console.log("📝 Transcription:", transcript);
             transcriptDiv.textContent += transcript + (isFinal ? " ✔️\n" : " …\n");
