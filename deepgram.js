@@ -7,6 +7,7 @@ if (!deepgramApiKey) {
 }
 
 const deepgramClient = createClient(deepgramApiKey);
+
 let keepAlive;
 
 function startWebSocketServer(server) {
@@ -15,17 +16,16 @@ function startWebSocketServer(server) {
   wss.on('connection', (ws) => {
     console.log("🔗 Client connected to WebSocket");
 
-    let lastChunkTime = null;
-    let readyToSendAudio = false;
     let deepgram;
+    let readyToSendAudio = false;
+    let pendingChunks = [];
+    let lastChunkTime = null;
 
     function createDeepgramConnection() {
       if (deepgram) {
         deepgram.finish();
         deepgram.removeAllListeners();
       }
-
-      readyToSendAudio = false;
 
       deepgram = deepgramClient.listen.live({
         model: 'nova-3',
@@ -37,13 +37,31 @@ function startWebSocketServer(server) {
         vad_events: true
       });
 
+      readyToSendAudio = false;
+
+      if (keepAlive) clearInterval(keepAlive);
+      keepAlive = setInterval(() => {
+        if (deepgram.getReadyState && deepgram.getReadyState() === WebSocket.OPEN) {
+          console.log("deepgram: keepalive");
+          deepgram.keepAlive();
+        }
+      }, 10 * 1000);
+
       deepgram.addListener(LiveTranscriptionEvents.Open, () => {
         console.log("🔗 deepgram: connected");
         readyToSendAudio = true;
+
+        // שלח את כל ה-chunks שהצטברו
+        while (pendingChunks.length > 0) {
+          const chunk = pendingChunks.shift();
+          lastChunkTime = Date.now();
+          deepgram.send(chunk);
+        }
       });
 
       deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
         const latency = lastChunkTime ? (Date.now() - lastChunkTime) : null;
+
         console.log("✅ WebSocket received transcript from deepgram", latency ? `Latency: ${latency} ms` : '');
         console.log("✅ WebSocket sent transcript to client");
         ws.send(JSON.stringify(data));
@@ -62,7 +80,9 @@ function startWebSocketServer(server) {
 
       deepgram.addListener(LiveTranscriptionEvents.Metadata, (data) => {
         const detectedLang = data?.detected_language || "unknown";
-        console.log(`deepgram: metadata received – Detected language: ${detectedLang}`);
+        const tier = data?.tier || "unknown";
+        const models = data?.models || "-";
+        console.log(`deepgram: metadata received – Detected language: ${detectedLang}, Tier: ${tier}, Models: ${models}`);
         ws.send(JSON.stringify({ metadata: data }));
       });
 
@@ -70,6 +90,12 @@ function startWebSocketServer(server) {
         console.log("deepgram: disconnected");
         clearInterval(keepAlive);
         readyToSendAudio = false;
+
+        // ניסיון חיבור מחדש אחרי שנייה
+        setTimeout(() => {
+          console.log("🔄 Reconnecting to Deepgram...");
+          createDeepgramConnection();
+        }, 1000);
       });
 
       deepgram.addListener(LiveTranscriptionEvents.Error, (error) => {
@@ -81,24 +107,17 @@ function startWebSocketServer(server) {
         console.log("⚠️ deepgram: warning received");
         console.warn(warning);
       });
-
-      if (keepAlive) clearInterval(keepAlive);
-      keepAlive = setInterval(() => {
-        if (deepgram.getReadyState && deepgram.getReadyState() === WebSocket.OPEN) {
-          console.log("deepgram: keepalive");
-          deepgram.keepAlive();
-        }
-      }, 10000);
     }
 
-    // יצירת חיבור ראשוני
+    // יצירת חיבור ל-Deepgram בתחילה
     createDeepgramConnection();
 
     ws.on('message', (message) => {
       console.log('Received audio chunk, size:', message.length);
 
       if (!readyToSendAudio) {
-        console.log("⚠️ Not ready to send audio yet, skipping chunk");
+        console.log("⚠️ Not ready to send audio yet, queuing chunk");
+        pendingChunks.push(message);
         return;
       }
 
@@ -106,22 +125,23 @@ function startWebSocketServer(server) {
         lastChunkTime = Date.now();
         deepgram.send(message);
       } else if (deepgram.getReadyState && deepgram.getReadyState() >= 2) {
-        console.log("⚠️ deepgram connection closing/closed, reconnecting...");
+        console.log("⚠️ deepgram connection closing/closed, queuing chunk and reconnecting...");
+        pendingChunks.push(message);
         createDeepgramConnection();
       } else {
-        console.log("⚠️ deepgram connection not open, can't send data");
+        console.log("⚠️ deepgram connection not open, queuing chunk");
+        pendingChunks.push(message);
       }
     });
 
     ws.on('close', () => {
       console.log("❌ Client disconnected from WebSocket");
       clearInterval(keepAlive);
+      deepgram?.finish();
+      deepgram?.removeAllListeners();
+      deepgram = null;
+      pendingChunks = [];
       readyToSendAudio = false;
-      if (deepgram) {
-        deepgram.finish();
-        deepgram.removeAllListeners();
-        deepgram = null;
-      }
     });
   });
 }
