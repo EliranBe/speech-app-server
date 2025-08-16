@@ -16,6 +16,8 @@ function startWebSocketServer(server) {
   wss.on('connection', (ws) => {
     console.log("🔗 Client connected to WebSocket");
 
+      let readyToSendAudio = false; // 🔹 לאפשר שליחת אודיו רק לאחר Open
+
     let deepgram = deepgramClient.listen.live({
       model: 'nova-3',
       smart_format: true,
@@ -36,6 +38,7 @@ function startWebSocketServer(server) {
 
     deepgram.addListener(LiveTranscriptionEvents.Open, () => {
       console.log("🔗 deepgram: connected");
+          readyToSendAudio = true; // 🔹 אפשר לשלוח אודיו עכשיו
     });
 
 deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
@@ -89,11 +92,21 @@ let lastChunkTime = null;
 
 ws.on('message', (message) => {
   console.log('Received audio chunk, size:', message.length);
+  
+    // 🔹 בדיקה האם החיבור ל-Deepgram מוכן
+  if (!readyToSendAudio) {
+    console.log("⚠️ Not ready to send audio yet, skipping chunk");
+    return; // דילוג על השליחה עד שהחיבור מוכן
+  }
 
+    // 🔹 שליחה אם ה-WebSocket ל-Deepgram פתוח
    if (deepgram.getReadyState && deepgram.getReadyState() === WebSocket.OPEN) {
     lastChunkTime = Date.now(); // שמירת הזמן שבו שלחנו
     deepgram.send(message);
-  } else if (deepgram.getReadyState && deepgram.getReadyState() >= 2) {
+   }
+     
+            // 🔹 אם ה-WebSocket נסגר או מתנתק, נסה reconnect
+   else if (deepgram.getReadyState && deepgram.getReadyState() >= 2) {
     console.log("⚠️ deepgram connection closing/closed, reconnecting...");
     deepgram.finish();
     deepgram.removeAllListeners();
@@ -106,7 +119,10 @@ ws.on('message', (message) => {
       endpointing: 100,
       vad_events: true
     });
-  } else {
+  } 
+     
+     // 🔹 אם פשוט לא פתוח עדיין
+   else {
     console.log("⚠️ deepgram connection not open, can't send data");
   }
  });
