@@ -34,7 +34,9 @@ function startWebSocketServer(server) {
         punctuate: true,
         interim_results: true,
         endpointing: 100,
-        vad_events: true
+        vad_events: true,  
+        encoding: 'linear16',
+        sample_rate: 16000
       });
 
       readyToSendAudio = false;
