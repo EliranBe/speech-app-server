@@ -35,9 +35,8 @@ function startWebSocketServer(server) {
         interim_results: true,
         endpointing: 100,
         vad_events: true,  
-        encoding: codec,
-        sample_rate: 48000,
-        channels=1
+        encoding: 'linear16',
+        sample_rate: 16000
       });
 
       readyToSendAudio = false;
