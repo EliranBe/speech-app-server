@@ -16,8 +16,6 @@ function startWebSocketServer(server) {
   wss.on('connection', (ws) => {
     console.log("🔗 Client connected to WebSocket");
 
-      let readyToSendAudio = false; // 🔹 לאפשר שליחת אודיו רק לאחר Open
-
     let deepgram = deepgramClient.listen.live({
       model: 'nova-3',
       smart_format: true,
@@ -25,7 +23,9 @@ function startWebSocketServer(server) {
       punctuate: true,
       interim_results: true,
       endpointing: 100,
-      vad_events: true  
+      vad_events: true,  
+      encoding: 'linear16',
+      sample_rate: 16000  
     });
 
     if (keepAlive) clearInterval(keepAlive);
@@ -38,7 +38,6 @@ function startWebSocketServer(server) {
 
     deepgram.addListener(LiveTranscriptionEvents.Open, () => {
       console.log("🔗 deepgram: connected");
-          readyToSendAudio = true; // 🔹 אפשר לשלוח אודיו עכשיו
     });
 
 deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
@@ -93,19 +92,11 @@ let lastChunkTime = null;
 ws.on('message', (message) => {
   console.log('Received audio chunk, size:', message.length);
   
-    // 🔹 בדיקה האם החיבור ל-Deepgram מוכן
-  if (!readyToSendAudio) {
-    console.log("⚠️ Not ready to send audio yet, skipping chunk");
-    return; // דילוג על השליחה עד שהחיבור מוכן
-  }
-
     // 🔹 שליחה אם ה-WebSocket ל-Deepgram פתוח
    if (deepgram.getReadyState && deepgram.getReadyState() === WebSocket.OPEN) {
     lastChunkTime = Date.now(); // שמירת הזמן שבו שלחנו
     deepgram.send(message);
    }
-     
-            // 🔹 אם ה-WebSocket נסגר או מתנתק, נסה reconnect
    else if (deepgram.getReadyState && deepgram.getReadyState() >= 2) {
     console.log("⚠️ deepgram connection closing/closed, reconnecting...");
     deepgram.finish();
@@ -117,12 +108,12 @@ ws.on('message', (message) => {
       punctuate: true,
       interim_results: true,
       endpointing: 100,
-      vad_events: true
+      vad_events: true,  
+      encoding: 'linear16',
+      sample_rate: 16000
     });
   } 
-     
-     // 🔹 אם פשוט לא פתוח עדיין
-   else {
+       else {
     console.log("⚠️ deepgram connection not open, can't send data");
   }
  });
