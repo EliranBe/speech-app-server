@@ -23,9 +23,7 @@ function startWebSocketServer(server) {
       punctuate: true,
       interim_results: true,
       endpointing: 100,
-      vad_events: true,  
-      encoding: 'linear16',
-      sample_rate: 16000
+      vad_events: true  
     });
 
     if (keepAlive) clearInterval(keepAlive);
@@ -106,9 +104,7 @@ ws.on('message', (message) => {
       punctuate: true,
       interim_results: true,
       endpointing: 100,
-      vad_events: true,
-      encoding: 'linear16',
-      sample_rate: 16000
+      vad_events: true
     });
   } else {
     console.log("⚠️ deepgram connection not open, can't send data");
