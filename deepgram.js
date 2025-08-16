@@ -35,7 +35,6 @@ function startWebSocketServer(server) {
         interim_results: true,
         endpointing: 100,
         vad_events: true,  
-        encoding: 'opus',
         sample_rate: 48000
       });
 
