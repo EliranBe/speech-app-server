@@ -76,7 +76,7 @@ async function startRecording() {
       }
     }
 
-  const mediaRecorder = new MediaRecorder(stream, {
+  mediaRecorder = new MediaRecorder(stream, {
   mimeType: 'audio/webm'
 });
 
