@@ -35,8 +35,9 @@ function startWebSocketServer(server) {
         interim_results: true,
         endpointing: 100,
         vad_events: true, 
-        encoding: 'linear16',
-        sample_rate: 16000
+        encoding: 'opus',
+        sample_rate: 48000,
+        container: 'webm'
       });
 
       readyToSendAudio = false;
