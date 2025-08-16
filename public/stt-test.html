@@ -76,8 +76,12 @@ async function startRecording() {
       }
     }
 
-    mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
-  } catch (error) {
+  const mediaRecorder = new MediaRecorder(stream, {
+  mimeType: 'audio/webm;codecs=opus'
+});
+
+   } 
+  catch (error) {
     console.error("Error accessing microphone:", error);
     logStatus("❌ Error accessing microphone");
     throw error;
