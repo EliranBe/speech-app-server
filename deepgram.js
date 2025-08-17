@@ -36,8 +36,8 @@ function startWebSocketServer(server) {
         endpointing: 100,
         vad_events: true, 
         channels: 1,
-        encoding: 'opus',
-        sample_rate: 48000
+        encoding: 'linear16',
+        sample_rate: 16000
       });
 
       readyToSendAudio = false;
