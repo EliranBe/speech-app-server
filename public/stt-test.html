@@ -76,7 +76,7 @@ async function startRecording() {
       }
     }
 
-  const options = { mimeType: 'audio/webm; codecs=opus' }; // 💡 לוודא שזה מה שנשלח
+  const options = { mimeType: 'audio/ogg; codecs=opus' }; // 💡 לוודא שזה מה שנשלח
     
     if (!MediaRecorder.isTypeSupported(options.mimeType)) {
   console.warn("⚠️ mimeType not supported, falling back to default");
