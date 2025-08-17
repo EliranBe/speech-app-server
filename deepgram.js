@@ -30,7 +30,7 @@ function startWebSocketServer(server) {
       deepgram = deepgramClient.listen.live({
         model: 'nova-3',
         smart_format: true,
-        language: 'multi',
+        language: 'en-US',
         punctuate: true,
         interim_results: true,
         endpointing: 100,
