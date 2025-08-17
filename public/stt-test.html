@@ -81,7 +81,7 @@ const mimeType = MediaRecorder.isTypeSupported("audio/ogg;codecs=opus")
   ? "audio/ogg;codecs=opus"
   : "audio/webm;codecs=opus";
 
-const mediaRecorder = new MediaRecorder(stream, { mimeType });
+mediaRecorder = new MediaRecorder(stream, { mimeType });
 
    } 
   catch (error) {
