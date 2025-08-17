@@ -76,13 +76,10 @@ async function startRecording() {
       }
     }
 
-navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
   const options = { mimeType: 'audio/webm;codecs=opus' }; // 💡 לוודא שזה מה שנשלח
   mediaRecorder = new MediaRecorder(stream, options);
-
-mediaRecorder = new MediaRecorder(stream, { mimeType });
-
    } 
+                                                          
   catch (error) {
     console.error("Error accessing microphone:", error);
     logStatus("❌ Error accessing microphone");
