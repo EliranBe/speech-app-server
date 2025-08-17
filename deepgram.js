@@ -34,14 +34,16 @@ function startWebSocketServer(server) {
         punctuate: true,
         interim_results: true,
         endpointing: 100,
-        vad_events: true
+        vad_events: true, 
+        encoding: 'opus',
+        sample_rate: 48000
       });
 
       readyToSendAudio = false;
 
       if (keepAlive) clearInterval(keepAlive);
       keepAlive = setInterval(() => {
-        if (deepgram.getReadyState && deepgram.getReadyState() === WebSocket.OPEN) {
+        if (deepgram.getReadyState && deepgram.getReadyState() === 1) {
           console.log("deepgram: keepalive");
           deepgram.keepAlive();
         }
@@ -124,11 +126,13 @@ function startWebSocketServer(server) {
       if (deepgram.getReadyState && deepgram.getReadyState() === 1) {
         lastChunkTime = Date.now();
         deepgram.send(message);
-      } else if (deepgram.getReadyState && deepgram.getReadyState() >= 2) {
+      }
+      else if (deepgram.getReadyState && deepgram.getReadyState() >= 2) {
         console.log("⚠️ deepgram connection closing/closed, queuing chunk and reconnecting...");
         pendingChunks.push(message);
         createDeepgramConnection();
-      } else {
+      } 
+      else {
         console.log("⚠️ deepgram connection not open, queuing chunk");
         pendingChunks.push(message);
       }
