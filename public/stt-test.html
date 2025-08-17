@@ -76,9 +76,12 @@ async function startRecording() {
       }
     }
 
-  mediaRecorder = new MediaRecorder(stream, {
-  mimeType: 'audio/webm'
-});
+// נבדוק איזה פורמט נתמך – עדיפות ל־OGG/Opus
+const mimeType = MediaRecorder.isTypeSupported("audio/ogg;codecs=opus")
+  ? "audio/ogg;codecs=opus"
+  : "audio/webm;codecs=opus";
+
+const mediaRecorder = new MediaRecorder(stream, { mimeType });
 
    } 
   catch (error) {
