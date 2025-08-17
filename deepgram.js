@@ -34,9 +34,7 @@ function startWebSocketServer(server) {
         punctuate: true,
         interim_results: true,
         endpointing: 100,
-        vad_events: true, 
-        encoding: 'opus',
-        sample_rate: 48000
+        vad_events: true
       });
 
       readyToSendAudio = false;
@@ -123,7 +121,7 @@ function startWebSocketServer(server) {
         return;
       }
 
-      if (deepgram.getReadyState && deepgram.getReadyState() === WebSocket.OPEN) {
+      if (deepgram.getReadyState && deepgram.getReadyState() === 1) {
         lastChunkTime = Date.now();
         deepgram.send(message);
       } else if (deepgram.getReadyState && deepgram.getReadyState() >= 2) {
