@@ -153,7 +153,7 @@ async function startRecording() {
           console.log("ℹ️ Metadata:", data.metadata);
                   }
           
-          const transcript = data.channel?.alternatives?.[0]?.transcript || '';
+          const transcript = data.channel?.[0]?.alternatives?.[0]?.transcript || '';
           const isFinal = data.is_final || data.speech_final || false;
           if (transcript) {
             console.log("📝 Transcription:", transcript);
