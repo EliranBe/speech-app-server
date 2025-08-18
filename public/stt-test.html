@@ -76,7 +76,7 @@ async function startRecording() {
       }
     }
 
-  const options = { mimeType: 'audio/webm' }; // 💡 לוודא שזה מה שנשלח
+  const options = { mimeType: 'audio/webm; codecs=opus' }; // 💡 לוודא שזה מה שנשלח
     
     if (!MediaRecorder.isTypeSupported(options.mimeType)) {
   console.warn("⚠️ mimeType not supported, falling back to default");
@@ -136,34 +136,41 @@ async function startRecording() {
         }
       };
 
-      ws.onmessage = (event) => {
-        if (!event.data) return; // התעלמות מהודעות ריקות
-        
-          let messageData = event.data;
+  ws.onmessage = (event) => {
+  if (!event.data) return; // התעלמות מהודעות ריקות
+
+  let messageData = event.data;
 
   // אם המידע בינארי → להמיר אותו ל-string
   if (messageData instanceof ArrayBuffer) {
     messageData = new TextDecoder('utf-8').decode(messageData);
   }
-        try {
-          const data = JSON.parse(messageData);
-          console.log("RAW data from server:", data);
 
-          if (data.metadata) {
-          console.log("ℹ️ Metadata:", data.metadata);
-                  }
-          
-          const transcript = data.channel?.[0]?.alternatives?.[0]?.transcript || '';
-          const isFinal = data.is_final || data.speech_final || false;
-          if (transcript) {
-            console.log("📝 Transcription:", transcript);
-            transcriptDiv.textContent += transcript + (isFinal ? " ✔️\n" : " …\n");
-            transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
-          }
-        } catch (e) {
-          console.error("❌ Error parsing message:", e);
-        }
-      };
+  try {
+    const data = JSON.parse(messageData);
+    console.log("RAW data from server:", data);
+
+    // 🆕 שלב חדש: נטפל רק בהודעות מסוג Results
+    if (data.type === "Results") {
+      const transcript = data.channel?.alternatives?.[0]?.transcript || '';
+      const isFinal = data.is_final || data.speech_final || false;
+
+      if (transcript) {
+        console.log("📝 Transcription:", transcript);
+        transcriptDiv.textContent += transcript + (isFinal ? " ✔️\n" : " …\n");
+        transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
+      }
+    }
+
+    // ניהול metadata במקום אחר
+    if (data.metadata) {
+      console.log("ℹ️ Metadata:", data.metadata);
+    }
+
+  } catch (e) {
+    console.error("❌ Error parsing message:", e);
+  }
+};
 
       ws.onerror = (error) => {
         console.error("⚠️ WebSocket error:", error);
