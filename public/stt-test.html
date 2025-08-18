@@ -151,8 +151,7 @@ async function startRecording() {
 
           if (data.metadata) {
           console.log("ℹ️ Metadata:", data.metadata);
-          return;   // לא ממשיך לעיבוד של transcript
-        }
+                  }
           
           const transcript = data.channel?.alternatives?.[0]?.transcript || '';
           const isFinal = data.is_final || data.speech_final || false;
