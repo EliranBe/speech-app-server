@@ -85,6 +85,10 @@ async function startRecording() {
 
   mediaRecorder = new MediaRecorder(stream, options);
    } 
+
+    mediaRecorder.addEventListener("dataavailable", event => {
+  console.log("🎙️ raw audio blob:", event.data.type, event.data.size);
+});
                                                           
   catch (error) {
     console.error("Error accessing microphone:", error);
@@ -144,6 +148,7 @@ async function startRecording() {
   // אם המידע בינארי → להמיר אותו ל-string
   if (messageData instanceof ArrayBuffer) {
     messageData = new TextDecoder('utf-8').decode(messageData);
+    
   }
 
   try {
