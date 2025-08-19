@@ -5,10 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>STT Test - Opus 48kHz</title>
   <style>
-        body.recording { background-color: #fffae6; }
+    body.recording { background-color: #fffae6; }
     #transcript { white-space: pre-wrap; border: 1px solid #ccc; padding: 10px; height: 150px; overflow-y: auto; }
     #status { margin-top: 10px; font-weight: bold; color: #444; }
-    
   </style>
 </head>
 <body>
@@ -19,7 +18,6 @@
   <div id="transcript"></div>
   <div id="status"></div>
 
-  
 <script>
 let ws;
 let mediaRecorder;
@@ -49,7 +47,7 @@ async function startRecording() {
 
     mediaRecorder = new MediaRecorder(stream, options);
 
-    // 🔹 כל החלק של dataavailable כאן
+    // 🔹 event dataavailable
     mediaRecorder.addEventListener("dataavailable", event => {
       console.log("🎙️ Raw audio blob:", event.data.type, event.data.size);
       if (event.data.size > 0 && ws && ws.readyState === WebSocket.OPEN) {
@@ -59,6 +57,20 @@ async function startRecording() {
       }
     });
 
+    mediaRecorder.onstart = () => {
+      logStatus("🎙️ Microphone opened");
+      document.body.classList.add("recording");
+    };
+    mediaRecorder.onstop = () => {
+      logStatus("🛑 Microphone closed");
+      document.body.classList.remove("recording");
+    };
+
+    mediaRecorder.start(250); // שולח כל 250ms
+    logStatus("🎙️ Recording started (Opus, 48kHz)");
+    startBtn.disabled = true;
+    stopBtn.disabled = false;
+
   } catch (err) {
     console.error("❌ Error accessing microphone:", err);
     logStatus("❌ Error accessing microphone");
@@ -66,36 +78,27 @@ async function startRecording() {
   }
 
   setupWebSocket();
-
-    mediaRecorder.onstart = () => { logStatus("🎙️ Microphone opened"); document.body.classList.add("recording"); };
-  mediaRecorder.onstop = () => { logStatus("🛑 Microphone closed"); document.body.classList.remove("recording"); };
-
-
-  mediaRecorder.start(250); // שולח כל 250ms
-  logStatus("🎙️ Recording started (Opus, 48kHz)");
-  startBtn.disabled = true;
-  stopBtn.disabled = false;
 }
-  
+
 function setupWebSocket() {
   if (ws) { ws.close(); ws = null; }
-        setupWebSocket();
 
   ws = new WebSocket(`wss://${window.location.host}`);
   ws.binaryType = "arraybuffer";
 
-  ws.onopen = () => { logStatus("✅ WebSocket connection opened"); clearTimeout(reconnectTimeout); reconnectTimeout = null; };
+  ws.onopen = () => {
+    logStatus("✅ WebSocket connection opened");
+    if (reconnectTimeout) { clearTimeout(reconnectTimeout); reconnectTimeout = null; }
+  };
 
-    ws.onmessage = (event) => {
+  ws.onmessage = (event) => {
     if (!event.data) return;
 
     let messageData = event.data;
-      
     if (messageData instanceof ArrayBuffer) {
       messageData = new TextDecoder('utf-8').decode(messageData);
-      }
     }
-  
+
     try {
       const data = JSON.parse(messageData);
       console.log("RAW data from server:", data);
@@ -104,26 +107,37 @@ function setupWebSocket() {
       if (data.type === "Transcript" || data.type === "PartialTranscript" || data.type === "Results") {
         const transcript = data.channel?.alternatives?.[0]?.transcript || '';
         const isFinal = data.is_final || data.speech_final || false;
+
         if (transcript) {
           console.log(`📝 Transcription [${data.channel?.alternatives?.[0]?.language || 'unknown'}]:`, transcript);
           transcriptDiv.textContent += transcript + (isFinal ? " ✔️\n" : " …\n");
           transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
         }
-    }
+      }
 
-            // ℹ️ Metadata
+      // ℹ️ Metadata
       if (data.metadata) console.log("ℹ️ Metadata:", data.metadata);
-      
-   } catch (e) { console.error("❌ Error parsing message:", e); }
+
+    } catch (e) {
+      console.error("❌ Error parsing message:", e);
+    }
   };
 
- ws.onerror = (err) => { console.error("⚠️ WebSocket error:", err); logStatus("⚠️ WebSocket error");
+  ws.onerror = (err) => {
+    console.error("⚠️ WebSocket error:", err);
+    logStatus("⚠️ WebSocket error");
+  };
+
   ws.onclose = (event) => {
     logStatus(`🔌 WebSocket closed (code: ${event.code}, reason: ${event.reason || 'No reason'})`);
     if (mediaRecorder && mediaRecorder.state === "recording" && !reconnectTimeout) {
-      reconnectTimeout = setTimeout(() => { logStatus("🔄 Reconnecting WebSocket..."); setupWebSocket(); }, 1000);
+      reconnectTimeout = setTimeout(() => {
+        logStatus("🔄 Reconnecting WebSocket...");
+        setupWebSocket();
+      }, 1000);
     }
-};
+  };
+}
 
 function stopRecording() {
   if (reconnectTimeout) { clearTimeout(reconnectTimeout); reconnectTimeout = null; }
@@ -137,8 +151,7 @@ function stopRecording() {
 
 startBtn.onclick = () => { startRecording().catch(() => {}); };
 stopBtn.onclick = () => { stopRecording(); };
-
 </script>
-   
+
 </body>
 </html>
