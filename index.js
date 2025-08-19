@@ -12,7 +12,7 @@ const port = process.env.PORT || 3000;
 
 // בדיקה ש־API Key של Deepgram קיים
 if (!process.env.DEEPGRAM_API_KEY) {
-  throw new Error("Missing DEEPGRAM_API_KEY in environment variables");
+  throw new Error("⚠️ Warning: Missing DEEPGRAM_API_KEY in environment variables");
 }
 if (!process.env.DEEPGRAM_PROJECT_ID) {
   console.warn("⚠️ Warning: Missing DEEPGRAM_PROJECT_ID – not critical but might be used later.");
