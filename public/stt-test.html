@@ -3,136 +3,158 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>STT Test - Opus 48kHz</title>
+  <title>STT Test - PCM 16-bit</title>
   <style>
-    body.recording { background-color: #fffae6; }
-    #transcript { white-space: pre-wrap; border: 1px solid #ccc; padding: 10px; height: 150px; overflow-y: auto; }
-    #status { margin-top: 10px; font-weight: bold; color: #444; }
+    body.recording {
+      background-color: #fffae6;
+    }
+    #transcript {
+      white-space: pre-wrap;
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-top: 20px;
+      height: 150px;
+      overflow-y: auto;
+    }
+    #status {
+      margin-top: 10px;
+      font-weight: bold;
+      color: #444;
+    }
+    button { margin-right: 10px; }
   </style>
 </head>
 <body>
-  <h1>🎤 STT Microphone Test (Opus 48kHz)</h1>
+  <h1>🎤 STT Microphone Test (PCM 16-bit)</h1>
   <button id="start">Start</button>
   <button id="stop" disabled>Stop</button>
+
   <div id="transcript"></div>
   <div id="status"></div>
 
-<script>
-let ws;
-let mediaRecorder;
-let stream;
-let reconnectTimeout = null;
+  <script>
+    let ws;
+    let stream;
+    let audioContext;
+    let processor;
+    let source;
+    let reconnectTimeout = null;
+    const transcriptDiv = document.getElementById('transcript');
+    const statusDiv = document.getElementById('status');
+    const startBtn = document.getElementById('start');
+    const stopBtn = document.getElementById('stop');
 
-const transcriptDiv = document.getElementById('transcript');
-const statusDiv = document.getElementById('status');
-const startBtn = document.getElementById('start');
-const stopBtn = document.getElementById('stop');
-
-function logStatus(msg) {
-  console.log(msg);
-  statusDiv.textContent = msg;
-}
-
-async function startRecording() {
-  try {
-    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-    const audioContext = new AudioContext();
-    const source = audioContext.createMediaStreamSource(stream);
-    console.log(`🎛 Sample rate: ${audioContext.sampleRate} Hz`);
-
-    const options = { mimeType: 'audio/webm; codecs=opus' };
-    if (!MediaRecorder.isTypeSupported(options.mimeType)) options.mimeType = "";
-
-    mediaRecorder = new MediaRecorder(stream, options);
-
-    // 🔹 כל החלק של dataavailable כאן
-    mediaRecorder.addEventListener("dataavailable", event => {
-      console.log("🎙️ Raw audio blob:", event.data.type, event.data.size);
-      if (event.data.size > 0 && ws && ws.readyState === WebSocket.OPEN) {
-        event.data.arrayBuffer().then(buffer => {
-          ws.send(buffer);
-        });
-      }
-    });
-
-  } catch (err) {
-    console.error("❌ Error accessing microphone:", err);
-    logStatus("❌ Error accessing microphone");
-    return;
-  }
-
-  setupWebSocket();
-
-  mediaRecorder.onstart = () => { logStatus("🎙️ Microphone opened"); document.body.classList.add("recording"); };
-  mediaRecorder.onstop = () => { logStatus("🛑 Microphone closed"); document.body.classList.remove("recording"); };
-
-  mediaRecorder.start(250); // שולח כל 250ms
-  logStatus("🎙️ Recording started (Opus, 48kHz)");
-  startBtn.disabled = true;
-  stopBtn.disabled = false;
-}
-
-function setupWebSocket() {
-  if (ws) { ws.close(); ws = null; }
-
-  ws = new WebSocket(`wss://${window.location.host}`);
-  ws.binaryType = "arraybuffer";
-
-  ws.onopen = () => { logStatus("✅ WebSocket connection opened"); clearTimeout(reconnectTimeout); reconnectTimeout = null; };
-
-  ws.onmessage = (event) => {
-    if (!event.data) return;
-
-    let messageData = event.data;
-
-    if (messageData instanceof ArrayBuffer) {
-      messageData = new TextDecoder('utf-8').decode(messageData);
+    function logStatus(msg) {
+      console.log(msg);
+      statusDiv.textContent = msg;
     }
 
-    try {
-      const data = JSON.parse(messageData);
-      console.log("RAW data from server:", data);
+    async function startRecording() {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioContext = new AudioContext({ sampleRate: 48000 });
+        source = audioContext.createMediaStreamSource(stream);
 
-      // 📝 טיפול בתמלול
-      if (data.type === "Transcript" || data.type === "PartialTranscript" || data.type === "Results") {
-        const transcript = data.channel?.alternatives?.[0]?.transcript || '';
-        const isFinal = data.is_final || data.speech_final || false;
-        if (transcript) {
-          console.log(`📝 Transcription [${data.channel?.alternatives?.[0]?.language || 'unknown'}]:`, transcript);
-          transcriptDiv.textContent += transcript + (isFinal ? " ✔️\n" : " …\n");
-          transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
+        processor = audioContext.createScriptProcessor(4096, 1, 1);
+        source.connect(processor);
+        processor.connect(audioContext.destination);
+
+        setupWebSocket();
+
+        processor.onaudioprocess = (e) => {
+          if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
+          const inputData = e.inputBuffer.getChannelData(0);
+          const pcmBuffer = convertFloat32ToInt16(inputData);
+          ws.send(pcmBuffer);
+        };
+
+        logStatus("🎙️ Recording started (PCM 16-bit)");
+        document.body.classList.add("recording");
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+
+      } catch (err) {
+        console.error("❌ Error accessing microphone:", err);
+        logStatus("❌ Error accessing microphone");
+      }
+    }
+
+    function stopRecording() {
+      if (reconnectTimeout) { clearTimeout(reconnectTimeout); reconnectTimeout = null; }
+      processor?.disconnect();
+      source?.disconnect();
+      stream?.getTracks().forEach(track => track.stop());
+      ws?.close();
+      document.body.classList.remove("recording");
+      logStatus("🛑 Recording stopped");
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+    }
+
+    function convertFloat32ToInt16(buffer) {
+      const l = buffer.length;
+      const result = new Int16Array(l);
+      for (let i = 0; i < l; i++) {
+        let s = Math.max(-1, Math.min(1, buffer[i]));
+        result[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+      }
+      return result.buffer;
+    }
+
+    function setupWebSocket() {
+      if (ws) { ws.close(); ws = null; }
+
+      ws = new WebSocket(`wss://${window.location.host}`);
+      ws.binaryType = "arraybuffer";
+
+      ws.onopen = () => {
+        logStatus("✅ WebSocket connection opened");
+        if (reconnectTimeout) { clearTimeout(reconnectTimeout); reconnectTimeout = null; }
+      };
+
+      ws.onmessage = (event) => {
+        if (!event.data) return;
+
+        let messageData = event.data;
+        if (messageData instanceof ArrayBuffer) {
+          messageData = new TextDecoder('utf-8').decode(messageData);
         }
-      }
 
-      // ℹ️ Metadata
-      if (data.metadata) console.log("ℹ️ Metadata:", data.metadata);
+        try {
+          const data = JSON.parse(messageData);
+          console.log("RAW data from server:", data);
 
-    } catch (e) { console.error("❌ Error parsing message:", e); }
-  };
+          if (data.type === "Transcript" || data.type === "PartialTranscript") {
+            const transcript = data.channel?.alternatives?.[0]?.transcript || '';
+            const isFinal = data.is_final || data.speech_final || false;
 
-  ws.onerror = (err) => { console.error("⚠️ WebSocket error:", err); logStatus("⚠️ WebSocket error"); };
-  ws.onclose = (event) => {
-    logStatus(`🔌 WebSocket closed (code: ${event.code}, reason: ${event.reason || 'No reason'})`);
-    if (mediaRecorder && mediaRecorder.state === "recording" && !reconnectTimeout) {
-      reconnectTimeout = setTimeout(() => { logStatus("🔄 Reconnecting WebSocket..."); setupWebSocket(); }, 1000);
+            if (transcript) {
+              console.log("📝 Transcription:", transcript);
+              transcriptDiv.textContent += transcript + (isFinal ? " ✔️\n" : " …\n");
+              transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
+            }
+          }
+
+          if (data.metadata) {
+            console.log("ℹ️ Metadata:", data.metadata);
+          }
+        } catch (e) {
+          console.error("❌ Error parsing message:", e);
+        }
+      };
+
+      ws.onerror = (err) => { console.error("⚠️ WebSocket error:", err); logStatus("⚠️ WebSocket error"); };
+      ws.onclose = (event) => {
+        logStatus(`🔌 WebSocket closed (code: ${event.code}, reason: ${event.reason || 'No reason'})`);
+        if (stream && stream.getAudioTracks().length > 0 && !reconnectTimeout) {
+          reconnectTimeout = setTimeout(() => { logStatus("🔄 Reconnecting WebSocket..."); setupWebSocket(); }, 1000);
+        }
+      };
     }
-  };
-}
 
-function stopRecording() {
-  if (reconnectTimeout) { clearTimeout(reconnectTimeout); reconnectTimeout = null; }
-  mediaRecorder?.stop();
-  stream?.getTracks().forEach(track => track.stop());
-  if (ws) { ws.close(); ws = null; }
-  logStatus("🛑 Recording stopped");
-  startBtn.disabled = false;
-  stopBtn.disabled = true;
-}
-
-startBtn.onclick = () => { startRecording().catch(() => {}); };
-stopBtn.onclick = () => { stopRecording(); };
-
-</script>
+    startBtn.onclick = () => startRecording();
+    stopBtn.onclick = () => stopRecording();
+  </script>
 </body>
 </html>
