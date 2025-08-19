@@ -69,16 +69,16 @@ function startWebSocketServer(server) {
         console.log("✅ WebSocket sent transcript to client");
         ws.send(JSON.stringify(data));
 
-        const channel = data.channel;
-        if (channel?.alternatives) {
-          channel.alternatives.forEach(alt => {
-            const transcript = alt.transcript || '';
-            const detectedLanguage = alt.language || 'unknown';
-            if (transcript) {
-              console.log(`📝 Transcription [${detectedLanguage}]:`, transcript);
-            }
-          });
-        }
+const alternatives = data.channel?.alternatives || data.alternatives;
+if (alternatives) {
+  alternatives.forEach(alt => {
+    const transcript = alt.transcript || '';
+    const detectedLanguage = alt.language || 'unknown';
+    if (transcript) {
+      console.log(`📝 Transcription [${detectedLanguage}]:`, transcript);
+    }
+  });
+}
       });
 
       deepgram.addListener(LiveTranscriptionEvents.Metadata, (data) => {
