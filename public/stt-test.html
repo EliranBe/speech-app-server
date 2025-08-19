@@ -124,7 +124,6 @@ function setupWebSocket() {
       reconnectTimeout = setTimeout(() => { logStatus("🔄 Reconnecting WebSocket..."); setupWebSocket(); }, 1000);
     }
 };
-}
 
 function stopRecording() {
   if (reconnectTimeout) { clearTimeout(reconnectTimeout); reconnectTimeout = null; }
