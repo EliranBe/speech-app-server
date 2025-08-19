@@ -93,10 +93,6 @@ function setupWebSocket() {
       
     if (messageData instanceof ArrayBuffer) {
       messageData = new TextDecoder('utf-8').decode(messageData);
-
-      } catch (err) {
-        console.error("❌ Error accessing microphone:", err);
-        logStatus("❌ Error accessing microphone");
       }
     }
   
