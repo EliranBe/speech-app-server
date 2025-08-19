@@ -117,7 +117,7 @@ function setupWebSocket() {
    } catch (e) { console.error("❌ Error parsing message:", e); }
   };
 
- ws.onerror = (err) => { console.error("⚠️ WebSocket error:", err); logStatus("⚠️ WebSocket error"); };
+ ws.onerror = (err) => { console.error("⚠️ WebSocket error:", err); logStatus("⚠️ WebSocket error");
   ws.onclose = (event) => {
     logStatus(`🔌 WebSocket closed (code: ${event.code}, reason: ${event.reason || 'No reason'})`);
     if (mediaRecorder && mediaRecorder.state === "recording" && !reconnectTimeout) {
