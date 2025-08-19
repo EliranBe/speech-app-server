@@ -185,7 +185,7 @@ async function startRecording() {
             reconnectTimeout = setTimeout(() => {
               logStatus("🔄 Reconnecting WebSocket...");
               setupWebSocket();
-            }, 2000); // מחכה 2 שניות ואז מנסה להתחבר מחדש
+            }, 1000); // מחכה 1 שניות ואז מנסה להתחבר מחדש
           }
         }
       };
