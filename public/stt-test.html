@@ -151,7 +151,7 @@ async function startRecording() {
     console.log("RAW data from server:", data);
 
     // 🆕 שלב חדש: נטפל רק בהודעות מסוג Results
-    if (data.type === "Results") {
+    if (data.type === "Transcript" || data.type === "PartialTranscript") {
       const transcript = data.channel?.alternatives?.[0]?.transcript || '';
       const isFinal = data.is_final || data.speech_final || false;
 
