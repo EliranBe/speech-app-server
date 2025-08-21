@@ -1,5 +1,7 @@
-const { WebSocketServer } = require('ws');
+const WebSocket = require('ws');
 const { createClient, LiveTranscriptionEvents } = require('@deepgram/sdk');
+
+const wss = new WebSocket.Server({ server });
 
 const deepgramApiKey = process.env.DEEPGRAM_API_KEY;
 if (!deepgramApiKey) {
@@ -7,27 +9,10 @@ if (!deepgramApiKey) {
 }
 
 const deepgramClient = createClient(deepgramApiKey);
-
 let keepAlive;
 
-function startWebSocketServer(server) {
-  const wss = new WebSocketServer({ server });
-
-  wss.on('connection', (ws) => {
-    console.log("🔗 Client connected to WebSocket");
-
-    let deepgram;
-    let readyToSendAudio = false;
-    let pendingChunks = [];
-    let lastChunkTime = null;
-
-    function createDeepgramConnection() {
-      if (deepgram) {
-        deepgram.finish();
-        deepgram.removeAllListeners();
-      }
-
-      deepgram = deepgramClient.listen.live({
+const setupDeepgram = (ws) => {
+  const deepgram = deepgramClient.listen.live({
         model: 'nova-3',
         smart_format: true,
         language: 'en-US',
@@ -38,9 +23,9 @@ function startWebSocketServer(server) {
         channels: 1,
         encoding: 'linear16',
         sample_rate: 16000
-      });
+  });
 
-      readyToSendAudio = false;
+    let lastChunkTime = null;
 
       if (keepAlive) clearInterval(keepAlive);
       keepAlive = setInterval(() => {
@@ -50,37 +35,32 @@ function startWebSocketServer(server) {
         }
       }, 10 * 1000);
 
-      deepgram.addListener(LiveTranscriptionEvents.Open, () => {
+      deepgram.addListener(LiveTranscriptionEvents.Open, async () => {
         console.log("🔗 deepgram: connected");
-        readyToSendAudio = true;
 
-        // שלח את כל ה-chunks שהצטברו
-        while (pendingChunks.length > 0) {
-          const chunk = pendingChunks.shift();
-          lastChunkTime = Date.now();
-          deepgram.send(chunk);
-        }
-      });
-
-      deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
+              deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
         console.log("📦 Full transcript event:", JSON.stringify(data, null, 2));
         const latency = lastChunkTime ? (Date.now() - lastChunkTime) : null;
-
         console.log("✅ WebSocket received transcript from deepgram", latency ? `Latency: ${latency} ms` : '');
         console.log("✅ WebSocket sent transcript to client");
         ws.send(JSON.stringify(data));
-
-const alternatives = data.channel?.alternatives || data.alternatives;
-if (alternatives) {
-  alternatives.forEach(alt => {
-    const transcript = alt.transcript || '';
-    const detectedLanguage = alt.language || 'unknown';
-    if (transcript) {
-      console.log(`📝 Transcription [${detectedLanguage}]:`, transcript);
-    }
-  });
-}
       });
+
+      deepgram.addListener(LiveTranscriptionEvents.Close, async () => {
+        console.log("deepgram: disconnected");
+        clearInterval(keepAlive);
+        deepgram.finish();
+      });
+
+      deepgram.addListener(LiveTranscriptionEvents.Error, async (error) => {
+        console.log("⚠️ deepgram: error received");
+        console.error(error);
+      });
+
+      deepgram.addListener(LiveTranscriptionEvents.Warning, async (warning) => {
+        console.log("⚠️ deepgram: warning received");
+        console.warn(warning);
+      });         
 
       deepgram.addListener(LiveTranscriptionEvents.Metadata, (data) => {
         const detectedLang = data?.detected_language || "unknown";
@@ -89,67 +69,49 @@ if (alternatives) {
         console.log(`deepgram: metadata received – Detected language: ${detectedLang}, Tier: ${tier}, Models: ${models}`);
         ws.send(JSON.stringify({ metadata: data }));
       });
+  });
 
-      deepgram.addListener(LiveTranscriptionEvents.Close, () => {
-        console.log("deepgram: disconnected");
-        clearInterval(keepAlive);
-        readyToSendAudio = false;
+  return deepgram;
+};
 
-        // ניסיון חיבור מחדש אחרי שנייה
-        setTimeout(() => {
-          console.log("🔄 Reconnecting to Deepgram...");
-          createDeepgramConnection();
-        }, 1000);
-      });
-
-      deepgram.addListener(LiveTranscriptionEvents.Error, (error) => {
-        console.log("⚠️ deepgram: error received");
-        console.error(error);
-      });
-
-      deepgram.addListener(LiveTranscriptionEvents.Warning, (warning) => {
-        console.log("⚠️ deepgram: warning received");
-        console.warn(warning);
-      });
-    }
-
-    // יצירת חיבור ל-Deepgram בתחילה
-    createDeepgramConnection();
+  wss.on('connection', (ws) => {
+    console.log("🔗 Client connected to WebSocket");
+     let deepgram = setupDeepgram(ws);
 
     ws.on('message', (message) => {
       console.log('Received audio chunk, size:', message.length);
 
-      if (!readyToSendAudio) {
-        console.log("⚠️ Not ready to send audio yet, queuing chunk");
-        pendingChunks.push(message);
-        return;
-      }
-
-      if (deepgram.getReadyState && deepgram.getReadyState() === 1) {
+      if (deepgram.getReadyState() === 1)  /* OPEN */ {  
         lastChunkTime = Date.now();
+        console.log("✅ WebSocket sent data to deepgram");
         deepgram.send(message);
       }
-      else if (deepgram.getReadyState && deepgram.getReadyState() >= 2) {
-        console.log("⚠️ deepgram connection closing/closed, queuing chunk and reconnecting...");
-        pendingChunks.push(message);
-        createDeepgramConnection();
+      else if (deepgram.getReadyState() >= 2) /* 2 = CLOSING, 3 = CLOSED */ {
+      console.log("⚠️ WebSocket couldn't be sent data to deepgram");
+      console.log("⚠️ WebSocket retrying connection to deepgram");
+      /* Attempt to reopen the Deepgram connection */
+      deepgram.finish();
+      deepgram.removeAllListeners();
+      deepgram = setupDeepgram(ws);
       } 
       else {
-        console.log("⚠️ deepgram connection not open, queuing chunk");
-        pendingChunks.push(message);
+      console.log("⚠️ WebSocket couldn't be sent data to deepgram");
       }
     });
 
     ws.on('close', () => {
       console.log("❌ Client disconnected from WebSocket");
-      clearInterval(keepAlive);
-      deepgram?.finish();
-      deepgram?.removeAllListeners();
+      deepgram.finish();
+      deepgram.removeAllListeners();
       deepgram = null;
-      pendingChunks = [];
-      readyToSendAudio = false;
     });
   });
-}
+    
+app.use(express.static("public/"));
+app.get("/", (req, res) => {
+  res.sendFile(__dirname + "/public/index.html");
+});
 
-module.exports = startWebSocketServer;
+server.listen(3000, () => {
+  console.log("Server is listening on port 3000");
+});
