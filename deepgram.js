@@ -1,7 +1,9 @@
 const WebSocket = require('ws');
 const { createClient, LiveTranscriptionEvents } = require('@deepgram/sdk');
 
-const wss = new WebSocket.Server({ server });
+module.exports = function startWebSocketServer(server) {
+  const wss = new WebSocket.Server({ server }); // עכשיו server מגיע מ-index.js
+};
 
 const deepgramApiKey = process.env.DEEPGRAM_API_KEY;
 if (!deepgramApiKey) {
@@ -20,9 +22,7 @@ const setupDeepgram = (ws) => {
         interim_results: true,
         endpointing: 100,
         vad_events: true, 
-        channels: 1,
-        encoding: 'linear16',
-        sample_rate: 16000
+        channels: 1
   });
 
     let lastChunkTime = null;
