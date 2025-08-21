@@ -64,7 +64,7 @@ app.get('/', (req, res) => {
 
 // חיבור WebSocket לשרת HTTP
 const startWebSocketServer = require('./deepgram');
-startWebSocketServer(server);
+startWebSocketServer(server, app);
 
 // הפעלת השרת
 server.listen(port, () => {
