@@ -31,9 +31,9 @@ module.exports = function startWebSocketServer(server, app) {
     keepAlive = setInterval(() => {
          console.log("deepgram: keepalive");
         deepgram.keepAlive();
-        },10 * 10000);
+        },10 * 1000);
 
-    deepgram.addListener(LiveTranscriptionEvents.Open, () => {
+    deepgram.addListener(LiveTranscriptionEvents.Open, async() => {
       console.log("🔗 deepgram: connected");
 
       deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
@@ -44,18 +44,18 @@ module.exports = function startWebSocketServer(server, app) {
         ws.send(JSON.stringify(data));
       });
 
-      deepgram.addListener(LiveTranscriptionEvents.Close, () => {
+      deepgram.addListener(LiveTranscriptionEvents.Close, async() => {
         console.log("deepgram: disconnected");
         clearInterval(keepAlive);
         deepgram.finish();
       });
 
-      deepgram.addListener(LiveTranscriptionEvents.Error, (error) => {
+      deepgram.addListener(LiveTranscriptionEvents.Error, async(error) => {
         console.log("⚠️ deepgram: error received");
         console.error(error);
       });
 
-      deepgram.addListener(LiveTranscriptionEvents.Warning, (warning) => {
+      deepgram.addListener(LiveTranscriptionEvents.Warning, async(warning) => {
         console.log("⚠️ deepgram: warning received");
         console.warn(warning);
       });
