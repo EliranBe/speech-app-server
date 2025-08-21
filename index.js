@@ -1,9 +1,10 @@
 const express = require('express');
-const cors = require('cors');
-const app = express();
-require('dotenv').config();
-
 const http = require('http');
+const dotenv = require("dotenv");
+dotenv.config();
+const cors = require('cors');
+
+const app = express();
 const server = http.createServer(app); // נדרש בשביל WebSocket
 
 const { RtcTokenBuilder, RtcRole } = require('agora-access-token');
