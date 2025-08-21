@@ -21,6 +21,9 @@ if (!process.env.DEEPGRAM_PROJECT_ID) {
 
 app.use(cors());
 app.use(express.static('public')); // מאפשר גישה לקבצי HTML כמו stt-test.html
+  app.get("/", (req, res) => {
+    res.sendFile(__dirname + "/public/index.html");
+  });
 
 // החזרת APP_ID בצורה בטוחה
 app.get('/appId', (req, res) => {
