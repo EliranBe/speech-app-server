@@ -1,7 +1,7 @@
 const { WebSocketServer } = require('ws');
 const { createClient, LiveTranscriptionEvents } = require('@deepgram/sdk');
 
-const deepgramApiKey = process.env.DEEPGRAM_API_KEY;
+const deepgramApiKey = new ({ createClient, LiveTranscriptionEvents }(process.env.DEEPGRAM_API_KEY));
 if (!deepgramApiKey) {
   throw new Error("⚠️ Missing DEEPGRAM_API_KEY in environment variables");
 }
