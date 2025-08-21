@@ -50,6 +50,10 @@ async function openMicrophone(microphone, socket) {
     microphone.onstop = () => {
       console.log("🛑 Microphone closed");
       document.body.classList.remove("recording");
+        if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.close();
+        console.log("🔌 WebSocket closed");
+  }
     };
 
     microphone.ondataavailable = (event) => {
