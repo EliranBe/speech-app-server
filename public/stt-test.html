@@ -15,7 +15,7 @@
   <button id="start">Start</button>
   <button id="stop" disabled>Stop</button>
 
-  <div id="transcript"></div>
+  <div id="captions"></div>
   <div id="status"></div>
 
 <script>
@@ -37,7 +37,8 @@ async function getMicrophone() {
     console.error("⚠️ error accessing microphone:", error);
     throw error;
   }
-
+} 
+  
 async function openMicrophone(microphone, socket) {
   return new Promise((resolve) => {
     microphone.onstart = () => {
@@ -68,7 +69,7 @@ async function closeMicrophone(microphone) {
 }
 
 async function start(socket) {
-  const listenButton = document.querySelector("#record");
+  const listenButton = document.querySelector("#start");
   let microphone; 
     
   console.log("waiting to open microphone");
