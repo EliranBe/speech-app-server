@@ -72,19 +72,16 @@ async function closeMicrophone(microphone) {
   microphone.stop();
 }
 
-async function start() {
+  const socket = new WebSocket(`wss://${window.location.host}`);
+
+async function start(socket) {
   const listenButton = document.querySelector("#start");
   let microphone; 
-  let socket; 
-    
+     
   console.log("waiting to open microphone");
 
   listenButton.addEventListener("click", async () => {
-    socket = new WebSocket(`wss://${window.location.host}`);
-
-  socket.addEventListener("open", async () => {
-    console.log("✅ connected to server");
-        if (!microphone) {
+     if (!microphone) {
       try {
         microphone = await getMicrophone();
         await openMicrophone(microphone, socket);
@@ -95,7 +92,13 @@ async function start() {
       await closeMicrophone(microphone);
       microphone = undefined;
     }
-   });
+  });
+}
+
+  socket.addEventListener("open", async () => {
+    console.log("✅ connected to server");
+    await start(socket);
+  });
 
   socket.addEventListener("message", (event) => {
     if (event.data === "") {
@@ -118,8 +121,7 @@ async function start() {
   socket.addEventListener("close", () => {
     console.log("❌ disconnected from server");
   });
-});
-}
+
  
 </script>
 
