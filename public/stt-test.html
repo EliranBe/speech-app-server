@@ -113,10 +113,9 @@ async function start(socket) {
       return;
     }
   
-    if (data && data.channel && data.channel.alternatives[0].transcript !== "" && data.channel.is_final) {
-        const newText = data.channel.alternatives[0].transcript;
+    if (data && data.channel && data.channel.alternatives[0].transcript !== "") {
         const span = document.createElement('div');
-        span.textContent = newText;
+        span.textContent = data.channel.alternatives[0].transcript;
         captions.appendChild(span);
     }
   });
