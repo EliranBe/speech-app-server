@@ -25,8 +25,7 @@ module.exports = function startWebSocketServer(server, app) {
       paragraphs: true,
       interim_results: false,
       endpointing: 100,
-      vad_events: true,
-      multichannel: true
+      vad_events: true
     });
 
     let lastChunkTime = null;
