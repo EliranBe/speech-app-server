@@ -24,7 +24,7 @@ module.exports = function startWebSocketServer(server, app) {
       diarize: true,
       numerals: true,
       paragraphs: true,
-      interim_results: true,
+      interim_results: false,
       endpointing: 100,
       vad_events: true,
       channels: 1
