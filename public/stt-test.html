@@ -13,7 +13,6 @@
 <body>
   <h1>🎤 STT Microphone Test (Opus 48kHz)</h1>
   <button id="start">Start</button>
-  <button id="stop" disabled>Stop</button>
 
   <div id="captions"></div>
   <div id="status"></div>
@@ -27,7 +26,59 @@ let reconnectTimeout = null;
 const captions = window.document.getElementById('captions');
 const statusDiv = window.document.getElementById('status');
 const startBtn = window.document.getElementById('start');
-const stopBtn = window.document.getElementById('stop');
+
+  let microphone;
+let socket;
+let isRunning = false; // מצב האם פועל או לא
+
+startBtn.addEventListener("click", async () => {
+  if (!isRunning) {
+    // ▶️ התחלה
+    socket = new WebSocket(`wss://${window.location.host}`);
+
+    socket.addEventListener("open", async () => {
+      console.log("✅ connected to server");
+      try {
+        microphone = await getMicrophone();
+        await openMicrophone(microphone, socket);
+        startBtn.textContent = "STOP"; // שינוי טקסט בכפתור
+        isRunning = true;
+      } catch (error) {
+        console.error("⚠️ error opening microphone:", error);
+      }
+    });
+
+    socket.addEventListener("message", (event) => {
+      if (event.data === "") return;
+      let data;
+      try {
+        data = JSON.parse(event.data);
+      } catch (e) {
+        console.error("⚠️ Failed to parse JSON:", e);
+        return;
+      }
+      if (data && data.channel && data.channel.alternatives[0].transcript !== "") {
+        const span = document.createElement('div');
+        span.textContent = data.channel.alternatives[0].transcript;
+        captions.appendChild(span);
+      }
+    });
+
+    socket.addEventListener("close", () => {
+      console.log("❌ disconnected from server");
+    });
+
+  } else {
+    // ⏹️ עצירה
+    await closeMicrophone(microphone);
+    microphone = undefined;
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.close();
+    }
+    startBtn.textContent = "START"; // שינוי טקסט בכפתור
+    isRunning = false;
+  }
+});
 
 async function getMicrophone() {
   try {
@@ -72,59 +123,6 @@ async function closeMicrophone(microphone) {
   microphone.stop();
 }
 
-  const socket = new WebSocket(`wss://${window.location.host}`);
-
-async function start(socket) {
-  const listenButton = document.querySelector("#start");
-  let microphone; 
-     
-  console.log("waiting to open microphone");
-
-  listenButton.addEventListener("click", async () => {
-     if (!microphone) {
-      try {
-        microphone = await getMicrophone();
-        await openMicrophone(microphone, socket);
-      } catch (error) {
-        console.error("⚠️ error opening microphone:", error);
-      }
-    } else {
-      await closeMicrophone(microphone);
-      microphone = undefined;
-    }
-  });
-}
-
-  socket.addEventListener("open", async () => {
-    console.log("✅ connected to server");
-    await start(socket);
-  });
-
-  socket.addEventListener("message", (event) => {
-    if (event.data === "") {
-      return;
-    }
-    
-    let data;
-    try {
-      data = JSON.parse(event.data);
-    } catch (e) {
-      console.error("⚠️ Failed to parse JSON:", e);
-      return;
-    }
-  
-    if (data && data.channel && data.channel.alternatives[0].transcript !== "") {
-        const span = document.createElement('div');
-        span.textContent = data.channel.alternatives[0].transcript;
-        captions.appendChild(span);
-    }
-  });
-
-  socket.addEventListener("close", () => {
-    console.log("❌ disconnected from server");
-  });
-
- 
 </script>
 
 </body>
