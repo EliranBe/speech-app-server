@@ -11,7 +11,6 @@ module.exports = function startWebSocketServer(server, app) {
   }
 
   const deepgramClient = createClient(deepgramApiKey);
-  let keepAlive;
 
   const setupDeepgram = (ws) => {
     const deepgram = deepgramClient.listen.live({
@@ -32,11 +31,10 @@ module.exports = function startWebSocketServer(server, app) {
 
     let lastChunkTime = null;
 
-    if (keepAlive) clearInterval(keepAlive);
-    keepAlive = setInterval(() => {
-         console.log("deepgram: keepalive");
-        deepgram.keepAlive();
-        },10 * 1000);
+    let keepAlive = setInterval(() => {
+    console.log("deepgram: keepalive");
+    deepgram.keepAlive();
+  }, 10 * 1000);
 
     deepgram.addListener(LiveTranscriptionEvents.Open, async() => {
       console.log("🔗 deepgram: connected");
@@ -74,12 +72,12 @@ module.exports = function startWebSocketServer(server, app) {
       });
     });
 
-    return deepgram;
+    return { deepgram, keepAlive };
   };
 
   wss.on('connection', (ws) => {
     console.log("🔗 Client connected to WebSocket");
-    let deepgram = setupDeepgram(ws);
+    let { deepgram, keepAlive } = setupDeepgram(ws);
     let lastChunkTime = null;
 
     ws.on('message', (message) => {
@@ -94,17 +92,25 @@ module.exports = function startWebSocketServer(server, app) {
         console.log("⚠️ WebSocket retrying connection to deepgram");
         deepgram.finish();
         deepgram.removeAllListeners();
-        deepgram = setupDeepgram(ws);
-      } else {
+  if (keepAlive) {
+    clearInterval(keepAlive);
+    keepAlive = null;
+  }
+  ({ deepgram, keepAlive } = setupDeepgram(ws)); // ✅ עדכון גם של keepAlive
+} else {
         console.log("⚠️ WebSocket couldn't be sent data to deepgram");
       }
     });
 
     ws.on('close', () => {
       console.log("❌ Client disconnected from WebSocket");
+    if (keepAlive) {
+    clearInterval(keepAlive);
+    keepAlive = null;
+  }
       deepgram.finish();
       deepgram.removeAllListeners();
       deepgram = null;
-    });
+         });
   });
 };
