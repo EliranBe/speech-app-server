@@ -188,6 +188,7 @@ localPlayer.appendChild(langTag);
   const langSelect = document.getElementById("native-language").value;
   nameTag.innerText = nameInput || "";
   langTag.innerText = langSelect || "";
+}
 
 document.getElementById("user-name").addEventListener("input", updateNameTag);
 document.getElementById("native-language").addEventListener("change", updateNameTag);
@@ -201,6 +202,7 @@ document.getElementById("native-language").addEventListener("change", updateName
 
       document.getElementById("status").innerText = "✅ מחובר";
       [microphoneTrack, cameraTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
+}
 
     cameraTrack.play("local-player");
       await client.publish([microphoneTrack, cameraTrack]);
