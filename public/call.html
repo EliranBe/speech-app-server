@@ -201,15 +201,8 @@ document.getElementById("native-language").addEventListener("change", updateName
         console.log("✅ Connected to Agora channel");
 
       document.getElementById("status").innerText = "✅ מחובר";
-      [microphoneTrack, cameraTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
 
           await startLocalTracks();
-}
-async function startLocalTracks() {
-    [microphoneTrack, cameraTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
-    cameraTrack.play("local-player");
-      await client.publish([microphoneTrack, cameraTrack]);
-}
     
               // 🧠 כאשר משתמש אחר מפרסם מדיה
       client.on("user-published", async (user, mediaType) => {
@@ -233,6 +226,11 @@ async function startLocalTracks() {
       });
     }
 
+async function startLocalTracks() {
+    [microphoneTrack, cameraTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
+    cameraTrack.play("local-player");
+      await client.publish([microphoneTrack, cameraTrack]);
+}
     document.getElementById("btn_mic").onclick = () => {
       micMuted = !micMuted;
       if (micMuted) {
