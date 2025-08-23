@@ -21,7 +21,7 @@
       color: #333;
       text-shadow: 0 1px 2px rgba(0,0,0,0.1);
     }
-
+    
     .video-container {
       display: flex;
       gap: 20px;
@@ -86,6 +86,27 @@
   <h1>🎥 Agora Secure Call</h1>
   <div id="status">מחכה להתחברות...</div>
 
+      <!-- זמני עד שילוב עם Base44 שדות למילוי שם משתמש ושפת אם -->
+    <!-- התחלה -->
+    
+    <div class="user-info">
+  <input type="text" id="user-name" placeholder="User Name (optional)" style="margin-bottom:10px;" />
+  <select id="native-language" style="margin-bottom:10px;">
+    <option value="">Native Language (optional)</option>
+    <option value="Dutch">Dutch</option>
+    <option value="English">English</option>
+    <option value="French">French</option>
+    <option value="German">German</option>
+    <option value="Hindi">Hindi</option>
+    <option value="Italian">Italian</option>
+    <option value="Japanese">Japanese</option>
+    <option value="Portuguese">Portuguese</option>
+    <option value="Russian">Russian</option>
+    <option value="Spanish">Spanish</option>
+  </select>
+</div>
+    <!-- סוף -->
+  
   <div class="video-container">
     <div id="local-player" class="video-box"></div>
     <div id="remote-player" class="video-box"></div>
@@ -133,6 +154,34 @@ window.onload = async () => {
       const captions = window.document.getElementById('captions');
       const btn_mic = window.document.getElementById('btn_mic');
 
+          //זמני עד שילוב עם Base44 שדות למילוי שם משתמש ושפת אם// 
+//התחלה//
+      
+const localPlayer = document.getElementById("local-player");
+let nameTag = document.createElement("div");
+nameTag.style.position = "absolute";
+nameTag.style.top = "5px";
+nameTag.style.left = "5px";
+nameTag.style.background = "rgba(0,0,0,0.5)";
+nameTag.style.color = "#fff";
+nameTag.style.padding = "2px 5px";
+nameTag.style.borderRadius = "5px";
+nameTag.style.fontSize = "14px";
+localPlayer.appendChild(nameTag);
+
+      function updateNameTag() {
+  const nameInput = document.getElementById("user-name").value.trim();
+  const langSelect = document.getElementById("native-language").value;
+  nameTag.innerText = (nameInput || langSelect) ? nameInput + (nameInput && langSelect ? " " : "") + langSelect : "";
+}
+
+document.getElementById("user-name").addEventListener("input", updateNameTag);
+document.getElementById("native-language").addEventListener("change", updateNameTag);
+
+    updateNameTag();  
+
+  //סוף//
+      
       await client.join(AGORA_APP_ID, CHANNEL_NAME, tokenData.rtcToken, null);
         console.log("✅ Connected to Agora channel");
 
