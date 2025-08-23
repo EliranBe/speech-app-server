@@ -94,7 +94,7 @@
   </div>
 
   <div class="controls">
-    <button id="btn-mic">🔇 Mute</button>
+    <button id="btn_mic">🔇 Mute</button>
     <button id="btn-cam">📷 Turn Off Camera</button>
     <button id="btn-leave">🚪 Leave</button>
   </div>
@@ -129,7 +129,7 @@
       const tokenRes = await fetch(`/rte-token?channelName=${CHANNEL_NAME}`);
       const tokenData = await tokenRes.json();
       const captions = window.document.getElementById('captions');
-      const startBtn = window.document.getElementById('btn-mic');
+      const btn_mic = window.document.getElementById('btn_mic');
 
       await client.join(AGORA_APP_ID, CHANNEL_NAME, tokenData.rtcToken, null);
 
@@ -162,14 +162,14 @@
       });
     }
 
-    document.getElementById("btn-mic").onclick = () => {
+    document.getElementById("btn_mic").onclick = () => {
       micMuted = !micMuted;
       if (micMuted) {
         microphoneTrack.setEnabled(false);
-        document.getElementById("btn-mic").innerText = "🎤 Unmute";
+        document.getElementById("btn_mic").innerText = "🎤 Unmute";
       } else {
         microphoneTrack.setEnabled(true);
-        document.getElementById("btn-mic").innerText = "🔇 Mute";
+        document.getElementById("btn_mic").innerText = "🔇 Mute";
       }
     };
 
@@ -195,7 +195,7 @@
 
     //שילוב עם Deppgram//
 
-startBtn.addEventListener("click", async () => {
+btn_mic.addEventListener("click", async () => {
   if (!isRunning) {
     // ▶️ התחלה
     socket = new WebSocket(`wss://${window.location.host}`);
