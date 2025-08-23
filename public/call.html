@@ -159,6 +159,7 @@ window.onload = async () => {
       
 const localPlayer = document.getElementById("local-player");
 let nameTag = document.createElement("div");
+let langTag = document.createElement("div");
 nameTag.style.position = "absolute";
 nameTag.style.top = "5px";
 nameTag.style.left = "5px";
@@ -167,12 +168,25 @@ nameTag.style.color = "#fff";
 nameTag.style.padding = "2px 5px";
 nameTag.style.borderRadius = "5px";
 nameTag.style.fontSize = "14px";
+
+// סגנון עבור שפת אם בצד ימין
+langTag.style.position = "absolute";
+langTag.style.top = "5px";
+langTag.style.right = "5px";
+langTag.style.background = "rgba(0,0,0,0.5)";
+langTag.style.color = "#fff";
+langTag.style.padding = "2px 5px";
+langTag.style.borderRadius = "5px";
+langTag.style.fontSize = "14px";
+
 localPlayer.appendChild(nameTag);
+localPlayer.appendChild(langTag);
 
       function updateNameTag() {
   const nameInput = document.getElementById("user-name").value.trim();
   const langSelect = document.getElementById("native-language").value;
-  nameTag.innerText = (nameInput || langSelect) ? nameInput + (nameInput && langSelect ? " " : "") + langSelect : "";
+  nameTag.innerText = nameInput || "";
+  langTag.innerText = langSelect || "";
 }
 
 document.getElementById("user-name").addEventListener("input", updateNameTag);
