@@ -202,11 +202,15 @@ document.getElementById("native-language").addEventListener("change", updateName
 
       document.getElementById("status").innerText = "✅ מחובר";
       [microphoneTrack, cameraTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
-}
 
+          await startLocalTracks();
+}
+async function startLocalTracks() {
+    [microphoneTrack, cameraTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
     cameraTrack.play("local-player");
       await client.publish([microphoneTrack, cameraTrack]);
-
+}
+    
               // 🧠 כאשר משתמש אחר מפרסם מדיה
       client.on("user-published", async (user, mediaType) => {
         await client.subscribe(user, mediaType);
