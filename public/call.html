@@ -109,7 +109,6 @@
   
   <div class="video-container">
     <div id="local-player" class="video-box"></div>
-    <div id="remote-player" class="video-box"></div>
     <div id="captions"></div>
   </div>
 
@@ -156,43 +155,70 @@ window.onload = async () => {
 
           //זמני עד שילוב עם Base44 שדות למילוי שם משתמש ושפת אם// 
 //התחלה//
-      
-const localPlayer = document.getElementById("local-player");
-let nameTag = document.createElement("div");
-let langTag = document.createElement("div");
-nameTag.style.position = "absolute";
-nameTag.style.top = "5px";
-nameTag.style.left = "5px";
-nameTag.style.background = "rgba(0,0,0,0.5)";
-nameTag.style.color = "#fff";
-nameTag.style.padding = "2px 5px";
-nameTag.style.borderRadius = "5px";
-nameTag.style.fontSize = "14px";
 
-// סגנון עבור שפת אם בצד ימין
-langTag.style.position = "absolute";
-langTag.style.top = "5px";
-langTag.style.right = "5px";
-langTag.style.background = "rgba(0,0,0,0.5)";
-langTag.style.color = "#fff";
-langTag.style.padding = "2px 5px";
-langTag.style.borderRadius = "5px";
-langTag.style.fontSize = "14px";
+      function createUserVideoBox(userId, isLocal = false) {
+  const container = document.createElement("div");
+  container.className = "video-box";
+  container.id = isLocal ? "local-player" : `remote-player-${userId}`;
+  container.style.position = "relative"; // חשוב ל־nameTag ו־langTag
 
-localPlayer.appendChild(nameTag);
-localPlayer.appendChild(langTag);
+          const nameTag = document.createElement("div");
+  nameTag.className = "name-tag";
+  nameTag.style.position = "absolute";
+  nameTag.style.top = "5px";
+  nameTag.style.left = "5px";
+  nameTag.style.background = "rgba(0,0,0,0.5)";
+  nameTag.style.color = "#fff";
+  nameTag.style.padding = "2px 5px";
+  nameTag.style.borderRadius = "5px";
+  nameTag.style.fontSize = "14px";
+  nameTag.innerText = ""; // יתעדכן בהמשך
 
-      function updateNameTag() {
-  const nameInput = document.getElementById("user-name").value.trim();
-  const langSelect = document.getElementById("native-language").value;
-  nameTag.innerText = nameInput || "";
-  langTag.innerText = langSelect || "";
+          const langTag = document.createElement("div");
+  langTag.className = "lang-tag";
+  langTag.style.position = "absolute";
+  langTag.style.top = "5px";
+  langTag.style.right = "5px";
+  langTag.style.background = "rgba(0,0,0,0.5)";
+  langTag.style.color = "#fff";
+  langTag.style.padding = "2px 5px";
+  langTag.style.borderRadius = "5px";
+  langTag.style.fontSize = "14px";
+  langTag.innerText = "";
+
+  container.appendChild(nameTag);
+  container.appendChild(langTag);
+  document.querySelector(".video-container").appendChild(container);
+
+  return { container, nameTag, langTag };
 }
 
-document.getElementById("user-name").addEventListener("input", updateNameTag);
-document.getElementById("native-language").addEventListener("change", updateNameTag);
+function updateTags(userId, name, lang) {
+    let container = document.getElementById(userId.startsWith("local") ? "local-player" : `remote-player-${userId}`);
+    if (!container) {
+        container = createUserVideoBox(userId); // יוצרים דינמית
+    }
+    const nameTag = container.querySelector(".name-tag");
+    const langTag = container.querySelector(".lang-tag");
 
-    updateNameTag();  
+    nameTag.innerText = name || "";
+    langTag.innerText = lang || "";
+}
+
+      const local = createUserVideoBox("local-player", true);
+updateTags("local-player", document.getElementById("user-name").value, document.getElementById("native-language").value);
+
+      client.on("user-published", async (user, mediaType) => {
+  await client.subscribe(user, mediaType);
+
+  const remote = createUserVideoBox(user.uid);
+
+  if (mediaType === "video") user.videoTrack.play(remote.container.id);
+  if (mediaType === "audio") user.audioTrack.play();
+
+  // כאן אפשר לשלוח או לקבל את השם והשפה של המשתמש האחר
+  updateTags(user.uid, user.userName || "Guest", user.userLang || "");
+});
 
   //סוף//
       
@@ -201,27 +227,48 @@ document.getElementById("native-language").addEventListener("change", updateName
 
       document.getElementById("status").innerText = "✅ מחובר";
 
+const dataChannel = client.createDataStream({
+    reliable: true,
+    ordered: true
+});
+
+dataChannel.on("stream-message", (evt) => {
+    const { uid, name, lang } = JSON.parse(evt.text);
+    updateTags(uid, name, lang);
+});
+
+// לשלוח את המידע שלך
+dataChannel.send(JSON.stringify({
+    uid: client.uid,
+    name: document.getElementById("user-name").value,
+    lang: document.getElementById("native-language").value
+}));
+
+      document.getElementById("user-name").addEventListener("input", () => {
+    dataChannel.send(JSON.stringify({
+        uid: client.uid,
+        name: document.getElementById("user-name").value,
+        lang: document.getElementById("native-language").value
+    }));
+});
+
+document.getElementById("native-language").addEventListener("change", () => {
+    dataChannel.send(JSON.stringify({
+        uid: client.uid,
+        name: document.getElementById("user-name").value,
+        lang: document.getElementById("native-language").value
+    }));
+});
+
       [microphoneTrack, cameraTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
 
       cameraTrack.play("local-player");
       await client.publish([microphoneTrack, cameraTrack]);
 
-      // 🧠 כאשר משתמש אחר מפרסם מדיה
-      client.on("user-published", async (user, mediaType) => {
-        await client.subscribe(user, mediaType);
-
-        if (mediaType === 'video') {
-          user.videoTrack.play("remote-player");
-        }
-        if (mediaType === 'audio') {
-          user.audioTrack.play();
-        }
-      });
-
       // 🧠 אם אנחנו מתחברים באיחור – נתחבר למדיה שכבר משודרת
       client.remoteUsers.forEach(async (user) => {
         await client.subscribe(user, "video");
-        user.videoTrack?.play("remote-player");
+        user.videoTrack?.play("remote-player-${user.uid}");
 
         await client.subscribe(user, "audio");
         user.audioTrack?.play();
