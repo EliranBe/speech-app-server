@@ -112,14 +112,17 @@
     let socket;
     let isRunning = false; // מצב האם פועל או לא
 
-    window.onload = () => {
-      fetch('/appId')
-        .then(res => res.json())
-        .then(data => {
-          AGORA_APP_ID = data.appId;
-          startCall();
-        });
-    };
+window.onload = async () => {
+  try {
+    const res = await fetch('/appId');
+    const data = await res.json();
+    AGORA_APP_ID = data.appId;
+
+    await startCall(); // עכשיו App ID כבר מוגדר
+  } catch (err) {
+    console.error("⚠️ Failed to fetch App ID:", err);
+  }
+};
 
     async function startCall() {
       client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
@@ -132,6 +135,7 @@
       const btn_mic = window.document.getElementById('btn_mic');
 
       await client.join(AGORA_APP_ID, CHANNEL_NAME, tokenData.rtcToken, null);
+        console.log("✅ Connected to Agora channel");
 
       document.getElementById("status").innerText = "✅ מחובר";
 
