@@ -233,7 +233,6 @@ async function startLocalTracks() {
       await client.publish([microphoneTrack, cameraTrack]);
 }
     document.getElementById("btn_mic").onclick = async () => {
-        if (!microphoneTrack) return; // אם עדיין אין track, אין מה לעשות
       micMuted = !micMuted;
       if (micMuted) {
         await microphoneTrack.setEnabled(false); // כיבוי מיקרופון
