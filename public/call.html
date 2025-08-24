@@ -232,16 +232,17 @@ async function startLocalTracks() {
     cameraTrack.play("local-player");
       await client.publish([microphoneTrack, cameraTrack]);
 }
-    document.getElementById("btn_mic").onclick = () => {
-      micMuted = !micMuted;
-      if (micMuted) {
-        microphoneTrack.setEnabled(false); // כיבוי מיקרופון
-        document.getElementById("btn_mic").innerText = "🎤 Unmute";
-      } else {
-      microphoneTrack.setEnabled(true);// הדלקת מיקרופון
-        document.getElementById("btn_mic").innerText = "🔇 Mute";
-      }
-    };
+    
+document.getElementById("btn_mic").onclick = async () => {
+  if (!isRunning) {
+    await startMicAndTranscription();
+    document.getElementById("btn_mic").innerText = "🎤 Mute";
+  } else {
+    await stopMicAndTranscription();
+    document.getElementById("btn_mic").innerText = "🔇 Unmute";
+  }
+};
+
 
     document.getElementById("btn-cam").onclick = () => {
       camMuted = !camMuted;
@@ -265,52 +266,56 @@ async function startLocalTracks() {
 
     //שילוב עם Deppgram//
 
-btn_mic.addEventListener("click", async () => {
-  if (!isRunning) {
-    // ▶️ התחלה
-    socket = new WebSocket(`wss://${window.location.host}`);
+async function startMicAndTranscription() {
+  socket = new WebSocket(`wss://${window.location.host}`);
 
-        socket.addEventListener("open", async () => {
-      console.log("✅ connected to server");
-      try {
-        microphoneTrack = await getMicrophone();
-        await openMicrophone(microphoneTrack, socket);
-        isRunning = true;
-      } catch (error) {
-        console.error("⚠️ error opening microphone:", error);
-      }
-    });
+  socket.addEventListener("open", async () => {
+    console.log("✅ connected to server");
+    try {
+      microphoneTrack = await getMicrophone();
 
-        socket.addEventListener("message", (event) => {
-      if (event.data === "") return;
-      let data;
-      try {
-        data = JSON.parse(event.data);
-      } catch (e) {
-        console.error("⚠️ Failed to parse JSON:", e);
-        return;
-      }
-      if (data && data.channel && data.channel.alternatives[0].transcript !== "") {
-        const span = document.createElement('div');
-        span.textContent = data.channel.alternatives[0].transcript;
-        captions.appendChild(span);
-      }
-    });
+      // 🎤 הפעלת Agora
+      await openMicrophone(microphoneTrack, socket);
 
-    socket.addEventListener("close", () => {
-      console.log("❌ disconnected from server");
-    });
-
-      } else {
-    // ⏹️ עצירה
-    await closeMicrophone(microphoneTrack);
-    microphoneTrack = undefined;
-    if (socket && socket.readyState === WebSocket.OPEN) {
-      socket.close();
+      isRunning = true;
+    } catch (error) {
+      console.error("⚠️ error opening microphone:", error);
     }
-    isRunning = false;
+  });
+
+  socket.addEventListener("message", (event) => {
+    if (event.data === "") return;
+    let data;
+    try {
+      data = JSON.parse(event.data);
+    } catch (e) {
+      console.error("⚠️ Failed to parse JSON:", e);
+      return;
+    }
+    if (data && data.channel && data.channel.alternatives[0].transcript !== "") {
+      const span = document.createElement("div");
+      span.textContent = data.channel.alternatives[0].transcript;
+      captions.appendChild(span);
+    }
+  });
+
+  socket.addEventListener("close", () => {
+    console.log("❌ disconnected from server");
+  });
+}
+
+async function stopMicAndTranscription() {
+  // 🎤 סגירת Agora
+  await closeMicrophone(microphoneTrack);
+  microphoneTrack = undefined;
+
+  // 📴 סגירת WebSocket
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    socket.close();
   }
-});
+
+  isRunning = false;
+}
 
   async function getMicrophone() {
   try {
