@@ -232,13 +232,14 @@ async function startLocalTracks() {
     cameraTrack.play("local-player");
       await client.publish([microphoneTrack, cameraTrack]);
 }
-    document.getElementById("btn_mic").onclick = () => {
+    document.getElementById("btn_mic").onclick = async () => {
+        if (!microphoneTrack) return; // אם עדיין אין track, אין מה לעשות
       micMuted = !micMuted;
       if (micMuted) {
-        microphoneTrack.setEnabled(false);
+        await microphoneTrack.setEnabled(false); // כיבוי מיקרופון
         document.getElementById("btn_mic").innerText = "🎤 Unmute";
       } else {
-        microphoneTrack.setEnabled(true);
+      await microphoneTrack.setEnabled(true);// הדלקת מיקרופון
         document.getElementById("btn_mic").innerText = "🔇 Mute";
       }
     };
