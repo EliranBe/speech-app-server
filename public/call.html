@@ -23,9 +23,12 @@
     }
     
     .video-container {
-      display: flex;
-      gap: 20px;
+      display: grid;
+      grid-gap: 20px;
       margin-top: 20px;
+      width: 100%;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      grid-auto-rows: minmax(200px, auto);
     }
 
     .video-box {
@@ -109,7 +112,6 @@
   
   <div class="video-container">
     <div id="local-player" class="video-box"></div>
-    <div id="remote-player" class="video-box"></div>
     <div id="captions"></div>
   </div>
 
@@ -147,6 +149,23 @@
 
     async function startCall() {
       client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+
+      // כשמשתתף מפרסם וידאו/אודיו
+client.on("user-published", async (user, mediaType) => {
+  await client.subscribe(user, mediaType);
+
+if (mediaType === "video") {
+  addParticipantVideo(user.uid, user.videoTrack);
+}
+  if (mediaType === "audio") {
+    user.audioTrack.play();
+  }
+});
+
+// כשמשתתף עוזב
+client.on("user-left", (user) => {
+  removeParticipantVideo(user.uid);
+});
     
       document.getElementById("status").innerText = "מתחבר לערוץ...";
 
@@ -204,27 +223,6 @@ document.getElementById("native-language").addEventListener("change", updateName
 
                 await startLocalTracks();
 
-              // 🧠 כאשר משתמש אחר מפרסם מדיה
-      client.on("user-published", async (user, mediaType) => {
-        await client.subscribe(user, mediaType);
-
-        if (mediaType === 'video') {
-          user.videoTrack.play("remote-player");
-        }
-
-          if (mediaType === 'audio') {
-          user.audioTrack.play();
-        }
-      });
-
-      // 🧠 אם אנחנו מתחברים באיחור – נתחבר למדיה שכבר משודרת
-      client.remoteUsers.forEach(async (user) => {
-        await client.subscribe(user, "video");
-        user.videoTrack?.play("remote-player");
-
-        await client.subscribe(user, "audio");
-        user.audioTrack?.play();
-      });
     }
 
 async function startLocalTracks() {
@@ -232,7 +230,29 @@ async function startLocalTracks() {
     cameraTrack.play("local-player");
       await client.publish([microphoneTrack, cameraTrack]);
 }
-    
+
+    function addParticipantVideo(userId, remoteTrack) {
+  const container = document.querySelector('.video-container');
+
+  // יצירת box חדש
+  const videoBox = document.createElement('div');
+  videoBox.className = 'video-box';
+  videoBox.id = `participant-${userId}`;
+
+  // הוספת ה־box ל־container
+  container.appendChild(videoBox);
+
+       // הפעלת הוידאו של Agora בתוך ה־div
+  remoteTrack.play(videoBox);
+}
+
+    function removeParticipantVideo(userId) {
+  const videoBox = document.getElementById(`participant-${userId}`);
+  if (videoBox) {
+    videoBox.remove();
+  }
+}
+
 document.getElementById("btn_mic").onclick = async () => {
   if (!isRunning) {
     await startMicAndTranscription();
@@ -242,7 +262,6 @@ document.getElementById("btn_mic").onclick = async () => {
     document.getElementById("btn_mic").innerText = "🔇 Unmute";
   }
 };
-
 
     document.getElementById("btn-cam").onclick = () => {
       camMuted = !camMuted;
@@ -261,7 +280,7 @@ document.getElementById("btn_mic").onclick = async () => {
       cameraTrack && cameraTrack.stop();
       document.getElementById("status").innerText = "👋 יצאת מהשיחה";
       document.getElementById("local-player").innerHTML = "";
-      document.getElementById("remote-player").innerHTML = "";
+      document.querySelectorAll("[id^='participant-']").forEach(el => el.remove());   // הסרת כל המשתתפים שנוספו ב־grid
     };
 
     //שילוב עם Deppgram//
