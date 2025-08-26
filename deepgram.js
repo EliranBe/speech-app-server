@@ -116,6 +116,10 @@ module.exports = function startWebSocketServer(server, app) {
       } else {
         console.log("🕒 No latency data collected for this session.");
       }
+        // שלח ACK ללקוח
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ event: "MIC_CLOSE_ACK" }));
+  }
       ws.latencies = [];
       ws.micOpenTime = null;
       return;
