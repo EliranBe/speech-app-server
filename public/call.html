@@ -47,21 +47,6 @@
       height: 100%;
       object-fit: cover;
     }
-
-    /* תווית שם + שפה */
-.participant-label {
-  position: absolute;
-  bottom: 5px;      /* למקם בתחתית */
-  left: 5px;        /* מקצה שמאל */
-  right: 5px;       /* מקצה ימין */
-  background: rgba(0,0,0,0.5); /* רקע חצי שקוף */
-  color: #fff;
-  padding: 5px 10px;
-  border-radius: 10px;
-  font-size: 14px;
-  text-align: center;
-  pointer-events: none; /* לא חוסם לחיצות על וידאו */
-}
     
     #captions {
   position: fixed;        /* מקבע את התיבה במסך */
@@ -110,7 +95,7 @@
     
     <div class="user-info">
   <input type="text" id="user-name" placeholder="User Name (optional)" style="margin-bottom:10px;" />
-  <select id="userLanguage" style="margin-bottom:10px;">
+  <select id="native-language" style="margin-bottom:10px;">
     <option value="">Native Language (optional)</option>
     <option value="Dutch">Dutch</option>
     <option value="English">English</option>
@@ -127,7 +112,7 @@
     <!-- סוף -->
   
   <div class="video-container">
-    <div id="participants"></div>
+    <div id="local-player" class="video-box"></div>
     <div id="captions"></div>
   </div>
 
@@ -149,8 +134,6 @@
     let stream;
     let socket;
     let isRunning = false; // מצב האם פועל או לא
-    let localUserName = "";
-    let localUserLanguage = "";
 
     window.onload = async () => {
 
@@ -172,48 +155,16 @@
 client.on("user-published", async (user, mediaType) => {
   await client.subscribe(user, mediaType);
 
-   // 🔹 קבלת שם ושפה של המשתמש
-  const attributes = await client.getUserAttributes(user.uid);
-  const userName = attributes.name || `User-${user.uid}`;
-  const userLanguage = attributes.language || "Unknown";
-
- if (mediaType === "video") {
-    const remoteVideoTrack = user.videoTrack;
-    addParticipantVideo(user.uid, remoteVideoTrack, userName, userLanguage);
-  }
-
+  if (mediaType === "video") {
+  addParticipantVideo(user.uid, user.videoTrack);
+}
+ 
   if (mediaType === "audio") {
-    const remoteAudioTrack = user.audioTrack;
-    remoteAudioTrack.play();
+  user.audioTrack.play();
   }
 });
 
-      // קבלת מידע מהשרת על המשתתפים
-socket.addEventListener("message", (event) => {
-    if (!event.data) return;
-
-    let msg;
-    try {
-        msg = JSON.parse(event.data);
-    } catch (e) {
-        console.error("⚠️ Failed to parse JSON:", e);
-        return;
-    }
-
-    if (msg.type === "user-info") {
-        // בדיקה אם המשתמש כבר קיים
-        let existingBox = document.getElementById(`participant-${msg.user.uid}`);
-        if (!existingBox) {
-            addParticipantVideo(msg.user.uid, null, msg.name, msg.language);
-        } else {
-            // אם כבר יש box, נעדכן את התווית
-            const label = existingBox.querySelector(".participant-label");
-            label.innerText = `${msg.name} • ${msg.language}`;
-        }
-    }
-});
-
-// כשמשתתף עוזב
+  // כשמשתתף עוזב
 client.on("user-left", (user) => {
   removeParticipantVideo(user.uid);
 });
@@ -224,35 +175,51 @@ client.on("user-left", (user) => {
       const tokenData = await tokenRes.json();
       const captions = window.document.getElementById('captions');
       const btn_mic = window.document.getElementById('btn_mic');
+
+                //זמני עד שילוב עם Base44 שדות למילוי שם משתמש ושפת אם// 
+//התחלה//
+     
+const localPlayer = document.getElementById("local-player");
+let nameTag = document.createElement("div");
+let langTag = document.createElement("div");
+nameTag.style.position = "absolute";
+nameTag.style.top = "5px";
+nameTag.style.left = "5px";
+nameTag.style.background = "rgba(0,0,0,0.5)";
+nameTag.style.color = "#fff";
+nameTag.style.padding = "2px 5px";
+nameTag.style.borderRadius = "5px";
+nameTag.style.fontSize = "14px";
+
+// סגנון עבור שפת אם בצד ימין
+langTag.style.position = "absolute";
+langTag.style.top = "5px";
+langTag.style.right = "5px";
+langTag.style.background = "rgba(0,0,0,0.5)";
+langTag.style.color = "#fff";
+langTag.style.padding = "2px 5px";
+langTag.style.borderRadius = "5px";
+langTag.style.fontSize = "14px";
+
+localPlayer.appendChild(nameTag);
+localPlayer.appendChild(langTag);
+
+      function updateNameTag() {
+  const nameInput = document.getElementById("user-name").value.trim();
+  const langSelect = document.getElementById("native-language").value;
+  nameTag.innerText = nameInput || "";
+  langTag.innerText = langSelect || "";
+}
+
+document.getElementById("user-name").addEventListener("input", updateNameTag);
+document.getElementById("native-language").addEventListener("change", updateNameTag);
+
+         updateNameTag();  
+      
+  //סוף//
       
       await client.join(AGORA_APP_ID, CHANNEL_NAME, tokenData.rtcToken, null);
         console.log("✅ Connected to Agora channel");
-
-      // אחרי ההצטרפות לערוץ – אחזור שם ושפה
-const userName = document.getElementById("user-name").value.trim() || `User-${client.uid}`;
-const userLanguage = document.getElementById("userLanguage").value || "Unknown";
-
-// שמירה באטריביוטים של Agora
-await client.setUserAttributes({
-  name: userName,
-  language: userLanguage
-});
-
-// שמירה גם מקומית
-localUserName = userName;
-localUserLanguage = userLanguage;
-
-// שליחת מידע לשרת דרך WebSocket
-socket = new WebSocket(`wss://${window.location.host}`);
-socket.addEventListener("open", () => {
-  socket.send(JSON.stringify({
-    type: "user-info",
-    userId: client.uid, 
-    name: localUserName,
-    language: localUserLanguage
-  }));
-    console.log("✅ connected to server"); 
-});
 
       document.getElementById("status").innerText = "✅ מחובר";
 
@@ -261,45 +228,25 @@ socket.addEventListener("open", () => {
 
 async function startLocalTracks() {
     [microphoneTrack, cameraTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
-        await client.publish([microphoneTrack, cameraTrack]);
-        addParticipantVideo(client.uid, cameraTrack, localUserName, localUserLanguage);
+     cameraTrack.play("local-player");
+      await client.publish([microphoneTrack, cameraTrack]);
 }
 
-    function addParticipantVideo(userid, remoteTrack, userName, userLanguage) {
+    function addParticipantVideo(userId, remoteTrack) {
   const container = document.querySelector('.video-container');
 
   // יצירת box חדש
   const videoBox = document.createElement('div');
   videoBox.className = 'video-box';
-  videoBox.id = `participant-${userid}`;
-
-        // אזור וידאו / placeholder
-  const videoArea = document.createElement('div');
-  videoArea.className = 'video-area';
-  videoArea.style.width = "100%";
-  videoArea.style.height = "100%";
-  videoArea.style.display = "flex";
-  videoArea.style.alignItems = "center";
-  videoArea.style.justifyContent = "center";
-  videoArea.style.fontSize = "50px"; // גודל placeholder
-
-        if (remoteTrack) {
-    remoteTrack.play(videoArea);
-  } else {
-    videoArea.innerHTML = `<div class="placeholder">📷</div>`;
-  }
-
-      // יצירת label עם שם + שפה
-  const label = document.createElement("div");
-  label.className = "participant-label";
-  label.innerText = `${userName} • ${userLanguage}`;
-   
-  // חיבור כל החלקים
-  videoBox.appendChild(videoArea);
-  videoBox.appendChild(label);
-  container.appendChild(videoBox);
+        videoBox.id = `participant-${userId}`;
+      
+  // הוספת ה־box ל־container
+   container.appendChild(videoBox);
 }
- 
+
+           // הפעלת הוידאו של Agora בתוך ה־div
+  remoteTrack.play(videoBox);
+    
     function removeParticipantVideo(userId) {
   const videoBox = document.getElementById(`participant-${userId}`);
   if (videoBox) {
@@ -333,15 +280,28 @@ document.getElementById("btn_mic").onclick = async () => {
       microphoneTrack && microphoneTrack.stop();
       cameraTrack && cameraTrack.stop();
       document.getElementById("status").innerText = "👋 יצאת מהשיחה";
+            document.getElementById("local-player").innerHTML = "";
       document.querySelectorAll("[id^='participant-']").forEach(el => el.remove());   // הסרת כל המשתתפים שנוספו ב־grid
     };
 
     //שילוב עם Deppgram//
 
 async function startMicAndTranscription() {
-microphoneTrack = await getMicrophone();
-await openMicrophone(microphoneTrack, socket);
-isRunning = true;
+  socket = new WebSocket(`wss://${window.location.host}`);
+
+  socket.addEventListener("open", async () => {
+    console.log("✅ connected to server");
+    try {
+      microphoneTrack = await getMicrophone();
+
+      // 🎤 הפעלת Agora
+      await openMicrophone(microphoneTrack, socket);
+
+      isRunning = true;
+    } catch (error) {
+      console.error("⚠️ error opening microphone:", error);
+    }
+  });
 
   socket.addEventListener("message", (event) => {
     if (event.data === "") return;
@@ -361,7 +321,6 @@ isRunning = true;
 
   socket.addEventListener("close", () => {
     console.log("❌ disconnected from server");
-    console.log("🔌 WebSocket closed");
   });
 }
 
@@ -369,6 +328,12 @@ async function stopMicAndTranscription() {
   // 🎤 סגירת Agora
   await closeMicrophone(microphoneTrack);
   microphoneTrack = undefined;
+  
+  // 📴 סגירת WebSocket
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    socket.close();
+  }
+
   isRunning = false;
 }
 
@@ -393,8 +358,11 @@ async function openMicrophone(microphoneTrack, socket) {
          microphoneTrack.onstop = () => {
       console.log("🛑 Microphone closed");
       document.body.classList.remove("recording");
-         console.log("🔌 WebSocket remains open");
-      };
+              if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.close();
+        console.log("🔌 WebSocket closed");
+  }
+    };
 
         microphoneTrack.ondataavailable = (event) => {
       console.log("🎙️ microphone data received");
