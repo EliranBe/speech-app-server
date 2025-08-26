@@ -38,10 +38,11 @@ module.exports = function startWebSocketServer(server, app) {
       console.log("🔗 deepgram: connected");
 
       deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
+         if (!data.is_final) return;
          const lastChunkTime = getLastChunkTime();
         const latency = lastChunkTime ? (Date.now() - lastChunkTime) : null;
        console.log(
-        `📦 Full transcript event${latency ? ` (Latency: ${latency} ms)` : ''}:`,
+        `📦 Full final transcript event${latency ? ` (Latency: ${latency} ms)` : ''}:`,
         JSON.stringify(data, null, 2)
       );
         console.log("✅ WebSocket received transcript from deepgram");
