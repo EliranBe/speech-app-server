@@ -133,9 +133,9 @@
     let stream;
     let socket;
     let isRunning = false; // מצב האם פועל או לא
-    let audioSendTime = 0;
-    let transcriptReceiveTime = 0;
-    let latency = 0;
+    let STTaudioSendTime = 0;
+    let STTtranscriptReceiveTime = 0;
+    let STTlatency = 0;
 
     window.onload = async () => {
 
@@ -320,9 +320,9 @@ async function startMicAndTranscription() {
 
         // חישוב Latency
   if (data.is_final) {  // רק כאשר התמלול סופי
-    transcriptReceiveTime = Date.now(); // זמן קבלת התמלול
-    latency = transcriptReceiveTime - audioSendTime; // חישוב ה-Latency
-    console.log(`Latency: ${latency} ms`);
+    STTtranscriptReceiveTime = Date.now(); // זמן קבלת התמלול
+    STTlatency = STTtranscriptReceiveTime - STTaudioSendTime; // חישוב ה-Latency
+    console.log(`STTLatency: ${STTlatency} ms`);
   }
     }
   });
@@ -375,7 +375,7 @@ async function openMicrophone(microphoneTrack, socket) {
         microphoneTrack.ondataavailable = (event) => {
       console.log("🎙️ microphone data received");
       if (event.data.size > 0 && socket.readyState === WebSocket.OPEN) {
-        audioSendTime = Date.now(); // זמן שליחת האודיו
+        STTaudioSendTime = Date.now(); // זמן שליחת האודיו
         socket.send(event.data);
       }
     };
