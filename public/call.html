@@ -280,8 +280,11 @@ document.getElementById("btn_mic").onclick = async () => {
       await client.leave();
       microphoneTrack && microphoneTrack.stop();
       cameraTrack && cameraTrack.stop();
+      if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.close();
+      }
       document.getElementById("status").innerText = "👋 יצאת מהשיחה";
-            document.getElementById("local-player").innerHTML = "";
+      document.getElementById("local-player").innerHTML = "";
       document.querySelectorAll("[id^='participant-']").forEach(el => el.remove());   // הסרת כל המשתתפים שנוספו ב־grid
     };
 
