@@ -47,6 +47,10 @@ module.exports = function startWebSocketServer(server, app) {
       );
         console.log("✅ WebSocket received transcript from deepgram");
         console.log("✅ WebSocket sent transcript to client");
+          // שמירה לממוצע
+        if (latency && ws.latencies) {
+          ws.latencies.push(latency);
+        }
         ws.send(JSON.stringify(data));
       });
 
@@ -86,24 +90,56 @@ module.exports = function startWebSocketServer(server, app) {
 
     ws.on('message', (message) => {
       console.log('Received audio chunk, size:', message.length);
-
-      if (deepgram.getReadyState() === 1) { // OPEN
-        lastChunkTime = Date.now();
-        console.log("✅ WebSocket sent data to deepgram");
-        deepgram.send(message);
-      } else if (deepgram.getReadyState() >= 2) { // CLOSING / CLOSED
-        console.log("⚠️ WebSocket couldn't be sent data to deepgram");
-        console.log("⚠️ WebSocket retrying connection to deepgram");
-        deepgram.finish();
-        deepgram.removeAllListeners();
-  if (keepAlive) {
-    clearInterval(keepAlive);
-    keepAlive = null;
+  // מנסה לפרש את ההודעה כ-JSON
+  let parsed;
+  try {
+    parsed = JSON.parse(message);
+  } catch (e) {
+    parsed = null;
   }
-({ deepgram, keepAlive } = setupDeepgram(ws, getLastChunkTime));
-} else {
-        console.log("⚠️ WebSocket couldn't be sent data to deepgram");
+
+  // אם מדובר באירוע מיקרופון
+  if (parsed && parsed.event) {
+    if (parsed.event === "MIC_OPEN") {
+      console.log("🎙️ Microphone opened (server)");
+      // אתחל מערך לאיסוף Latency אם צריך
+      ws.latencies = [];
+      ws.micOpenTime = Date.now();
+      return;
+    }
+    if (parsed.event === "MIC_CLOSE") {
+      console.log("🛑 Microphone closed (server)");
+      // חשב ממוצע Latency שנאסף
+      if (ws.latencies && ws.latencies.length > 0) {
+        const avgLatency = ws.latencies.reduce((a,b)=>a+b,0) / ws.latencies.length;
+        console.log(`🕒 Average STT Latency for this session: ${avgLatency.toFixed(2)} ms`);
+      } else {
+        console.log("🕒 No latency data collected for this session.");
       }
+      ws.latencies = [];
+      ws.micOpenTime = null;
+      return;
+    }
+  }
+
+  // אחרת מדובר בנתוני אודיו
+  if (deepgram.getReadyState() === 1) { // OPEN
+    lastChunkTime = Date.now();
+    console.log("✅ WebSocket sent data to deepgram");
+    deepgram.send(message);
+  } else if (deepgram.getReadyState() >= 2) { // CLOSING / CLOSED
+    console.log("⚠️ WebSocket couldn't be sent data to deepgram");
+    console.log("⚠️ WebSocket retrying connection to deepgram");
+    deepgram.finish();
+    deepgram.removeAllListeners();
+    if (keepAlive) {
+      clearInterval(keepAlive);
+      keepAlive = null;
+    }
+    ({ deepgram, keepAlive } = setupDeepgram(ws, getLastChunkTime));
+  } else {
+    console.log("⚠️ WebSocket couldn't be sent data to deepgram");
+  }
     });
 
     ws.on('close', () => {
