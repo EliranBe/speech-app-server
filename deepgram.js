@@ -12,7 +12,7 @@ module.exports = function startWebSocketServer(server, app) {
 
   const deepgramClient = createClient(deepgramApiKey);
 
-  const setupDeepgram = (ws) => {
+  const setupDeepgram = (ws, getLastChunkTime) => {
     const deepgram = deepgramClient.listen.live({
       model: 'nova-3',
       smart_format: true,
@@ -29,8 +29,6 @@ module.exports = function startWebSocketServer(server, app) {
       vad_events: true
     });
 
-    let lastChunkTime = null;
-
     let keepAlive = setInterval(() => {
     console.log("deepgram: keepalive");
     deepgram.keepAlive();
@@ -40,6 +38,7 @@ module.exports = function startWebSocketServer(server, app) {
       console.log("🔗 deepgram: connected");
 
       deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
+         const lastChunkTime = getLastChunkTime();
         const latency = lastChunkTime ? (Date.now() - lastChunkTime) : null;
        console.log(
         `📦 Full transcript event${latency ? ` (Latency: ${latency} ms)` : ''}:`,
@@ -80,8 +79,9 @@ module.exports = function startWebSocketServer(server, app) {
 
   wss.on('connection', (ws) => {
     console.log("🔗 Client connected to WebSocket");
-    let { deepgram, keepAlive } = setupDeepgram(ws);
     let lastChunkTime = null;
+    const getLastChunkTime = () => lastChunkTime;
+    let { deepgram, keepAlive } = setupDeepgram(ws, getLastChunkTime);
 
     ws.on('message', (message) => {
       console.log('Received audio chunk, size:', message.length);
@@ -99,7 +99,7 @@ module.exports = function startWebSocketServer(server, app) {
     clearInterval(keepAlive);
     keepAlive = null;
   }
-  ({ deepgram, keepAlive } = setupDeepgram(ws)); // ✅ עדכון גם של keepAlive
+({ deepgram, keepAlive } = setupDeepgram(ws, getLastChunkTime));
 } else {
         console.log("⚠️ WebSocket couldn't be sent data to deepgram");
       }
