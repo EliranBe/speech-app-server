@@ -84,6 +84,7 @@ module.exports = function startWebSocketServer(server, app) {
 
   wss.on('connection', (ws) => {
     console.log("🔗 Client connected to WebSocket");
+      // מפעילים keepAlive לכל חיבור
     let lastChunkTime = null;
     const getLastChunkTime = () => lastChunkTime;
     let { deepgram, keepAlive } = setupDeepgram(ws, getLastChunkTime);
