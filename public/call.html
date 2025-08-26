@@ -357,6 +357,7 @@ async function stopMicAndTranscription() {
 
 async function openMicrophone(microphoneTrack, socket) {
   return new Promise((resolve) => {
+    let micClosed = false;
     microphoneTrack.onstart = () => {
       console.log("🎙️ microphone opened");
       document.body.classList.add("recording");
@@ -367,15 +368,27 @@ async function openMicrophone(microphoneTrack, socket) {
     };
 
          microphoneTrack.onstop = () => {
+            if (micClosed) return; // אם כבר נסגר, לא לעשות שוב
+  micClosed = true;
       console.log("🛑 Microphone closed");
       document.body.classList.remove("recording");
               if (socket && socket.readyState === WebSocket.OPEN) {
                   socket.send(JSON.stringify({ event: "MIC_CLOSE" }));
+                    // מחכה לאישור מהשרת לפני סגירה
+    const handleAck = (msg) => {
+      let parsed;
+      try { parsed = JSON.parse(msg); } catch(e){ parsed = null; }
+
+      if (parsed?.event === "MIC_CLOSE_ACK") {
+        console.log("✅ Server acknowledged MIC_CLOSE");
+        socket.removeEventListener('message', handleAck);
         socket.close();
         console.log("🔌 WebSocket closed");
-  }
+             }
     };
-
+                socket.addEventListener('message', handleAck);
+                }
+    };
         microphoneTrack.ondataavailable = (event) => {
       console.log("🎙️ microphone data received");
       if (event.data.size > 0 && socket.readyState === WebSocket.OPEN) {
