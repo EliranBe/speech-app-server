@@ -360,6 +360,9 @@ async function openMicrophone(microphoneTrack, socket) {
     microphoneTrack.onstart = () => {
       console.log("🎙️ microphone opened");
       document.body.classList.add("recording");
+          if (socket && socket.readyState === WebSocket.OPEN) {
+    socket.send(JSON.stringify({ event: "MIC_OPEN" }));
+  }
       resolve();
     };
 
@@ -367,6 +370,7 @@ async function openMicrophone(microphoneTrack, socket) {
       console.log("🛑 Microphone closed");
       document.body.classList.remove("recording");
               if (socket && socket.readyState === WebSocket.OPEN) {
+                  socket.send(JSON.stringify({ event: "MIC_CLOSE" }));
         socket.close();
         console.log("🔌 WebSocket closed");
   }
