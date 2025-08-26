@@ -32,7 +32,6 @@
     }
 
     .video-box {
-      position: relative; /* חשוב כדי שהתווית תהיה מעל הוידאו */
       width: 400px;
       height: 300px;
       background: rgba(255, 255, 255, 0.1);
@@ -113,7 +112,7 @@
   
   <div class="video-container">
     <div id="local-player" class="video-box"></div>
-    <div id="captions"></div>
+        <div id="captions"></div>
   </div>
 
   <div class="controls">
@@ -242,10 +241,9 @@ async function startLocalTracks() {
       
   // הוספת ה־box ל־container
    container.appendChild(videoBox);
-}
-
-           // הפעלת הוידאו של Agora בתוך ה־div
+                 // הפעלת הוידאו של Agora בתוך ה־div
   remoteTrack.play(videoBox);
+}
     
     function removeParticipantVideo(userId) {
   const videoBox = document.getElementById(`participant-${userId}`);
@@ -264,7 +262,7 @@ document.getElementById("btn_mic").onclick = async () => {
   }
 };
 
-    document.getElementById("btn-cam").onclick = () => {
+    document.getElementById("btn-cam").onclick = async () => {
       camMuted = !camMuted;
       if (camMuted) {
         cameraTrack.setEnabled(false);
