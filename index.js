@@ -4,11 +4,11 @@ const dotenv = require("dotenv");
 dotenv.config();
 const cors = require('cors');
 
-//  Azure Translator SDK
-const { TextTranslationClient, AzureKeyCredential } = require("@azure-rest/ai-translation-text");
-const azureKey = process.env.AZURE_TRANSLATOR_KEY1;
-const azureEndpoint = process.env.AZURE_TRANSLATOR_ENDPOINT;
-const translatorClient = new TextTranslationClient(azureEndpoint, new AzureKeyCredential(azureKey));
+// Azure Translator SDK - Classic Client
+const { TextTranslationClient } = require("@azure-rest/ai-translation-text");
+const translatorClient = TextTranslationClient(process.env.AZURE_TRANSLATOR_ENDPOINT, {
+  credential: { key: process.env.AZURE_TRANSLATOR_KEY1 }
+});
 
 const app = express();
 const server = http.createServer(app); // נדרש בשביל WebSocket
