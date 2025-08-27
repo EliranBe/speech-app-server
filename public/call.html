@@ -136,6 +136,7 @@
     let STTaudioSendTime = 0;
     let STTtranscriptReceiveTime = 0;
     let STTlatency = 0;
+    let captions;
 
     window.onload = async () => {
 
@@ -258,10 +259,10 @@ async function startLocalTracks() {
 document.getElementById("btn_mic").onclick = async () => {
   if (!isRunning) {
     await startMicAndTranscription();
-    document.getElementById("btn_mic").innerText = "🎤 Mute";
+    document.getElementById("btn_mic").innerText = "🔇 Stop Transcription";
   } else {
     await stopMicAndTranscription();
-    document.getElementById("btn_mic").innerText = "🔇 Unmute";
+    document.getElementById("btn_mic").innerText = "🎤 Start Transcription";
   }
 };
 
@@ -279,7 +280,9 @@ document.getElementById("btn_mic").onclick = async () => {
     document.getElementById("btn-leave").onclick = async () => {
       await client.leave();
       microphoneTrack && microphoneTrack.stop();
+            microphoneTrack && microphoneTrack.close();
       cameraTrack && cameraTrack.stop();
+            cameraTrack && cameraTrack.close();
       if (socket && socket.readyState === WebSocket.OPEN) {
       socket.close();
       }
@@ -360,37 +363,18 @@ async function stopMicAndTranscription() {
 
 async function openMicrophone(microphoneTrack, socket) {
   return new Promise((resolve) => {
-    let micClosed = false;
     microphoneTrack.onstart = () => {
       console.log("🎙️ microphone opened");
       document.body.classList.add("recording");
-          if (socket && socket.readyState === WebSocket.OPEN) {
-    socket.send(JSON.stringify({ event: "MIC_OPEN" }));
-  }
       resolve();
     };
 
          microphoneTrack.onstop = () => {
-            if (micClosed) return; // אם כבר נסגר, לא לעשות שוב
-  micClosed = true;
       console.log("🛑 Microphone closed");
       document.body.classList.remove("recording");
               if (socket && socket.readyState === WebSocket.OPEN) {
-                  socket.send(JSON.stringify({ event: "MIC_CLOSE" }));
-                    // מחכה לאישור מהשרת לפני סגירה
-    const handleAck = (msg) => {
-      let parsed;
-      try { parsed = JSON.parse(msg); } catch(e){ parsed = null; }
-
-      if (parsed?.event === "MIC_CLOSE_ACK") {
-        console.log("✅ Server acknowledged MIC_CLOSE");
-        socket.removeEventListener('message', handleAck);
-        socket.close();
-        console.log("🔌 WebSocket closed");
-             }
-    };
-                socket.addEventListener('message', handleAck);
-                }
+           console.log("🔌 WebSocket closed");
+                }             
     };
         microphoneTrack.ondataavailable = (event) => {
       console.log("🎙️ microphone data received");
