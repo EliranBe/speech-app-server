@@ -281,6 +281,8 @@ document.getElementById("btn_mic").onclick = async () => {
     };
 
     document.getElementById("btn-leave").onclick = async () => {
+        // 🔒 השבתת כל הכפתורים
+  document.querySelectorAll("button").forEach(btn => btn.disabled = true);
       await client.leave();
 agoraMicTrack && agoraMicTrack.stop();
 agoraMicTrack && agoraMicTrack.close();
