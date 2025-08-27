@@ -126,7 +126,8 @@
     let AGORA_APP_ID = "";
     const CHANNEL_NAME = "test-room";
     let client;
-    let microphoneTrack, cameraTrack;
+    let agoraMicTrack, cameraTrack; // Agora
+    let recorder;                   // MediaRecorder
     let micMuted = false;
     let camMuted = false;
     let ws; 
@@ -176,7 +177,7 @@ client.on("user-left", (user) => {
 
       const tokenRes = await fetch(`/rte-token?channelName=${CHANNEL_NAME}`);
       const tokenData = await tokenRes.json();
-      const captions = window.document.getElementById('captions');
+      captions = document.getElementById('captions');
       const btn_mic = window.document.getElementById('btn_mic');
 
                 //זמני עד שילוב עם Base44 שדות למילוי שם משתמש ושפת אם// 
@@ -230,9 +231,9 @@ document.getElementById("native-language").addEventListener("change", updateName
     }
 
 async function startLocalTracks() {
-    [microphoneTrack, cameraTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
+    [agoraMicTrack, cameraTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
      cameraTrack.play("local-player");
-      await client.publish([microphoneTrack, cameraTrack]);
+      await client.publish([agoraMicTrack, cameraTrack]);
 }
 
     function addParticipantVideo(userId, remoteTrack) {
@@ -255,6 +256,8 @@ async function startLocalTracks() {
     videoBox.remove();
   }
 }
+
+    btn_mic.innerText = isRunning ? "🔇 Stop Transcription" : "🎤 Start Transcription";
 
 document.getElementById("btn_mic").onclick = async () => {
   if (!isRunning) {
@@ -279,13 +282,15 @@ document.getElementById("btn_mic").onclick = async () => {
 
     document.getElementById("btn-leave").onclick = async () => {
       await client.leave();
-      microphoneTrack && microphoneTrack.stop();
-            microphoneTrack && microphoneTrack.close();
-      cameraTrack && cameraTrack.stop();
-            cameraTrack && cameraTrack.close();
-      if (socket && socket.readyState === WebSocket.OPEN) {
-      socket.close();
-      }
+agoraMicTrack && agoraMicTrack.stop();
+agoraMicTrack && agoraMicTrack.close();
+cameraTrack && cameraTrack.stop();
+cameraTrack && cameraTrack.close();
+      if (recorder && recorder.state !== "inactive") {
+  recorder.stop();
+        recorder = undefined;
+}
+
       document.getElementById("status").innerText = "👋 יצאת מהשיחה";
       document.getElementById("local-player").innerHTML = "";
       document.querySelectorAll("[id^='participant-']").forEach(el => el.remove());   // הסרת כל המשתתפים שנוספו ב־grid
@@ -299,12 +304,11 @@ async function startMicAndTranscription() {
   socket.addEventListener("open", async () => {
     console.log("✅ connected to server");
     try {
-      microphoneTrack = await getMicrophone();
-
+      recorder = await getMicrophone();
       // 🎤 הפעלת Agora
-      await openMicrophone(microphoneTrack, socket);
-
+      await openMicrophone(recorder, socket);
       isRunning = true;
+      btn_mic.innerText = "🔇 Stop Transcription";
     } catch (error) {
       console.error("⚠️ error opening microphone:", error);
     }
@@ -340,15 +344,16 @@ async function startMicAndTranscription() {
 
 async function stopMicAndTranscription() {
   // 🎤 סגירת Agora
-  await closeMicrophone(microphoneTrack);
-  microphoneTrack = undefined;
-  
+    if (recorder && recorder.state !== "inactive") {
+    recorder.stop();
+    recorder = undefined;
+  }
   // 📴 סגירת WebSocket
   if (socket && socket.readyState === WebSocket.OPEN) {
     socket.close();
   }
-
   isRunning = false;
+  btn_mic.innerText = "🎤 Start Transcription";
 }
 
   async function getMicrophone() {
@@ -361,22 +366,23 @@ async function stopMicAndTranscription() {
   }
 } 
 
-async function openMicrophone(microphoneTrack, socket) {
+async function openMicrophone(recorder, socket) {
   return new Promise((resolve) => {
-    microphoneTrack.onstart = () => {
+    recorder.onstart = () => {
       console.log("🎙️ microphone opened");
       document.body.classList.add("recording");
       resolve();
     };
 
-         microphoneTrack.onstop = () => {
+         recorder.onstop = () => {
       console.log("🛑 Microphone closed");
       document.body.classList.remove("recording");
               if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.close();
            console.log("🔌 WebSocket closed");
                 }             
     };
-        microphoneTrack.ondataavailable = (event) => {
+        recorder.ondataavailable = (event) => {
       console.log("🎙️ microphone data received");
       if (event.data.size > 0 && socket.readyState === WebSocket.OPEN) {
         STTaudioSendTime = Date.now(); // זמן שליחת האודיו
@@ -384,13 +390,8 @@ async function openMicrophone(microphoneTrack, socket) {
       }
     };
 
-     microphoneTrack.start(100); // שולח כל 100 ms
+     recorder.start(100); // שולח כל 100 ms
   });
-}
-
-    async function closeMicrophone(microphoneTrack) {
-  console.log("🛑 Recording stopped");
-  microphoneTrack.stop();
 }
     
   </script>
