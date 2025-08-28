@@ -1,27 +1,29 @@
-const TextTranslationClient = require("@azure-rest/ai-translation-text").default,
-  { isUnexpected } = require("@azure-rest/ai-translation-text");
+const TextTranslationClient = require("@azure-rest/ai-translation-text").default;
+const { isUnexpected } = require("@azure-rest/ai-translation-text");
 const { DefaultAzureCredential } = require("@azure/identity");
 
 const endpoint = process.env["AZURE_TRANSLATOR_ENDPOINT"];
 const resourceId = process.env["AZURE_TRANSLATOR_RESOURCE_ID"];
 const region = process.env["AZURE_TRANSLATOR_REGION"];
 
-async function main() {
-  console.log("== Multiple target languages translation ==");
+// קודם יוצרים את ה-credential ואז את ה-client
+const translateCredential = {
+  tokenCredential: new DefaultAzureCredential(),
+  azureResourceId: resourceId,
+  region,
+};
 
-  const translateCedential = {
-    tokenCredential: new DefaultAzureCredential(),
-    azureResourceId: resourceId,
-    region,
-  };
-  const translationClient = TextTranslationClient(endpoint, translateCedential);
+const translationClient = TextTranslationClient(endpoint, translateCredential);
 
-  const inputText = [{ text: "This is a test." }];
+// פונקציה כללית לתרגום טקסט
+async function translateText(inputText, toLanguage = 'he', fromLanguage = 'en') {
+  const requestBody = [{ text: inputText }];
+
   const translateResponse = await translationClient.path("/translate").post({
-    body: inputText,
+    body: requestBody,
     queryParameters: {
-      to: "he",
-      from: "en",
+      to: toLanguage,
+      from: fromLanguage,
     },
   });
 
@@ -29,21 +31,9 @@ async function main() {
     throw translateResponse.body.error;
   }
 
+  // מחזיר את הטקסט המתורגם הראשון
   const translations = translateResponse.body;
-  for (const translation of translations) {
-    for (const textKey in translation.translations) {
-      console.log(
-        `Text was translated to: '${translation?.translations[textKey]?.to}' and the result is: '${translation?.translations[textKey]?.text}'.`,
-      );
-    }
-  }
+  return translations[0]?.translations[0]?.text || '';
 }
 
-main().catch((err) => {
-  console.error(err);
-});
-
-module.exports = { main };
-
-
-
+module.exports = { translateText };
