@@ -1,5 +1,5 @@
 const axios = require("axios");
-
+ 
 const subscriptionKey = process.env.AZURE_TRANSLATOR_KEY1; // המפתח הישיר
 const endpoint = process.env["AZURE_TRANSLATOR_ENDPOINT"];
 const region = process.env["AZURE_TRANSLATOR_REGION"];
