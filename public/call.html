@@ -61,6 +61,20 @@
   border-radius: 20px;               /* פינות מעוגלות ברדיוס 20 פיקסלים */
 }
 
+        #translation {
+  position: fixed;        /* מקבע את התיבה במסך */
+  top: 0;                 /* מתחיל מהחלק העליון */
+  left: 0;               /* מוצמד לצד שמאל */
+  width: 300px;           /* רוחב התיבה (אפשר לשנות לפי הצורך) */
+  height: 50vh;           /* גובה התיבה = חצי מגובה המסך */
+  white-space: pre-wrap;  /* שומר על שורות ורווחים */
+  padding: 10px;          /* ריווח פנימי */
+  overflow-y: auto;       /* גלילה אם יש יותר טקסט */
+  box-shadow: -2px 2px 8px rgba(0,0,0,0.1); /* צל עדין */
+  background: rgba(255, 255, 255, 0.1); /* רקע לבן שקוף חלקית (10% אטימות) */
+  border-radius: 20px;               /* פינות מעוגלות ברדיוס 20 פיקסלים */
+}
+    
     .controls {
       margin-top: 30px;
       display: flex;
@@ -111,8 +125,9 @@
     <!-- סוף -->
   
   <div class="video-container">
-    <div id="local-player" class="video-box"></div>
-        <div id="captions"></div>
+  <div id="local-player" class="video-box"></div>
+  <div id="captions"></div>
+  <div id="translation"></div>
   </div>
 
   <div class="controls">
@@ -138,6 +153,7 @@
     let STTtranscriptReceiveTime = 0;
     let STTlatency = 0;
     let captions;
+    let translation;
 
     window.onload = async () => {
 
@@ -178,6 +194,7 @@ client.on("user-left", (user) => {
       const tokenRes = await fetch(`/rte-token?channelName=${CHANNEL_NAME}`);
       const tokenData = await tokenRes.json();
       captions = document.getElementById('captions');
+      translation = document.getElementById('translation');
       const btn_mic = window.document.getElementById('btn_mic');
 
                 //זמני עד שילוב עם Base44 שדות למילוי שם משתמש ושפת אם// 
@@ -329,10 +346,12 @@ async function startMicAndTranscription() {
       console.error("⚠️ Failed to parse JSON:", e);
       return;
     }
+      // ======== תמלול ========
     if (data && data.channel && data.channel.alternatives[0].transcript !== "") {
       const span = document.createElement("div");
       span.textContent = data.channel.alternatives[0].transcript;
       captions.appendChild(span);
+      captions.scrollTop = captions.scrollHeight;
 
         // חישוב Latency
   if (data.is_final) {  // רק כאשר התמלול סופי
@@ -341,6 +360,14 @@ async function startMicAndTranscription() {
     console.log(`STTLatency: ${STTlatency} ms`);
   }
     }
+    
+      // ======== תרגום ========
+  if (data.type === "translation" && data.payload?.translated) {
+    const span = document.createElement("div");
+    span.textContent = data.payload.translated;
+    translation.appendChild(span);
+    translation.scrollTop = translation.scrollHeight;
+  }
   });
 
   socket.addEventListener("close", () => {
