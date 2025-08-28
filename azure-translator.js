@@ -23,7 +23,7 @@ async function translateText(inputText, from, to) {
       params: {
         "api-version": "3.0",
         from: "en",
-        to: "he", "ar", "ru",
+        to: "he,er,ru",
       },
       data: [{ Text: inputText }],
       responseType: "json",
