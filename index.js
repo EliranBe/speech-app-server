@@ -4,11 +4,19 @@ const dotenv = require("dotenv");
 dotenv.config();
 const cors = require('cors');
 
-// Azure Translator SDK - Classic Client
-const { TextTranslationClient } = require("@azure-rest/ai-translation-text");
-const { TranslatorCredential } = require("@azure/core-auth");
-const credential = new TranslatorCredential(apiKey, region);
-const client = new TextTranslationClient(endpoint, credential);
+// בדיקה ש־Azure Translator מוגדר
+if (!process.env.AZURE_TRANSLATOR_RESOURCE_ID) {
+  throw new Error("⚠️ Missing AZURE_TRANSLATOR_RESOURCE_ID in environment variables");
+}
+if (!process.env.AZURE_TRANSLATOR_REGION) {
+  throw new Error("⚠️ Missing AZURE_TRANSLATOR_REGION in environment variables");
+}
+if (!process.env.AZURE_TRANSLATOR_ENDPOINT) {
+  throw new Error("⚠️ Missing AZURE_TRANSLATOR_ENDPOINT in environment variables");
+}
+if (!process.env.AZURE_TRANSLATOR_KEY1) {
+  throw new Error("⚠️ Missing AZURE_TRANSLATOR_KEY1 in environment variables");
+}
 
 const app = express();
 const server = http.createServer(app); // נדרש בשביל WebSocket
@@ -74,6 +82,9 @@ app.get('/', (req, res) => {
 // חיבור WebSocket לשרת HTTP
 const startWebSocketServer = require('./deepgram');
 startWebSocketServer(server, app);
+
+const startTranslatorWebSocketServer = require('./Azure-translator');
+startTranslatorWebSocketServer(server, app);
 
 // הפעלת השרת
 server.listen(port, () => {
