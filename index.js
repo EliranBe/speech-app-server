@@ -83,9 +83,6 @@ app.get('/', (req, res) => {
 const startWebSocketServer = require('./deepgram');
 startWebSocketServer(server, app);
 
-const startTranslatorWebSocketServer = require('./Azure-translator');
-startTranslatorWebSocketServer(server, app);
-
 // הפעלת השרת
 server.listen(port, () => {
   console.log(`🚀 Server is running on port ${port}`);
