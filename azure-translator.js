@@ -1,39 +1,39 @@
-const TextTranslationClient = require("@azure-rest/ai-translation-text").default;
-const { isUnexpected } = require("@azure-rest/ai-translation-text");
-const { DefaultAzureCredential } = require("@azure/identity");
+const axios = require("axios");
 
+const subscriptionKey = process.env.AZURE_TRANSLATOR_KEY1; // המפתח הישיר
 const endpoint = process.env["AZURE_TRANSLATOR_ENDPOINT"];
-const resourceId = process.env["AZURE_TRANSLATOR_RESOURCE_ID"];
 const region = process.env["AZURE_TRANSLATOR_REGION"];
 
-// קודם יוצרים את ה-credential ואז את ה-client
-const translateCredential = {
-  tokenCredential: new DefaultAzureCredential(),
-  azureResourceId: resourceId,
-  region,
-};
-
-const translationClient = TextTranslationClient(endpoint, translateCredential);
-
 // פונקציה כללית לתרגום טקסט
-async function translateText(inputText, toLanguage = 'he', fromLanguage = 'en') {
-  const requestBody = [{ text: inputText }];
-
-  const translateResponse = await translationClient.path("/translate").post({
-    body: requestBody,
-    queryParameters: {
-      to: toLanguage,
-      from: fromLanguage,
-    },
-  });
-
-  if (isUnexpected(translateResponse)) {
-    throw translateResponse.body.error;
+async function translateText(inputText, fromLanguage = "en", toLanguage = "he") {
+   if (!subscriptionKey) {
+    throw new Error("⚠️ Missing AZURE_TRANSLATOR_KEY1 in environment variables");
   }
 
-  // מחזיר את הטקסט המתורגם הראשון
-  const translations = translateResponse.body;
-  return translations[0]?.translations[0]?.text || '';
+  try {
+    const response = await axios({
+      baseURL: endpoint,
+      url: "/translate",
+      method: "post",
+      headers: {
+        "Ocp-Apim-Subscription-Key": subscriptionKey,
+        "Ocp-Apim-Subscription-Region": region,
+        "Content-Type": "application/json",
+      },
+      params: {
+        "api-version": "3.0",
+        from: fromLanguage,
+        to: toLanguage,
+      },
+      data: [{ Text: inputText }],
+      responseType: "json",
+    });
+
+    return response.data?.[0]?.translations?.[0]?.text || "";
+  } catch (err) {
+    console.error("❌ Translation API error:", err.message);
+    throw err;
+  }
 }
 
 module.exports = { translateText };
