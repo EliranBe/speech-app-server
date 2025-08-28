@@ -5,7 +5,7 @@ const endpoint = process.env["AZURE_TRANSLATOR_ENDPOINT"];
 const region = process.env["AZURE_TRANSLATOR_REGION"];
 
 // פונקציה כללית לתרגום טקסט
-async function translateText(inputText, fromLanguage = "en", toLanguage = "he") {
+async function translateText(inputText, from, to) {
    if (!subscriptionKey) {
     throw new Error("⚠️ Missing AZURE_TRANSLATOR_KEY1 in environment variables");
   }
@@ -22,8 +22,8 @@ async function translateText(inputText, fromLanguage = "en", toLanguage = "he") 
       },
       params: {
         "api-version": "3.0",
-        from: fromLanguage,
-        to: [toLanguage],
+        from: en,
+        to: he,
       },
       data: [{ Text: inputText }],
       responseType: "json",
