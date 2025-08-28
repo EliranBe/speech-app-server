@@ -2,8 +2,6 @@ const WebSocket = require('ws');
 const { createClient, LiveTranscriptionEvents } = require('@deepgram/sdk');
 const express = require('express'); // אם צריך app
 
-const { translateText } = require('./azure-translator'); // שימוש בפונקציית התרגום
-
 module.exports = function startWebSocketServer(server, app) {
   const wss = new WebSocket.Server({ server }); // server מגיע מ-index.js
 
@@ -39,33 +37,14 @@ const setupDeepgram = (ws, getLastChunkTime) => {
     deepgram.addListener(LiveTranscriptionEvents.Open, async() => {
       console.log("🔗 deepgram: connected");
 
-    deepgram.addListener(LiveTranscriptionEvents.Transcript, async (data) => {
-      const last = typeof getLastChunkTime === 'function' ? getLastChunkTime() : null;
-      const latency = last ? (Date.now() - last) : null;      
-      console.log("📦 Full transcript event:", JSON.stringify(data, null, 2));
+       deepgram.addListener(LiveTranscriptionEvents.Transcript, (data) => {
+          const last = typeof getLastChunkTime === 'function' ? getLastChunkTime() : null;
+  const latency = last ? (Date.now() - last) : null;      
+             console.log("📦 Full transcript event:", JSON.stringify(data, null, 2));
         console.log("✅ WebSocket received transcript from deepgram", latency ? `Latency: ${latency} ms` : '');
         console.log("✅ WebSocket sent transcript to client");
-
-        // נשלח ללקוח את התמלול המקורי (כפי שהיה עד עכשיו)
-      ws.send(JSON.stringify({ type: "transcript", payload: data }));
-
-        // אם יש טקסט סופי (לא interim), נתרגם אותו
-  const transcriptText = data?.channel?.alternatives?.[0]?.transcript;
-  if (transcriptText) {
-    try {
-      const translated = await translateText(transcriptText, "he", "en");
-      console.log("🌍 Translated text:", translated);
-
-      // שולח ללקוח הודעה חדשה עם התרגום
-      ws.send(JSON.stringify({
-        type: "translation",
-        payload: { original: transcriptText, translated }
-      }));
-    } catch (err) {
-      console.error("❌ Translation error:", err);
-    }
-  }
-});
+  ws.send(JSON.stringify(data));
+      });
 
       deepgram.addListener(LiveTranscriptionEvents.Close, async() => {
         console.log("deepgram: disconnected");
