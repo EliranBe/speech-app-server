@@ -22,8 +22,8 @@ async function translateText(inputText, from, to) {
       },
       params: {
         "api-version": "3.0",
-        from: en,
-        to: he,
+        from: "en",
+        to: "he",
       },
       data: [{ Text: inputText }],
       responseType: "json",
