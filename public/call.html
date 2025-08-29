@@ -364,11 +364,19 @@ async function startMicAndTranscription() {
       // ======== תרגום ========
   if (data.type === "translation" && data.payload?.translated) {
     const translated = data.payload.translated;
-  // נעבור על כל השפות
-  for (const [lang, text] of Object.entries(translated)) {
+    
+  if (typeof translated === "string") {
+    // מחרוזת פשוטה
     const span = document.createElement("div");
-    span.textContent = `[${lang}] ${text}`;
+    span.textContent = translated;
     translation.appendChild(span);
+  } else if (typeof translated === "object") {
+    // אובייקט שפות
+    for (const [lang, text] of Object.entries(translated)) {
+      const span = document.createElement("div");
+      span.textContent = `[${lang}] ${text}`;
+      translation.appendChild(span);
+    }
   }
 
   translation.scrollTop = translation.scrollHeight;
