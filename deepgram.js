@@ -18,7 +18,7 @@ const setupDeepgram = (ws, getLastChunkTime) => {
     const deepgram = deepgramClient.listen.live({
       model: 'nova-3',
       smart_format: true,
-      language: 'multi',
+      language: 'en-US',
       dictation: true, 
       punctuate: true,
       utterances: true,
