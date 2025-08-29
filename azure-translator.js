@@ -27,7 +27,7 @@ async function translateText(inputText, from, to) {
       data: [{ Text: inputText }],
       responseType: "json",
     });
-  return response.data?.[0]?.translations || [];
+    return response.data?.[0]?.translations?.[0]?.text || "";
   } catch (err) {
 console.error("❌ Translation API error:", err.message);
     throw err;  }
