@@ -362,7 +362,7 @@ async function startMicAndTranscription() {
     }
     
       // ======== תרגום ========
-  if (data.type === "translation" && data.payload?.translated  && data.is_final) {
+  if (data.type === "translation" && data.payload?.translated) {
     const translated = data.payload.translated;
     
   if (typeof translated === "string") {
