@@ -23,13 +23,13 @@ async function translateText(inputText, from, to) {
       params: {
         "api-version": "3.0",
         from: "en",
-        to: "he",
+        to: Array.isArray(to) ? to : [to],
       },
       data: [{ Text: inputText }],
       responseType: "json",
     });
 
-    return response.data?.[0]?.translations?.[0]?.text || "";
+    return response.data?.[0]?.translations || [];
   } catch (err) {
     console.error("❌ Translation API error:", err.message);
     throw err;
