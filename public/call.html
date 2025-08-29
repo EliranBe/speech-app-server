@@ -363,11 +363,16 @@ async function startMicAndTranscription() {
     
       // ======== תרגום ========
   if (data.type === "translation" && data.payload?.translated) {
+    const translated = data.payload.translated;
+  // נעבור על כל השפות
+  for (const [lang, text] of Object.entries(translated)) {
     const span = document.createElement("div");
-    span.textContent = data.payload.translated;
+    span.textContent = `[${lang}] ${text}`;
     translation.appendChild(span);
-    translation.scrollTop = translation.scrollHeight;
   }
+
+  translation.scrollTop = translation.scrollHeight;
+}
   });
 
   socket.addEventListener("close", () => {
