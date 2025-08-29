@@ -322,6 +322,11 @@ cameraTrack && cameraTrack.close();
     //שילוב עם Deppgram//
 
 async function startMicAndTranscription() {
+    // ✅ בדיקה אם כבר קיים WebSocket פעיל
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    console.log("⚠️ WebSocket already open, skipping creation");
+    return; // או אפשר לעצור את הפונקציה כדי למנוע כפילויות
+  }
   socket = new WebSocket(`wss://${window.location.host}`);
 
   socket.addEventListener("open", async () => {
