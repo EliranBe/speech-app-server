@@ -347,7 +347,7 @@ async function startMicAndTranscription() {
       return;
     }
       // ======== תמלול ========
-    if (data && data.channel && data.channel.alternatives[0].transcript !== "") {
+    if (data && data.channel && data.channel.alternatives[0].transcript !== "" && data.is_final) {
       const span = document.createElement("div");
       span.textContent = data.channel.alternatives[0].transcript;
       captions.appendChild(span);
@@ -362,7 +362,7 @@ async function startMicAndTranscription() {
     }
     
       // ======== תרגום ========
-  if (data.type === "translation" && data.payload?.translated) {
+  if (data.type === "translation" && data.payload?.translated && data.is_final) {
     const translated = data.payload.translated;
   // נעבור על כל השפות
   for (const [lang, text] of Object.entries(translated)) {
