@@ -386,6 +386,25 @@ async function startMicAndTranscription() {
 
   translation.scrollTop = translation.scrollHeight;
 }
+
+      // ======== טקסט לדיבור (TTS) ========
+  if (data.type === "tts" && data.payload?.audioBase64) {
+    const audioData = data.payload.audioBase64;
+
+    // הפיכת Base64 ל־Blob
+    const byteChars = atob(audioData);
+    const byteNumbers = new Array(byteChars.length);
+    for (let i = 0; i < byteChars.length; i++) {
+      byteNumbers[i] = byteChars.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const audioBlob = new Blob([byteArray], { type: "audio/mp3" });
+
+    // השמעה
+    const audioUrl = URL.createObjectURL(audioBlob);
+    const audio = new Audio(audioUrl);
+    audio.play().catch(err => console.error("⚠️ Error playing TTS:", err));
+  }
   });
 
   socket.addEventListener("close", () => {
