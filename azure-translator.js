@@ -14,7 +14,7 @@ const url = `${endpoint}/translate`;
   const params = {
     "api-version": "3.0",
     from: "en",
-    to: "he,ar,fr"
+    to: "he"
   };
   const headers = {
     "Ocp-Apim-Subscription-Key": subscriptionKey,
