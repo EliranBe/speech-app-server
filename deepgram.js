@@ -26,7 +26,7 @@ const setupDeepgram = (ws, getLastChunkTime) => {
       numerals: true,
       paragraphs: true,
       interim_results: false,
-      
+      utterance_end_ms: 1000,  //When using utterance_end_ms, setting interim_results=true is also required.//
       endpointing: 100,
       vad_events: true
     });
