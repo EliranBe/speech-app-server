@@ -4,6 +4,11 @@ const dotenv = require("dotenv");
 dotenv.config();
 const cors = require('cors');
 
+// בדיקה ש־Google TTS מוגדר
+if (!process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+  throw new Error("⚠️ Missing GOOGLE_APPLICATION_CREDENTIALS_JSON in environment variables");
+}
+
 // בדיקה ש־Azure Translator מוגדר
 if (!process.env.AZURE_TRANSLATOR_RESOURCE_ID) {
   throw new Error("⚠️ Missing AZURE_TRANSLATOR_RESOURCE_ID in environment variables");
