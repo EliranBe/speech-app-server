@@ -4,6 +4,8 @@ const express = require('express'); // אם צריך app
 
 const { translateText } = require('./azure-translator'); // שימוש בפונקציית התרגום
 
+const { synthesizeTextToBase64 } = require('./google-tts'); // שימוש בפונקציית הקולית
+
 module.exports = function startWebSocketServer(server, app) {
   const wss = new WebSocket.Server({ server }); // server מגיע מ-index.js
 
@@ -49,11 +51,12 @@ deepgram.addListener(LiveTranscriptionEvents.Transcript, async (data) => {
     // נשלח ללקוח את התמלול המקורי ישירות (כדי להתאים לצד הלקוח)
   ws.send(JSON.stringify(data));
 
-    // אם יש טקסט סופי (לא interim), נתרגם אותו
+    // נתרגם את התמלול 
   const transcriptText = data?.channel?.alternatives?.[0]?.transcript;
+   let translated = null;
   if (transcriptText) {
-    try {
-      const translated = await translateText(transcriptText, "he", "en");
+         try {
+      translated = await translateText(transcriptText, "he", "en");
       console.log("🌍 Translated text:", translated);
 
       // שולח ללקוח הודעה חדשה עם התרגום
@@ -64,7 +67,20 @@ deepgram.addListener(LiveTranscriptionEvents.Transcript, async (data) => {
     } catch (err) {
       console.error("❌ Translation error:", err);
     }
+    if (translated) {
+      try {
+      // יוצר אודיו ב-Google TTS מהתרגום
+  const audioBase64 = await synthesizeTextToBase64(translated);
+    // שולח ללקוח את האודיו
+  ws.send(JSON.stringify({
+    type: "tts",
+    payload: { audioBase64 }
+  }));
+} catch (err) {
+  console.error("❌ Google TTS error:", err);
   }
+}
+}
 });
     
       deepgram.addListener(LiveTranscriptionEvents.Close, async() => {
