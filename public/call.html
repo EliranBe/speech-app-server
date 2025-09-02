@@ -122,8 +122,6 @@ video {
     <button id="btn-leave">🚪 Leave</button>
   </div>
 
-   <div id="status">מחכה להתחברות...</div>
-  
   <script src="https://cdn.agora.io/sdk/release/AgoraRTC_N-4.20.0.js"></script>
   <script>
     let AGORA_APP_ID = "";
@@ -178,8 +176,6 @@ video {
         client = null;
     }
 
-    // ♻️ איפוס סטטוס ותצוגה
-    document.getElementById("status").innerText = "👋 יצאת מהשיחה";
 }
 
     window.onload = async () => {
@@ -216,8 +212,6 @@ client.on("user-left", (user) => {
   removeParticipantVideo(user.uid);
 });
     
-      document.getElementById("status").innerText = "מתחבר לערוץ...";
-
       const tokenRes = await fetch(`/rte-token?channelName=${CHANNEL_NAME}`);
       const tokenData = await tokenRes.json();
       captions = document.getElementById('captions');
@@ -226,8 +220,6 @@ client.on("user-left", (user) => {
     
       await client.join(AGORA_APP_ID, CHANNEL_NAME, tokenData.rtcToken, null);
         console.log("✅ Connected to Agora channel");
-
-      document.getElementById("status").innerText = "✅ מחובר";
 
                 await startLocalTracks();
     }
