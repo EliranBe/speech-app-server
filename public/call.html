@@ -156,6 +156,44 @@
     let translation;
     let tts;
 
+    async function leaveCall() {
+    // 🔒 השבתת כל הכפתורים
+    document.querySelectorAll("button").forEach(btn => {
+        btn.disabled = true;
+        btn.style.opacity = "0.5";
+        btn.style.cursor = "not-allowed";
+    });
+
+    // 🎥 סגירת כל הוידאו והאודיו של Agora
+    if (agoraMicTrack) { agoraMicTrack.stop(); agoraMicTrack.close(); agoraMicTrack = null; }
+    if (cameraTrack) { cameraTrack.stop(); cameraTrack.close(); cameraTrack = null; }
+
+    // 📹 הסרת כל הוידאו מה-DOM
+    document.getElementById("local-player").innerHTML = "";
+    document.querySelectorAll("[id^='participant-']").forEach(el => el.remove());
+
+    // 📴 סגירת MediaRecorder
+    if (recorder && recorder.state !== "inactive") {
+        recorder.stop();
+        recorder = undefined;
+    }
+
+    // 🔌 סגירת WebSocket
+    if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.close();
+        socket = null;
+    }
+
+    // 📴 עזיבת ערוץ Agora
+    if (client) {
+        try { await client.leave(); } catch(e) { console.warn("⚠️ client.leave failed:", e); }
+        client = null;
+    }
+
+    // ♻️ איפוס סטטוס ותצוגה
+    document.getElementById("status").innerText = "👋 יצאת מהשיחה";
+}
+
     window.onload = async () => {
 
   try {
@@ -298,50 +336,11 @@ document.getElementById("btn_mic").onclick = async () => {
       }
     };
 
-    document.getElementById("btn-leave").onclick = async () => {
-        // 🔒 השבתת כל הכפתורים
-   document.querySelectorAll("button").forEach(btn => {
-    btn.disabled = true;
-    btn.style.opacity = "0.5";      // כפתורים בהירים יותר
-    btn.style.cursor = "not-allowed"; // מציג שהכפתור לא לחיץ
-  });
-// 🎥 סגירת כל הוידאו והאודיו של Agora
-  if (agoraMicTrack) {
-    agoraMicTrack.stop();
-    agoraMicTrack.close();
-    agoraMicTrack = null;
-  }
-  if (cameraTrack) {
-    cameraTrack.stop();
-    cameraTrack.close();
-    cameraTrack = null;
-  }
+document.getElementById("btn-leave").onclick = leaveCall;
 
-  // 📹 הסרת כל הוידאו מה-DOM
-  document.getElementById("local-player").innerHTML = "";
-  document.querySelectorAll("[id^='participant-']").forEach(el => el.remove());
-
-  // 📴 סגירת MediaRecorder
-  if (recorder && recorder.state !== "inactive") {
-    recorder.stop();
-    recorder = undefined;
-  }
-
-  // 🔌 סגירת WebSocket
-  if (socket && socket.readyState === WebSocket.OPEN) {
-    socket.close();
-    socket = null;
-  }
-
-  // 📴 עזיבת ערוץ Agora
-  if (client) {
-    await client.leave();
-    client = null;
-  }
-
-  // ♻️ איפוס סטטוס ותצוגה
-  document.getElementById("status").innerText = "👋 יצאת מהשיחה";
-};
+    window.addEventListener("beforeunload", () => {
+    leaveCall(); // לא מחכה ל-await, רק מבצע סגירה
+});
 
     //שילוב עם Deppgram//
 
