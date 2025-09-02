@@ -1,4 +1,4 @@
-const { TextToSpeechClient } = require('@google-cloud/text-to-speech').v1;
+const textToSpeech = require('@google-cloud/text-to-speech');
 
 const client = new textToSpeech.TextToSpeechClient({
   credentials: JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON)
