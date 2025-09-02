@@ -154,7 +154,6 @@
     let STTlatency = 0;
     let captions;
     let translation;
-    let tts;
 
     window.onload = async () => {
 
@@ -390,10 +389,10 @@ async function startMicAndTranscription() {
 
       // ======== טקסט לדיבור (TTS) ========
   if (data.type === "tts" && data.payload?.audioBase64) {
-    const audioBase64 = data.payload.audioBase64;
+    const audioData = data.payload.audioBase64;
 
     // הפיכת Base64 ל־Blob
-    const byteChars = atob(audioBase64);
+    const byteChars = atob(audioData );
     const byteNumbers = new Array(byteChars.length);
     for (let i = 0; i < byteChars.length; i++) {
       byteNumbers[i] = byteChars.charCodeAt(i);
