@@ -305,20 +305,43 @@ document.getElementById("btn_mic").onclick = async () => {
     btn.style.opacity = "0.5";      // כפתורים בהירים יותר
     btn.style.cursor = "not-allowed"; // מציג שהכפתור לא לחיץ
   });
-      await client.leave();
-agoraMicTrack && agoraMicTrack.stop();
-agoraMicTrack && agoraMicTrack.close();
-cameraTrack && cameraTrack.stop();
-cameraTrack && cameraTrack.close();
-      if (recorder && recorder.state !== "inactive") {
-  recorder.stop();
-        recorder = undefined;
-}
+// 🎥 סגירת כל הוידאו והאודיו של Agora
+  if (agoraMicTrack) {
+    agoraMicTrack.stop();
+    agoraMicTrack.close();
+    agoraMicTrack = null;
+  }
+  if (cameraTrack) {
+    cameraTrack.stop();
+    cameraTrack.close();
+    cameraTrack = null;
+  }
 
-      document.getElementById("status").innerText = "👋 יצאת מהשיחה";
-      document.getElementById("local-player").innerHTML = "";
-      document.querySelectorAll("[id^='participant-']").forEach(el => el.remove());   // הסרת כל המשתתפים שנוספו ב־grid
-    };
+  // 📹 הסרת כל הוידאו מה-DOM
+  document.getElementById("local-player").innerHTML = "";
+  document.querySelectorAll("[id^='participant-']").forEach(el => el.remove());
+
+  // 📴 סגירת MediaRecorder
+  if (recorder && recorder.state !== "inactive") {
+    recorder.stop();
+    recorder = undefined;
+  }
+
+  // 🔌 סגירת WebSocket
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    socket.close();
+    socket = null;
+  }
+
+  // 📴 עזיבת ערוץ Agora
+  if (client) {
+    await client.leave();
+    client = null;
+  }
+
+  // ♻️ איפוס סטטוס ותצוגה
+  document.getElementById("status").innerText = "👋 יצאת מהשיחה";
+};
 
     //שילוב עם Deppgram//
 
