@@ -26,12 +26,17 @@
       display: grid;
       grid-gap: 20px;
       margin-top: 20px;
-      width: 100%;
+          /* לא לגעת בתיבות */
+      margin-left: 320px;   /* רוחב של תיבת Translation + מרווח */
+      margin-right: 320px;  /* רוחב של תיבת Captions + מרווח */
+      width: calc(100% - 640px); /* גובה כל המסך פחות שני הצדדים */
       grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
       grid-auto-rows: minmax(200px, auto);
     }
 
     .video-box {
+      max-width: 100%;
+      max-height: calc(100vh - 100px); /* גובה מותאם למסך */
       width: 400px;
       height: 300px;
       background: rgba(255, 255, 255, 0.1);
@@ -124,10 +129,11 @@
 </div>
     <!-- סוף -->
   
-  <div class="video-container">
-  <div id="local-player" class="video-box"></div>
   <div id="captions"></div>
   <div id="translation"></div>
+
+  <div class="video-container">
+  <div id="local-player" class="video-box"></div>
   </div>
 
   <div class="controls">
