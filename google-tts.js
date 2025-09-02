@@ -1,52 +1,38 @@
-'use strict';
 const { TextToSpeechClient } = require('@google-cloud/text-to-speech').v1;
 
-const texttospeechClient = new TextToSpeechClient({
+const client = new textToSpeech.TextToSpeechClient({
   credentials: JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON)
 });
 
 /**
- * synthesizeStreaming
- * פונקציה שמקבלת טקסט ומבצעת סטרימינג של אודיו
- * @param {string} text - הטקסט להמרה לדיבור
- * @returns {Promise<void>}
+ * synthesizeTextToBase64
+ * פונקציה שמקבלת טקסט ומחזירה את האודיו כ-Base64
+ * @param {string} text - הטקסט שברצונך להמיר לקול
+ * @param {string} languageCode - קוד שפה שעליו יופע ה-TTS, למשל 'en-US' או 'he-IL'
+ * @param {string} gender - 'NEUTRAL', 'MALE' או 'FEMALE'
+ * @param {string} [voiceName] - שם הקול הספציפי ב-Google TTS, למשל 'he-IL-Wavenet-B'
+ * @returns {Promise<string>} Base64 של האודיו
  */
-async function synthesizeStreaming(text) {
-  return new Promise(async (resolve, reject) => {
-    const stream = await texttospeechClient.streamingSynthesize();
+async function synthesizeTextToBase64(text, languageCode = 'he-IL', gender = 'MALE', voiceName = "he-IL-Standard-B") {
+  const request = {
+    input: { text },
+    voice: { 
+      languageCode, 
+      ssmlGender: gender,
+      ...(voiceName && { name: voiceName }) // מוסיף את השדה רק אם מוגדר
+    },
+    audioConfig: { audioEncoding: 'MP3' }, // אפשר גם 'LINEAR16' ל-WAV
+  };
 
-    stream.on('data', (response) => {
-      if (response.audioContent) {
-        console.log('קיבלתי חלק אודיו בגודל:', response.audioContent.length);
-        // כאן אפשר לנגן או לשמור את ה-Buffer
-      }
-    });
-
-    stream.on('error', (err) => {
-      console.error('Error:', err);
-      reject(err); // חשוב! אחרת ה-Promise לא יכשל
-    });
-
-    stream.on('end', () => {
-      console.log('Streaming ended');
-      resolve(); // מסמן שהסטרימינג הסתיים בהצלחה
-    });
-
-    // שולחים את ההגדרות
-    stream.write({
-      streamingConfig: {
-        voice: { languageCode: 'he-IL', ssmlGender: 'MALE' },
-        audioConfig: { audioEncoding: 'MP3' },
-      }
-    });
-
-    // שולחים את הטקסט בפועל
-    stream.write({
-      input: { text }
-    });
-
-    stream.end();
-  });
+  try {
+    const [response] = await client.synthesizeSpeech(request);
+    // המרה ל-Base64
+    const audioBase64 = response.audioContent.toString('base64');
+    return audioBase64;
+  } catch (err) {
+    console.error('Google TTS error:', err);
+    throw err;
+  }
 }
 
-module.exports = { synthesizeStreaming };
+module.exports = { synthesizeTextToBase64 };
