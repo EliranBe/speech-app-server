@@ -70,7 +70,7 @@ deepgram.addListener(LiveTranscriptionEvents.Transcript, async (data) => {
     if (translated) {
       try {
       // יוצר אודיו ב-Google TTS מהתרגום
-      const textForTTS = transcriptText;
+      const textForTTS = translated || transcriptText;
         console.log("📢 Sending to Google TTS:", textForTTS);
     const audioBase64 = await synthesizeTextToBase64(textForTTS);
     // שולח ללקוח את האודיו
