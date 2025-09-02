@@ -365,6 +365,45 @@ async function startMicAndTranscription() {
     }
   });
 
+  // תור TTS כדי למנוע השמעה מקבילה
+const ttsQueue = [];  // תור של משפטים
+let isTtsPlaying = false; // האם כרגע משמיעים משהו
+
+function enqueueTts(audioBase64) {
+  ttsQueue.push(audioBase64);
+  playNextTts();
+}
+
+function playNextTts() {
+  if (isTtsPlaying || ttsQueue.length === 0) return;
+  
+ // הפיכת Base64 ל־Blob
+  const audioBase64 = ttsQueue.shift();
+  const byteChars = atob(audioBase64);
+  const byteNumbers = new Array(byteChars.length);
+  for (let i = 0; i < byteChars.length; i++) {
+    byteNumbers[i] = byteChars.charCodeAt(i);
+  }
+  const byteArray = new Uint8Array(byteNumbers);
+  const audioBlob = new Blob([byteArray], { type: "audio/mp3" });
+
+  // השמעה
+  const audioUrl = URL.createObjectURL(audioBlob);
+  const audio = new Audio(audioUrl);
+
+  isTtsPlaying = true;
+  audio.play().catch(err => {
+    console.error("⚠️ Error playing TTS:", err);
+    isTtsPlaying = false;
+    playNextTts(); // ממשיכים גם במקרה של שגיאה
+  });
+
+  audio.onended = () => {
+    isTtsPlaying = false;
+    playNextTts(); // מפעילים את המשפט הבא בתור
+  };
+}
+
   socket.addEventListener("message", (event) => {
     if (event.data === "") return;
     let data;
@@ -411,23 +450,9 @@ async function startMicAndTranscription() {
 }
 
       // ======== טקסט לדיבור (TTS) ========
-  if (data.type === "tts" && data.payload?.audioBase64) {
-    const audioBase64 = data.payload.audioBase64;
-
-    // הפיכת Base64 ל־Blob
-    const byteChars = atob(audioBase64);
-    const byteNumbers = new Array(byteChars.length);
-    for (let i = 0; i < byteChars.length; i++) {
-      byteNumbers[i] = byteChars.charCodeAt(i);
-    }
-    const byteArray = new Uint8Array(byteNumbers);
-    const audioBlob = new Blob([byteArray], { type: "audio/mp3" });
-    
-    // השמעה
-    const audioUrl = URL.createObjectURL(audioBlob);
-    const audio = new Audio(audioUrl);
-    audio.play().catch(err => console.error("⚠️ Error playing TTS:", err));
-  }
+if (data.type === "tts" && data.payload?.audioBase64) {
+  enqueueTts(data.payload.audioBase64);
+}
   });
 
   socket.addEventListener("close", () => {
