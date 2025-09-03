@@ -142,7 +142,6 @@ video {
     let captions;
     let translation;
     let tts;
-    let ttsPlayer = null; // נגן TTS קבוע
 
     async function leaveCall() {
     // 🔒 השבתת כל הכפתורים
@@ -186,8 +185,6 @@ video {
     const res = await fetch('/appId');
     const data = await res.json();
     AGORA_APP_ID = data.appId;
-
-    ttsPlayer = new Audio(); // אתחול הנגן הקבוע
 
     await startCall(); // עכשיו App ID כבר מוגדר
   } catch (err) {
@@ -258,14 +255,6 @@ async function startLocalTracks() {
     btn_mic.innerText = isRunning ? "🔇 Stop Transcription" : "🎤 Start Transcription";
 
 document.getElementById("btn_mic").onclick = async () => {
-    // unlock audio במכשירי מובייל
-  try {
-    const silent = new Audio("data:audio/mp3;base64,SUQzAwAAAAAA"); // אודיו שקט
-    await silent.play();
-    console.log("🔓 Audio unlocked for mobile autoplay");
-  } catch (e) {
-    console.warn("⚠️ Unlock failed:", e);
-  }
   if (!isRunning) {
     await startMicAndTranscription();
     document.getElementById("btn_mic").innerText = "🔇 Stop Transcription";
@@ -339,17 +328,15 @@ function playNextTts() {
 
   // השמעה
   const audioUrl = URL.createObjectURL(audioBlob);
-  ttsPlayer.src = audioUrl;
+  const audio = new Audio(audioUrl);
 
   isTtsPlaying = true;
-   ttsPlayer.play().then(() => {
-    console.log("🔊 Playing TTS audio");
-  }).catch(err => {
+    audio.play().catch(err => {
     console.error("⚠️ Error playing TTS:", err);
     isTtsPlaying = false;
-    playNextTts();
+    playNextTts(); // ממשיכים גם במקרה של שגיאה
   });
-  ttsPlayer.onended = () => {
+  audio.onended = () => {
     isTtsPlaying = false;
     playNextTts(); // מפעילים את המשפט הבא בתור
   };
