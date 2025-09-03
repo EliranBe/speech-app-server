@@ -255,6 +255,14 @@ async function startLocalTracks() {
     btn_mic.innerText = isRunning ? "🔇 Stop Transcription" : "🎤 Start Transcription";
 
 document.getElementById("btn_mic").onclick = async () => {
+    // unlock audio במכשירי מובייל
+  try {
+    const silent = new Audio("data:audio/mp3;base64,SUQzAwAAAAAA"); // אודיו שקט
+    await silent.play();
+    console.log("🔓 Audio unlocked for mobile autoplay");
+  } catch (e) {
+    console.warn("⚠️ Unlock failed:", e);
+  }
   if (!isRunning) {
     await startMicAndTranscription();
     document.getElementById("btn_mic").innerText = "🔇 Stop Transcription";
