@@ -142,6 +142,7 @@ video {
     let captions;
     let translation;
     let tts;
+    let ttsPlayer = null; // נגן TTS קבוע
 
     async function leaveCall() {
     // 🔒 השבתת כל הכפתורים
@@ -185,6 +186,8 @@ video {
     const res = await fetch('/appId');
     const data = await res.json();
     AGORA_APP_ID = data.appId;
+
+    ttsPlayer = new Audio(); // אתחול הנגן הקבוע
 
     await startCall(); // עכשיו App ID כבר מוגדר
   } catch (err) {
@@ -336,16 +339,17 @@ function playNextTts() {
 
   // השמעה
   const audioUrl = URL.createObjectURL(audioBlob);
-  const audio = new Audio(audioUrl);
+  ttsPlayer.src = audioUrl;
 
   isTtsPlaying = true;
-  audio.play().catch(err => {
+   ttsPlayer.play().then(() => {
+    console.log("🔊 Playing TTS audio");
+  }).catch(err => {
     console.error("⚠️ Error playing TTS:", err);
     isTtsPlaying = false;
-    playNextTts(); // ממשיכים גם במקרה של שגיאה
+    playNextTts();
   });
-
-  audio.onended = () => {
+  ttsPlayer.onended = () => {
     isTtsPlaying = false;
     playNextTts(); // מפעילים את המשפט הבא בתור
   };
