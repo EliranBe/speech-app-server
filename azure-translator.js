@@ -13,8 +13,8 @@ async function translateText(inputText) {
 const url = `${endpoint}/translate`;
   const params = {
     "api-version": "3.0",
-    from: "ru",
-    to: "he,es"
+    from: "en",
+    to: "he,ru"
   };
   const headers = {
     "Ocp-Apim-Subscription-Key": subscriptionKey,
