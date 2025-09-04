@@ -13,7 +13,7 @@ const client = new textToSpeech.TextToSpeechClient({
  * @param {string} [voiceName] - שם הקול הספציפי ב-Google TTS, למשל 'he-IL-Wavenet-B'
  * @returns {Promise<string>} Base64 של האודיו
  */
-async function synthesizeTextToBase64(text, languageCode = 'he-IL', gender = 'MALE', voiceName = "he-IL-Standard-B") {
+async function synthesizeTextToBase64(text, languageCode = 'he-IL', gender = 'MALE', voiceName = "he-IL-Wavenet-D") {
   const request = {
     input: { text },
     voice: { 
