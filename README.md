@@ -33,8 +33,8 @@ https://cloud.google.com/text-to-speech/docs/list-voices-and-types#list_of_all_s
 
 יש לשנות את ה- languageCode לשפה ש-TTS ידבר (צריך להיות תואם ל- to מהקובץ azure-translator.js, אבל רק לשפה אחת) (בהתאם לשפות הנתמכות ע"י Google).
 
-
 יש לשנות את ה- gender למגדר הנכון.
+
 יש לשנות את ה- voiceName לקול המתאים לשפה:
 
 Israel
