@@ -38,6 +38,7 @@ https://cloud.google.com/text-to-speech/docs/list-voices-and-types#list_of_all_s
 יש לשנות את ה- voiceName לקול המתאים לשפה:
 
 Israel
+
 עבור he-IL לזכר	he-IL-Wavenet-D 
 
 עבור he-IL לנקבה he-IL-Wavenet-C
