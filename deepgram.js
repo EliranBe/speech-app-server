@@ -51,7 +51,7 @@ deepgram.addListener(LiveTranscriptionEvents.Transcript, async (data) => {
   ws.send(JSON.stringify(data));
 
   // כאן נגדיר פעם אחת את שפת המקור ושפת היעד
-const sourceLang = "en";  // השפה בה אתה מדבר
+const sourceLang = "es";  // השפה בה אתה מדבר
 const targetLang = "he";  // השפה ל-TTS ותרגום
   
     // נתרגם את התמלול 
