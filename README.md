@@ -19,7 +19,7 @@ https://cloud.google.com/text-to-speech/docs/list-voices-and-types#list_of_all_s
 
 יש לשנות את ה- sourceLang לשפה המדוברת ע"י המשתמש (בהתאם לשפות הנתמכות ע"י Deepgram).
 
-יש לשנות את ה- targetLang לשפה שברצוננו לתרגם. - לא חייב לשנות ערך זה פה. במקום זאת, ניתן לשנות בקובץ azure-translator.js.
+יש לשנות את ה- targetLang לשפה שברצוננו לתרגם.
 
 
 בקובץ azure-translator.js:
