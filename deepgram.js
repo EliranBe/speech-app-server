@@ -20,7 +20,7 @@ const setupDeepgram = (ws, getLastChunkTime) => {
     const deepgram = deepgramClient.listen.live({
       model: 'nova-3',
       smart_format: true,
-      language: 'en-US',
+      language: 'multi',
       dictation: true, 
       punctuate: true,
       utterances: true,
@@ -50,12 +50,16 @@ deepgram.addListener(LiveTranscriptionEvents.Transcript, async (data) => {
     // נשלח ללקוח את התמלול המקורי ישירות (כדי להתאים לצד הלקוח)
   ws.send(JSON.stringify(data));
 
+  // כאן נגדיר פעם אחת את שפת המקור ושפת היעד
+const sourceLang = "en";  // השפה בה אתה מדבר
+const targetLang = "he";  // השפה ל-TTS ותרגום
+  
     // נתרגם את התמלול 
   const transcriptText = data?.channel?.alternatives?.[0]?.transcript;
    let translated = null;
   if (transcriptText) {
          try {
-      translated = await translateText(transcriptText, "he", "en");
+      translated = await translateText(transcriptText, targetLang, sourceLang);
       console.log("🌍 Translated text:", translated);
 
       // שולח ללקוח הודעה חדשה עם התרגום
@@ -69,7 +73,7 @@ deepgram.addListener(LiveTranscriptionEvents.Transcript, async (data) => {
     if (translated) {
       try {
       // יוצר אודיו ב-Google TTS מהתרגום
-      const textForTTS = translated?.he || "";
+      const textForTTS = translated?.[targetLang] || "";
         console.log("📢 Sending to Google TTS:", textForTTS);
     const audioBase64 = await synthesizeTextToBase64(textForTTS);
     // שולח ללקוח את האודיו
