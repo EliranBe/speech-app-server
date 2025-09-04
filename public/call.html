@@ -142,6 +142,7 @@ video {
     let captions;
     let translation;
     let tts;
+    let ttsPlayer = null;
 
     async function leaveCall() {
     // 🔒 השבתת כל הכפתורים
@@ -255,6 +256,17 @@ async function startLocalTracks() {
     btn_mic.innerText = isRunning ? "🔇 Stop Transcription" : "🎤 Start Transcription";
 
 document.getElementById("btn_mic").onclick = async () => {
+    if (!ttsPlayer) {
+    ttsPlayer = new Audio();
+    try {
+      // הפעלה ראשונה ריקה כדי "לפתוח" את הנגן
+      ttsPlayer.play().catch(() => {});
+      console.log("🔊 TTS player primed");
+    } catch (err) {
+      console.warn("⚠️ TTS player init failed:", err);
+    }
+  }
+
   if (!isRunning) {
     await startMicAndTranscription();
     document.getElementById("btn_mic").innerText = "🔇 Stop Transcription";
@@ -328,18 +340,22 @@ function playNextTts() {
 
   // השמעה
   const audioUrl = URL.createObjectURL(audioBlob);
-  const audio = new Audio(audioUrl);
 
+if (ttsPlayer) {
+  ttsPlayer.src = audioUrl;
   isTtsPlaying = true;
-    audio.play().catch(err => {
+
+  ttsPlayer.play().catch(err => {
     console.error("⚠️ Error playing TTS:", err);
     isTtsPlaying = false;
-    playNextTts(); // ממשיכים גם במקרה של שגיאה
+    playNextTts();
   });
-  audio.onended = () => {
+
+  ttsPlayer.onended = () => {
     isTtsPlaying = false;
-    playNextTts(); // מפעילים את המשפט הבא בתור
+    playNextTts();
   };
+}
 }
 
   socket.addEventListener("message", (event) => {
