@@ -17,7 +17,7 @@ https://cloud.google.com/text-to-speech/docs/list-voices-and-types#list_of_all_s
 
 בקובץ deepgram.js:
 
-יש לשנות את ה- sourceLang לשפה המדוברת ע"י המשתמש.
+יש לשנות את ה- sourceLang לשפה המדוברת ע"י המשתמש (בהתאם לשפות הנתמכות ע"י Deepgram).
 
 יש לשנות את ה- targetLang לשפה שברצוננו לתרגם. - לא חייב לשנות ערך זה פה. במקום זאת, ניתן לשנות בקובץ azure-translator.js.
 
@@ -26,12 +26,12 @@ https://cloud.google.com/text-to-speech/docs/list-voices-and-types#list_of_all_s
 
 יש לשנות את ה- from לשפה בה המשתמש מדבר (צריך להיות תואם ל- sourceLang מהקובץ deepgram.js).
 
-יש לשנות את ה- to לשפה אלייה נרצה לתרגם. לדוגמה: "he" או אם יש מס' שפות "he,ru".
+יש לשנות את ה- to לשפה אלייה נרצה לתרגם. לדוגמה: "he" או אם יש מס' שפות "he,ru" (בהתאם לשפות הנתמכות ע"י Azure).
 
 
 בקובץ google-tts.js:
 
-יש לשנות את ה- languageCode לשפה ש-TTS ידבר (צריך להיות תואם ל- to מהקובץ azure-translator.js, אבל רק לשפה אחת).
+יש לשנות את ה- languageCode לשפה ש-TTS ידבר (צריך להיות תואם ל- to מהקובץ azure-translator.js, אבל רק לשפה אחת) (בהתאם לשפות הנתמכות ע"י Google).
 
 
 יש לשנות את ה- gender למגדר הנכון.
