@@ -5,7 +5,7 @@ const endpoint = process.env["AZURE_TRANSLATOR_ENDPOINT"];
 const region = process.env["AZURE_TRANSLATOR_REGION"];
 
 // פונקציה כללית לתרגום טקסט
-async function translateText(inputText, toLang, fromLang) {
+async function translateText(inputText) {
    if (!subscriptionKey) {
     throw new Error("⚠️ Missing AZURE_TRANSLATOR_KEY1 in environment variables");
   }
@@ -13,8 +13,8 @@ async function translateText(inputText, toLang, fromLang) {
 const url = `${endpoint}/translate`;
   const params = {
     "api-version": "3.0",
-    from: fromLang,
-    to: toLang
+    from: "en",
+    to: "he,ru"
   };
   const headers = {
     "Ocp-Apim-Subscription-Key": subscriptionKey,
