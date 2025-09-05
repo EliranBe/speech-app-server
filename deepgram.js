@@ -16,7 +16,7 @@ module.exports = function startWebSocketServer(server, app) {
 
   const deepgramClient = createClient(deepgramApiKey);
 
-const setupDeepgram = (ws, getLastChunkTime, pendingItemsRef, checkClose) => {
+const setupDeepgram = (ws, getLastChunkTime) => {
     const deepgram = deepgramClient.listen.live({
       model: 'nova-3',
       smart_format: true,
@@ -39,35 +39,26 @@ const setupDeepgram = (ws, getLastChunkTime, pendingItemsRef, checkClose) => {
 
     deepgram.addListener(LiveTranscriptionEvents.Open, async() => {
       console.log("🔗 deepgram: connected");
-});
+
 deepgram.addListener(LiveTranscriptionEvents.Transcript, async (data) => {
   const last = typeof getLastChunkTime === 'function' ? getLastChunkTime() : null;
   const latency = last ? (Date.now() - last) : null;      
   console.log("📦 Full transcript event:", JSON.stringify(data, null, 2));
         console.log("✅ WebSocket received transcript from deepgram", latency ? `Latency: ${latency} ms` : '');
         console.log("✅ WebSocket sent transcript to client");
-  
+
     // נשלח ללקוח את התמלול המקורי ישירות (כדי להתאים לצד הלקוח)
-try {
-  pendingItemsRef.value++;
   ws.send(JSON.stringify(data));
-} catch (err) {
-  console.error("❌ Error sending transcript:", err);
-} finally {
-  pendingItemsRef.value--;
-  checkClose();
-}
 
   // כאן נגדיר פעם אחת את שפת המקור ושפת היעד
 const sourceLang = "en";  // השפה בה אתה מדבר
 const targetLang = "ru";  // השפה ל-TTS ותרגום
-  
+
     // נתרגם את התמלול 
   const transcriptText = data?.channel?.alternatives?.[0]?.transcript;
    let translated = null;
   if (transcriptText) {
          try {
-           pendingItemsRef.value++; // ✅ התחלנו תהליך תרגום
       translated = await translateText(transcriptText, targetLang, sourceLang);
       console.log("🌍 Translated text:", translated);
 
@@ -76,8 +67,6 @@ const targetLang = "ru";  // השפה ל-TTS ותרגום
         type: "translation",
         payload: { original: transcriptText, translated }
       }));
-           pendingItemsRef.value--; // ✅ תהליך תרגום הסתיים
-           checkClose();
     } catch (err) {
       console.error("❌ Translation error:", err);
     }
@@ -86,22 +75,19 @@ const targetLang = "ru";  // השפה ל-TTS ותרגום
       // יוצר אודיו ב-Google TTS מהתרגום
       const textForTTS = translated?.[targetLang] || "";
         console.log("📢 Sending to Google TTS:", textForTTS);
-        pendingItemsRef.value++; // ✅ התחלנו תהליך TTS
     const audioBase64 = await synthesizeTextToBase64(textForTTS);
     // שולח ללקוח את האודיו
   ws.send(JSON.stringify({
     type: "tts",
     payload: { audioBase64 }
   }));
-       pendingItemsRef.value--; // ✅ תהליך TTS הסתיים
-        checkClose();
 } catch (err) {
   console.error("❌ Google TTS error:", err);
   }
 }
 }
 });
-    
+
       deepgram.addListener(LiveTranscriptionEvents.Close, async() => {
         console.log("deepgram: disconnected");
         clearInterval(keepAlive);
@@ -124,76 +110,37 @@ const targetLang = "ru";  // השפה ל-TTS ותרגום
         console.log(`deepgram: metadata received – Detected language: ${detectedLang}, Tier: ${tier}, Models: ${models}`);
         ws.send(JSON.stringify({ metadata: data }));
       });
-    
+    });
 
     return { deepgram, keepAlive };
-  };// <-- סוף setupDeepgram
+  };
 
   wss.on('connection', (ws) => {
     console.log("🔗 Client connected to WebSocket");
   let lastChunkTime = null;
 const getLastChunkTime = () => lastChunkTime;
-      let isRecording = true; // ✅ ברירת מחדל - מקליטים
-      let pendingItemsRef = { value: 0 }; // מספר פריטים בהמתנה לשליחה ללקוח
-      let stopRequested = false;
-      let { deepgram, keepAlive } = setupDeepgram(ws, getLastChunkTime, pendingItemsRef, checkClose);
+      let { deepgram, keepAlive } = setupDeepgram(ws, getLastChunkTime);
  
-ws.on('message', (message) => {
-    let parsed;
-  try {
-    parsed = JSON.parse(message.toString());
-  } catch (e) {
-    parsed = null;
+    ws.on('message', (message) => {
+      console.log('Received audio chunk, size:', message.length);      
+      if (deepgram.getReadyState() === 1) { // OPEN
+        lastChunkTime = Date.now();
+        console.log("✅ WebSocket sent data to deepgram");
+        deepgram.send(message);
+      } else if (deepgram.getReadyState() >= 2) { // CLOSING / CLOSED
+        console.log("⚠️ WebSocket couldn't be sent data to deepgram");
+        console.log("⚠️ WebSocket retrying connection to deepgram");
+        deepgram.finish();
+        deepgram.removeAllListeners();
+  if (keepAlive) {
+    clearInterval(keepAlive);
+    keepAlive = null;
   }
-
-  // הודעת STOP מהלקוח
-if (parsed && parsed.action === "stop") {
-    console.log("⏸️ Recording stopped by client");
-    isRecording = false; // לא שולחים עוד chunks חדשים
-    stopRequested = true;
-
-    if (deepgram) {
-        console.log("⏳ Finishing Deepgram stream...");
-        // Finish מחזיר promise שמציין שסיימנו לקבל את כל התמלולים
-        deepgram.finish().then(() => {
-            console.log("✅ Deepgram stream finished");
-            // מחכים שכל התרגומים וה-TTS של מה שכבר התקבל הסתיימו
-            checkClose();
-        }).catch(err => {
-            console.error("❌ Error finishing Deepgram:", err);
-            checkClose();
-        });
-    } else {
-        checkClose();
-    }
-    return; // חשוב כדי לא להמשיך לעיבוד chunk
-}
-
-    // רק אם עדיין מקליטים - נשלח את האודיו ל־Deepgram
-  if (!isRecording) {
-    console.log("⚠️ Recording paused, audio chunk ignored");
-    return;
-  }
-
-  if (deepgram.getReadyState() === 1) { // OPEN
-    lastChunkTime = Date.now();
-    console.log("✅ WebSocket sent audio chunk to deepgram");
-    deepgram.send(message);
-  } else if (deepgram.getReadyState() >= 2) { // CLOSING / CLOSED
-    console.log("⚠️ Deepgram connection closed, retrying...");
-    deepgram.finish();
-    deepgram.removeAllListeners();
-    if (keepAlive) {
-      clearInterval(keepAlive);
-      keepAlive = null;
-    }
-    let result = setupDeepgram(ws, getLastChunkTime, pendingItemsRef, checkClose);
-    deepgram = result.deepgram;
-    keepAlive = result.keepAlive;
-  } else {
-    console.log("⚠️ Deepgram socket not ready (probably CONNECTING state)");
-  }
-});
+  ({ deepgram, keepAlive } = setupDeepgram(ws, getLastChunkTime));  // ✅ עדכון גם של keepAlive
+} else {
+        console.log("⚠️ WebSocket couldn't be sent data to deepgram");
+      }  
+    });
      
     ws.on('close', () => {
       console.log("❌ Client disconnected from WebSocket");
@@ -201,28 +148,9 @@ if (parsed && parsed.action === "stop") {
     clearInterval(keepAlive);
     keepAlive = null;
   }
-  // מבטיח שכל הקבצים שכבר התקבלו יעובדו
- if (deepgram) {
-  if (!stopRequested || pendingItemsRef.value === 0) {
-    deepgram.finish();             // מסיים תמלול רק כשבאמת מותר
-    deepgram.removeAllListeners();
-  }
-}
+      deepgram.finish();
+      deepgram.removeAllListeners();
+      deepgram = null;
+         });
   });
-
-function checkClose() {
-    // מחכים עד שכל הפריטים בהמתנה טופלו
-    if (stopRequested && pendingItemsRef.value === 0) {
-        if (ws.readyState === WebSocket.OPEN) {
-            console.log("🔌 Closing WebSocket after all processing finished");
-            ws.close();
-        }
-    } else {
-        console.log(`⏳ Waiting to close WS: pendingItems=${pendingItemsRef.value}`);
-    }
-}
-
-
-}); // סוגר את wss.on('connection')
-}; // סוגר את startWebSocketServer
-
+};
