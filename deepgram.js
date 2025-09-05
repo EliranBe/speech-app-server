@@ -174,7 +174,9 @@ if (parsed && parsed.type === "control") {
       clearInterval(keepAlive);
       keepAlive = null;
     }
-({ deepgram, keepAlive } = setupDeepgram(ws, getLastChunkTime, pendingItemsRef, checkClose));
+let result = setupDeepgram(ws, getLastChunkTime, pendingItemsRef, checkClose);
+deepgram = result.deepgram;
+keepAlive = result.keepAlive;
   } else {
     console.log("⚠️ Deepgram socket not ready (probably CONNECTING state)"); 
   }
@@ -204,5 +206,6 @@ if (parsed && parsed.type === "control") {
   }
 }
 
-}; // סוף startWebSocketServer
+}); // סוגר את wss.on('connection')
+}; // סוגר את startWebSocketServer
 
