@@ -120,29 +120,50 @@ const targetLang = "ru";  // השפה ל-TTS ותרגום
   let lastChunkTime = null;
 const getLastChunkTime = () => lastChunkTime;
       let { deepgram, keepAlive } = setupDeepgram(ws, getLastChunkTime);
+ 
+  let isRecording = true; // ✅ ברירת מחדל - מקליטים
 
-
-    ws.on('message', (message) => {
-      console.log('Received audio chunk, size:', message.length);      
-      if (deepgram.getReadyState() === 1) { // OPEN
-        lastChunkTime = Date.now();
-        console.log("✅ WebSocket sent data to deepgram");
-        deepgram.send(message);
-      } else if (deepgram.getReadyState() >= 2) { // CLOSING / CLOSED
-        console.log("⚠️ WebSocket couldn't be sent data to deepgram");
-        console.log("⚠️ WebSocket retrying connection to deepgram");
-        deepgram.finish();
-        deepgram.removeAllListeners();
-  if (keepAlive) {
-    clearInterval(keepAlive);
-    keepAlive = null;
+ws.on('message', (message) => {
+  // ננסה לפרש אם זו הודעת שליטה (stop) או אודיו
+  let parsed;
+  try {
+    parsed = JSON.parse(message.toString());
+  } catch (e) {
+    parsed = null;
   }
-  ({ deepgram, keepAlive } = setupDeepgram(ws, getLastChunkTime));  // ✅ עדכון גם של keepAlive
-} else {
-        console.log("⚠️ WebSocket couldn't be sent data to deepgram");
-      }  
-    });
 
+  // ✅ הודעת שליטה מהלקוח
+  if (parsed && parsed.type === "control") {
+    if (parsed.action === "stop") {
+      console.log("⏸️ Recording stopped by client");
+      isRecording = false; // מפסיקים לשלוח אודיו חדש
+    }
+    return; // לא לשלוח הודעות שליטה ל־Deepgram
+  }
+
+  // ✅ רק אם עדיין מקליטים - נשלח את האודיו ל־Deepgram
+  console.log('Received audio chunk, size:', message.length); // 🟢 חזרנו להדפיס גם את הגודל
+  if (isRecording && deepgram.getReadyState() === 1) {
+    lastChunkTime = Date.now();
+    console.log("✅ WebSocket sent audio chunk to deepgram");
+    deepgram.send(message);
+  } else if (!isRecording) {
+    console.log("⚠️ Recording paused, audio chunk ignored");
+  } else if (deepgram.getReadyState() >= 2) { // CLOSING / CLOSED
+    console.log("⚠️ WebSocket couldn't be sent data to deepgram");
+    console.log("⚠️ Deepgram connection closed, retrying...");
+    deepgram.finish();
+    deepgram.removeAllListeners();
+    if (keepAlive) {
+      clearInterval(keepAlive);
+      keepAlive = null;
+    }
+    ({ deepgram, keepAlive } = setupDeepgram(ws, getLastChunkTime));
+  } else {
+    console.log("⚠️ Deepgram socket not ready (probably CONNECTING state)"); 
+  }
+});
+     
     ws.on('close', () => {
       console.log("❌ Client disconnected from WebSocket");
     if (keepAlive) {
