@@ -48,7 +48,15 @@ deepgram.addListener(LiveTranscriptionEvents.Transcript, async (data) => {
         console.log("✅ WebSocket sent transcript to client");
   
     // נשלח ללקוח את התמלול המקורי ישירות (כדי להתאים לצד הלקוח)
+try {
+  pendingItems++;
   ws.send(JSON.stringify(data));
+} catch (err) {
+  console.error("❌ Error sending transcript:", err);
+} finally {
+  pendingItems--;
+  checkClose();
+}
 
   // כאן נגדיר פעם אחת את שפת המקור ושפת היעד
 const sourceLang = "en";  // השפה בה אתה מדבר
@@ -59,6 +67,7 @@ const targetLang = "ru";  // השפה ל-TTS ותרגום
    let translated = null;
   if (transcriptText) {
          try {
+           pendingItems++; // ✅ התחלנו תהליך תרגום
       translated = await translateText(transcriptText, targetLang, sourceLang);
       console.log("🌍 Translated text:", translated);
 
@@ -67,6 +76,8 @@ const targetLang = "ru";  // השפה ל-TTS ותרגום
         type: "translation",
         payload: { original: transcriptText, translated }
       }));
+           pendingItems--; // ✅ תהליך תרגום הסתיים
+           checkClose();
     } catch (err) {
       console.error("❌ Translation error:", err);
     }
@@ -75,12 +86,15 @@ const targetLang = "ru";  // השפה ל-TTS ותרגום
       // יוצר אודיו ב-Google TTS מהתרגום
       const textForTTS = translated?.[targetLang] || "";
         console.log("📢 Sending to Google TTS:", textForTTS);
+        pendingItems++; // ✅ התחלנו תהליך TTS
     const audioBase64 = await synthesizeTextToBase64(textForTTS);
     // שולח ללקוח את האודיו
   ws.send(JSON.stringify({
     type: "tts",
     payload: { audioBase64 }
   }));
+        pendingItems--; // ✅ תהליך TTS הסתיים
+        checkClose();
 } catch (err) {
   console.error("❌ Google TTS error:", err);
   }
@@ -119,10 +133,11 @@ const targetLang = "ru";  // השפה ל-TTS ותרגום
     console.log("🔗 Client connected to WebSocket");
   let lastChunkTime = null;
 const getLastChunkTime = () => lastChunkTime;
+      let isRecording = true; // ✅ ברירת מחדל - מקליטים
+      let pendingItems = 0; // מספר פריטים בהמתנה לשליחה ללקוח
+      let stopRequested = false;
       let { deepgram, keepAlive } = setupDeepgram(ws, getLastChunkTime);
  
-  let isRecording = true; // ✅ ברירת מחדל - מקליטים
-
 ws.on('message', (message) => {
   // ננסה לפרש אם זו הודעת שליטה (stop) או אודיו
   let parsed;
@@ -133,13 +148,14 @@ ws.on('message', (message) => {
   }
 
   // ✅ הודעת שליטה מהלקוח
-  if (parsed && parsed.type === "control") {
-    if (parsed.action === "stop") {
-      console.log("⏸️ Recording stopped by client");
-      isRecording = false; // מפסיקים לשלוח אודיו חדש
-    }
-    return; // לא לשלוח הודעות שליטה ל־Deepgram
+if (parsed && parsed.type === "control") {
+  if (parsed.action === "stop") {
+    console.log("⏸️ Recording stopped by client");
+    isRecording = false; // מפסיקים לשלוח אודיו חדש
+    stopRequested = true; // חדש: מציין שצריך להפסיק רק אחרי שהכול הגיע ללקוח
   }
+  return; // לא לשלוח הודעות שליטה ל־Deepgram
+}
 
   // ✅ רק אם עדיין מקליטים - נשלח את האודיו ל־Deepgram
   console.log('Received audio chunk, size:', message.length); // 🟢 חזרנו להדפיס גם את הגודל
@@ -170,9 +186,22 @@ ws.on('message', (message) => {
     clearInterval(keepAlive);
     keepAlive = null;
   }
-      deepgram.finish();
-      deepgram.removeAllListeners();
-      deepgram = null;
-         });
+  // מבטיח שכל הקבצים שכבר התקבלו יעובדו
+ if (deepgram) {
+  if (!stopRequested || pendingItems === 0) {
+    deepgram.finish();             // מסיים תמלול רק כשבאמת מותר
+    deepgram.removeAllListeners();
+  }
+}
   });
+
+    function checkClose() {
+  if (stopRequested && pendingItems === 0) {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.close();
+      console.log("🔌 WebSocket closed after all processing finished");
+    }
+  }
+}
+
 };
