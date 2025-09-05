@@ -147,21 +147,27 @@ ws.on('message', (message) => {
   }
 
   // הודעת STOP מהלקוח
-  if (parsed && parsed.action === "stop") {
+if (parsed && parsed.action === "stop") {
     console.log("⏸️ Recording stopped by client");
     isRecording = false; // לא שולחים עוד chunks חדשים
     stopRequested = true;
 
-    // מבטיחים שכל מה שנשלח ל-Deepgram יעובד לפני סגירת WS
     if (deepgram) {
-      console.log("⏳ Finishing Deepgram stream...");
-      deepgram.finish(); // סיים את התמלול כדי לקבל את כל התמלולים האחרונים
+        console.log("⏳ Finishing Deepgram stream...");
+        // Finish מחזיר promise שמציין שסיימנו לקבל את כל התמלולים
+        deepgram.finish().then(() => {
+            console.log("✅ Deepgram stream finished");
+            // מחכים שכל התרגומים וה-TTS של מה שכבר התקבל הסתיימו
+            checkClose();
+        }).catch(err => {
+            console.error("❌ Error finishing Deepgram:", err);
+            checkClose();
+        });
+    } else {
+        checkClose();
     }
-
-    // עכשיו לא סוגרים את ws מיד, checkClose יטפל בזה כשהכל יסתיים
-    checkClose();
     return; // חשוב כדי לא להמשיך לעיבוד chunk
-  }
+}
 
     // רק אם עדיין מקליטים - נשלח את האודיו ל־Deepgram
   if (!isRecording) {
@@ -205,14 +211,17 @@ ws.on('message', (message) => {
   });
 
 function checkClose() {
-  // רק אחרי שהמשתנה stopRequested והכל נשלח ללקוח
-  if (stopRequested && pendingItemsRef.value === 0) {
-    if (ws.readyState === WebSocket.OPEN) {
-      console.log("🔌 Closing WebSocket after all processing finished");
-      ws.close();
+    // מחכים עד שכל הפריטים בהמתנה טופלו
+    if (stopRequested && pendingItemsRef.value === 0) {
+        if (ws.readyState === WebSocket.OPEN) {
+            console.log("🔌 Closing WebSocket after all processing finished");
+            ws.close();
+        }
+    } else {
+        console.log(`⏳ Waiting to close WS: pendingItems=${pendingItemsRef.value}`);
     }
-  }
 }
+
 
 }); // סוגר את wss.on('connection')
 }; // סוגר את startWebSocketServer
