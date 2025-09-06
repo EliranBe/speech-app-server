@@ -167,10 +167,14 @@ video {
     }
 
     // 🔌 סגירת WebSocket
-    if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.close();
-        socket = null;
-    }
+if (socket && socket.readyState === WebSocket.OPEN) {
+    // השהיה לסיום התהליך האחרון
+    setTimeout(() => {
+      socket.close();
+      socket = null;
+      console.log("🔌 WebSocket closed after grace period (170)");
+    }, 1500); // 1.5 שנייה - אפשר להגדיל אם צריך
+}
 
     // 📴 עזיבת ערוץ Agora
     if (client) {
@@ -421,12 +425,14 @@ async function stopMicAndTranscription() {
     recorder = undefined;
   }
   // 📴 סגירת WebSocket
-  if (socket && socket.readyState === WebSocket.OPEN) {
+if (socket && socket.readyState === WebSocket.OPEN) {
+  setTimeout(() => {
     socket.close();
-  }
-  isRunning = false;
-  btn_mic.innerText = "🎤 Start Transcription";
+    console.log("🔌 WebSocket closed after grace period");
+  }, 1500);
 }
+isRunning = false;
+btn_mic.innerText = "🎤 Start Transcription";
 
   async function getMicrophone() {
   try {
@@ -450,9 +456,11 @@ async function openMicrophone(recorder, socket) {
       console.log("🛑 Microphone closed");
       document.body.classList.remove("recording");
               if (socket && socket.readyState === WebSocket.OPEN) {
-                socket.close();
-           console.log("🔌 WebSocket closed");
-                }             
+  setTimeout(() => {
+    socket.close();
+    console.log("🔌 WebSocket closed after grace period (452)");
+  }, 1500);
+}         
     };
         recorder.ondataavailable = (event) => {
       console.log("🎙️ microphone data received");
