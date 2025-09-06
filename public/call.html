@@ -433,7 +433,7 @@ if (socket && socket.readyState === WebSocket.OPEN) {
 }
 isRunning = false;
 btn_mic.innerText = "🎤 Start Transcription";
-
+}
   async function getMicrophone() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
