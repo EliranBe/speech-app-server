@@ -117,7 +117,7 @@ const targetLang = "ru";  // השפה ל-TTS ותרגום
     return { deepgram, keepAlive };
   };
 
-  wss.on('connection', (ws) => {
+  wss.on('connection', (ws, req) => {
     console.log("🔗 Client connected to WebSocket");
     const url = new URL(req.url, `http://${req.headers.host}`);
 ws.clientId = url.searchParams.get("clientId");
