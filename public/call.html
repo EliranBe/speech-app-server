@@ -301,7 +301,8 @@ async function startMicAndTranscription() {
     console.log("⚠️ WebSocket already open, skipping creation");
     return; // או אפשר לעצור את הפונקציה כדי למנוע כפילויות
   }
-  socket = new WebSocket(`wss://${window.location.host}`);
+  const clientId = crypto.randomUUID(); // מזהה ייחודי ללקוח
+socket = new WebSocket(`wss://${window.location.host}?clientId=${clientId}`);
 
   socket.addEventListener("open", async () => {
     console.log("✅ connected to server");
