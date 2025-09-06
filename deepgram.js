@@ -47,8 +47,10 @@ deepgram.addListener(LiveTranscriptionEvents.Transcript, async (data) => {
         console.log("✅ WebSocket received transcript from deepgram", latency ? `Latency: ${latency} ms` : '');
         console.log("✅ WebSocket sent transcript to client");
 
-    // נשלח ללקוח את התמלול המקורי ישירות (כדי להתאים לצד הלקוח)
+// שולח את התמלול רק ללקוח שמדבר (ws הזה)
+if (ws && ws.readyState === WebSocket.OPEN) {
   ws.send(JSON.stringify(data));
+}
 
   // כאן נגדיר פעם אחת את שפת המקור ושפת היעד
 const sourceLang = "en";  // השפה בה אתה מדבר
@@ -117,6 +119,9 @@ const targetLang = "ru";  // השפה ל-TTS ותרגום
 
   wss.on('connection', (ws) => {
     console.log("🔗 Client connected to WebSocket");
+    const url = new URL(req.url, `http://${req.headers.host}`);
+ws.clientId = url.searchParams.get("clientId");
+console.log("🔗 Client connected:", ws.clientId);
   let lastChunkTime = null;
 const getLastChunkTime = () => lastChunkTime;
       let { deepgram, keepAlive } = setupDeepgram(ws, getLastChunkTime);
