@@ -122,16 +122,6 @@ const getLastChunkTime = () => lastChunkTime;
       let { deepgram, keepAlive } = setupDeepgram(ws, getLastChunkTime);
  
     ws.on('message', (message) => {
-        let data = null;
-  try {
-    data = JSON.parse(message.toString());
-  } catch {
-    // אם לא ניתן לפענח JSON → כנראה שזה אודיו גולמי
-  }
-        if (data?.action === "stop-request") {
-    console.log("📌 Stop requested - waiting for final transcription...");
-    return;
-  }
       console.log('Received audio chunk, size:', message.length);      
       if (deepgram.getReadyState() === 1) { // OPEN
         lastChunkTime = Date.now();
