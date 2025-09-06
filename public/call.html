@@ -15,7 +15,7 @@
       height: 100vh;
       overflow: hidden;
     }
-    
+
     .video-container {
   flex: 2;
   display: grid;
@@ -50,7 +50,7 @@ video {
   height: 100%;
   object-fit: cover;
 }
-    
+
     #captions {
   position: fixed;        /* מקבע את התיבה במסך */
   bottom: 0;          /* מתחיל בדיוק מהקו התחתון */
@@ -78,7 +78,7 @@ video {
   background: rgba(255, 255, 255, 0.1); /* רקע לבן שקוף חלקית (10% אטימות) */
   border-radius: 20px;               /* פינות מעוגלות ברדיוס 20 פיקסלים */
 }
-    
+
     .controls {
     position: fixed;
     bottom: 10px;
@@ -109,14 +109,14 @@ video {
   </style>
 </head>
 <body>
-   
+
   <div id="captions"></div>
   <div id="translation"></div>
 
   <div class="video-container">
   <div id="local-player" class="video-box"></div>
   </div>
-  
+
    <div class="controls">
     <button id="btn_mic">🔇 Mute</button>
     <button id="btn-cam">📷 Turn Off Camera</button>
@@ -167,14 +167,10 @@ video {
     }
 
     // 🔌 סגירת WebSocket
-if (socket && socket.readyState === WebSocket.OPEN) {
-    // השהיה לסיום התהליך האחרון
-    setTimeout(() => {
-      socket.close();
-      socket = null;
-      console.log("🔌 WebSocket closed after grace period (170)");
-    }, 1500); // 1.5 שנייה - אפשר להגדיל אם צריך
-}
+    if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.close();
+        socket = null;
+    }
 
     // 📴 עזיבת ערוץ Agora
     if (client) {
@@ -207,7 +203,7 @@ client.on("user-published", async (user, mediaType) => {
   if (mediaType === "video") {
   addParticipantVideo(user.uid, user.videoTrack);
 }
- 
+
   if (mediaType === "audio") {
   user.audioTrack.play();
   }
@@ -217,13 +213,13 @@ client.on("user-published", async (user, mediaType) => {
 client.on("user-left", (user) => {
   removeParticipantVideo(user.uid);
 });
-    
+
       const tokenRes = await fetch(`/rte-token?channelName=${CHANNEL_NAME}`);
       const tokenData = await tokenRes.json();
       captions = document.getElementById('captions');
       translation = document.getElementById('translation');
       const btn_mic = window.document.getElementById('btn_mic');
-    
+
       await client.join(AGORA_APP_ID, CHANNEL_NAME, tokenData.rtcToken, null);
         console.log("✅ Connected to Agora channel");
 
@@ -243,13 +239,13 @@ async function startLocalTracks() {
   const videoBox = document.createElement('div');
   videoBox.className = 'video-box';
         videoBox.id = `participant-${userId}`;
-      
+
   // הוספת ה־box ל־container
    container.appendChild(videoBox);
                  // הפעלת הוידאו של Agora בתוך ה־div
   remoteTrack.play(videoBox);
 }
-    
+
     function removeParticipantVideo(userId) {
   const videoBox = document.getElementById(`participant-${userId}`);
   if (videoBox) {
@@ -331,7 +327,7 @@ function enqueueTts(audioBase64) {
 
 function playNextTts() {
   if (isTtsPlaying || ttsQueue.length === 0) return;
-  
+
  // הפיכת Base64 ל־Blob
   const audioBase64 = ttsQueue.shift();
   const byteChars = atob(audioBase64);
@@ -385,11 +381,11 @@ if (ttsPlayer) {
     console.log(`STTLatency: ${STTlatency} ms`);
   }
     }
-    
+
       // ======== תרגום ========
   if (data.type === "translation" && data.payload?.translated) {
     const translated = data.payload.translated;
-    
+
   if (typeof translated === "string") {
     // מחרוזת פשוטה
     const span = document.createElement("div");
@@ -425,15 +421,13 @@ async function stopMicAndTranscription() {
     recorder = undefined;
   }
   // 📴 סגירת WebSocket
-if (socket && socket.readyState === WebSocket.OPEN) {
-  setTimeout(() => {
+  if (socket && socket.readyState === WebSocket.OPEN) {
     socket.close();
-    console.log("🔌 WebSocket closed after grace period");
-  }, 1500);
+  }
+  isRunning = false;
+  btn_mic.innerText = "🎤 Start Transcription";
 }
-isRunning = false;
-btn_mic.innerText = "🎤 Start Transcription";
-}
+    
   async function getMicrophone() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -456,11 +450,9 @@ async function openMicrophone(recorder, socket) {
       console.log("🛑 Microphone closed");
       document.body.classList.remove("recording");
               if (socket && socket.readyState === WebSocket.OPEN) {
-  setTimeout(() => {
-    socket.close();
-    console.log("🔌 WebSocket closed after grace period (452)");
-  }, 1500);
-}         
+                socket.close();
+           console.log("🔌 WebSocket closed");
+                }               
     };
         recorder.ondataavailable = (event) => {
       console.log("🎙️ microphone data received");
@@ -473,7 +465,7 @@ async function openMicrophone(recorder, socket) {
      recorder.start(100); // שולח כל 100 ms
   });
 }
-    
+
   </script>
 </body>
 </html>
