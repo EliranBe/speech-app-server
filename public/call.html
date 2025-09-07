@@ -26,15 +26,15 @@
   justify-items: center;         /* מרכז כל חלון בשורה */
   align-items: center;       /* מרכז לגובה */
   margin-bottom: 10px;
-  height: calc(100vh - 50vh - 60px);
+  max-height: calc(100vh - 50vh - 80px); /* 50vh = תמלול/תרגום, 80px = כפתורים + מרווח */
+  overflow-y: auto; /* גלילה אם יש יותר מדי משתתפים */
 }
 
 .video-box {
-  aspect-ratio: 1 / 1;             /* שומר על ריבוע */
   width: 100%;                   /* תמיד מנצל את הרוחב הזמין */
   max-width: 750px;              /* שלא יגדל יותר מדי */
   min-width: 320px;              /* מונע קופסה קטנה מדי */
-  height: auto;
+  height: 100%;
   min-height: 220px;             /* גובה מינימלי */
   background: rgba(255, 255, 255, 0.1);
   border-radius: 20px;
@@ -45,7 +45,7 @@
 
 video {
   width: 100%;
-  height: auto;
+  height: 100%;
   object-fit: cover;
 }
 
@@ -264,12 +264,14 @@ function updateVideoLayout() {
   const rows = Math.ceil(count / cols);
 
   // חישוב הגובה הזמין לכל שורה: 100vh - 50vh (תמלול/תרגום) - 60px (controls)
-  const availableHeight = window.innerHeight - (0.5 * window.innerHeight) - 60;
-  const maxHeightPerVideo = availableHeight / rows;
+  const captionsHeight = document.getElementById('captions').offsetHeight || window.innerHeight * 0.5;
+  const controlsHeight = document.querySelector('.controls').offsetHeight || 60;
+  const availableHeight = window.innerHeight - captionsHeight - controlsHeight - 20; // 20px מרווח קטן
+
+const maxHeightPerVideo = Math.min(availableHeight / rows, 400); // 400px גובה מקסימום
 
   participants.forEach(box => {
     box.style.width = `calc(${100 / Math.min(count, cols)}% - 10px)`;
-    box.style.maxHeight = `${maxHeightPerVideo}px`;
     box.style.height = `${maxHeightPerVideo}px`;
   });
 }
