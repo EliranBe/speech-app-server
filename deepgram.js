@@ -59,8 +59,8 @@ const targetLang = "ru";  // השפה ל-TTS ותרגום
     // נתרגם את התמלול 
   const transcriptText = data?.channel?.alternatives?.[0]?.transcript;
    let translated = null;
-  if (transcriptText) {
-         try {
+if (transcriptText) {
+    try {
       translated = await translateText(transcriptText, targetLang, sourceLang);
       console.log("🌍 Translated text:", translated);
 
@@ -73,25 +73,23 @@ const targetLang = "ru";  // השפה ל-TTS ותרגום
               type: "translation",
               payload: { original: transcriptText, translated }
             }));
+
+            // שלח גם את ה-TTS
+            const textForTTS = translated?.[targetLang] || "";
+            console.log("📢 Sending to Google TTS:", textForTTS);
+            const audioBase64 = await synthesizeTextToBase64(textForTTS);
+            client.send(JSON.stringify({
+              type: "tts",
+              payload: { audioBase64 }
+            }));
+          } catch (err) {
+            console.error("❌ Error sending translation/TTS to other client:", err);
+          }
+        }
+      });
+
     } catch (err) {
       console.error("❌ Translation error:", err);
-    }
-          
-         // יוצר אודיו ב-Google TTS מהתרגום
-       try {
-      const textForTTS = translated?.[targetLang] || "";
-        console.log("📢 Sending to Google TTS:", textForTTS);
-    const audioBase64 = await synthesizeTextToBase64(textForTTS);
-    // שולח ללקוח את האודיו
-  client.send(JSON.stringify({
-    type: "tts",
-    payload: { audioBase64 }
-  }));
-  } catch (err) {
-  console.error("❌ Google TTS error:", err);
-        }
-            }
-    });
     }
   }
 });
