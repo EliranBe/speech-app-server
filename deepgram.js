@@ -65,26 +65,33 @@ const targetLang = "ru";  // השפה ל-TTS ותרגום
       console.log("🌍 Translated text:", translated);
 
       // שולח ללקוח הודעה חדשה עם התרגום
-      ws.send(JSON.stringify({
-        type: "translation",
-        payload: { original: transcriptText, translated }
-      }));
+           wss.clients.forEach(client => {
+  if (client.readyState === WebSocket.OPEN && client !== ws) { // לכל מי שמחובר אבל **לא** השולח
+    client.send(JSON.stringify({
+      type: "translation",
+      payload: { original: transcriptText, translated }
+    }));
+  }
+});
     } catch (err) {
       console.error("❌ Translation error:", err);
     }
-    if (translated) {
-      try {
-      // יוצר אודיו ב-Google TTS מהתרגום
-      const textForTTS = translated?.[targetLang] || "";
-        console.log("📢 Sending to Google TTS:", textForTTS);
+    
+if (translated) {
+  try {
+    const textForTTS = translated?.[targetLang] || "";
     const audioBase64 = await synthesizeTextToBase64(textForTTS);
-    // שולח ללקוח את האודיו
-  ws.send(JSON.stringify({
-    type: "tts",
-    payload: { audioBase64 }
-  }));
-} catch (err) {
-  console.error("❌ Google TTS error:", err);
+
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN && client !== ws) { // לכל מי שמחובר אבל לא השולח
+        client.send(JSON.stringify({
+          type: "tts",
+          payload: { audioBase64 }
+        }));
+      }
+    });
+  } catch (err) {
+    console.error("❌ Google TTS error:", err);
   }
 }
 }
