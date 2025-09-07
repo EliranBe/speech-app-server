@@ -76,8 +76,9 @@ const targetLang = "ru";  // השפה ל-TTS ותרגום
     } catch (err) {
       console.error("❌ Translation error:", err);
     }
-try {
-      // יוצר אודיו ב-Google TTS מהתרגום
+          
+         // יוצר אודיו ב-Google TTS מהתרגום
+       try {
       const textForTTS = translated?.[targetLang] || "";
         console.log("📢 Sending to Google TTS:", textForTTS);
     const audioBase64 = await synthesizeTextToBase64(textForTTS);
