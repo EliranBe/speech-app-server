@@ -66,7 +66,7 @@ const targetLang = "ru";  // השפה ל-TTS ותרגום
 
       // שולח ללקוח הודעה חדשה עם התרגום
            wss.clients.forEach(client => {
-  if (client.readyState === WebSocket.OPEN && client !== ws) { // לכל מי שמחובר אבל **לא** השולח
+  if (client.readyState === WebSocket.OPEN && client.clientId !== ws.clientId) {
     client.send(JSON.stringify({
       type: "translation",
       payload: { original: transcriptText, translated }
@@ -83,7 +83,7 @@ if (translated) {
     const audioBase64 = await synthesizeTextToBase64(textForTTS);
 
     wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN && client !== ws) { // לכל מי שמחובר אבל לא השולח
+  if (client.readyState === WebSocket.OPEN && client.clientId !== ws.clientId) {
         client.send(JSON.stringify({
           type: "tts",
           payload: { audioBase64 }
