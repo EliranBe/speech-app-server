@@ -64,30 +64,35 @@ const targetLang = "ru";  // השפה ל-TTS ותרגום
       translated = await translateText(transcriptText, targetLang, sourceLang);
       console.log("🌍 Translated text:", translated);
 
-      // שולח ללקוח הודעה חדשה עם התרגום
-      ws.send(JSON.stringify({
-        type: "translation",
-        payload: { original: transcriptText, translated }
-      }));
+      // 📌 שולח את התרגום + TTS לכל שאר המשתתפים (לא לדובר)
+      wss.clients.forEach(async (client) => {
+        if (client !== ws && client.readyState === WebSocket.OPEN) {
+          try {
+            // שלח את התרגום
+            client.send(JSON.stringify({
+              type: "translation",
+              payload: { original: transcriptText, translated }
+            }));
     } catch (err) {
       console.error("❌ Translation error:", err);
     }
-    if (translated) {
-      try {
+try {
       // יוצר אודיו ב-Google TTS מהתרגום
       const textForTTS = translated?.[targetLang] || "";
         console.log("📢 Sending to Google TTS:", textForTTS);
     const audioBase64 = await synthesizeTextToBase64(textForTTS);
     // שולח ללקוח את האודיו
-  ws.send(JSON.stringify({
+  client.send(JSON.stringify({
     type: "tts",
     payload: { audioBase64 }
   }));
-} catch (err) {
+  } catch (err) {
   console.error("❌ Google TTS error:", err);
+        }
+            }
+    });
+    }
   }
-}
-}
 });
 
       deepgram.addListener(LiveTranscriptionEvents.Close, async() => {
