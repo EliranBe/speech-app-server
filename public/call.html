@@ -22,12 +22,11 @@
   grid-gap: 10px;                /* רווחים בין החלונות */
   padding: 5px;                 /* רווח מסביב למסגרת */
   width: 100%;
-  height: calc(100vh - 220px);   /* משאיר מקום לכפתורים + תמלול/תרגום בתחתית */
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  grid-auto-rows: 1fr;           /* כל שורה שווה בגובה */
   justify-items: center;         /* מרכז כל חלון בשורה */
   align-items: center;       /* מרכז לגובה */
   margin-bottom: 10px;
+  height: calc(100vh - 50vh - 60px);
 }
 
 .video-box {
@@ -35,8 +34,7 @@
   width: 100%;                   /* תמיד מנצל את הרוחב הזמין */
   max-width: 750px;              /* שלא יגדל יותר מדי */
   min-width: 320px;              /* מונע קופסה קטנה מדי */
-  height: 100%;
-  max-height: 550px;             /* גובה מקסימלי */
+  height: auto;
   min-height: 220px;             /* גובה מינימלי */
   background: rgba(255, 255, 255, 0.1);
   border-radius: 20px;
@@ -47,7 +45,7 @@
 
 video {
   width: 100%;
-  height: 100%;
+  height: auto;
   object-fit: cover;
 }
 
@@ -238,20 +236,45 @@ async function startLocalTracks() {
   // יצירת box חדש
   const videoBox = document.createElement('div');
   videoBox.className = 'video-box';
-        videoBox.id = `participant-${userId}`;
+  videoBox.id = `participant-${userId}`;
 
   // הוספת ה־box ל־container
    container.appendChild(videoBox);
                  // הפעלת הוידאו של Agora בתוך ה־div
   remoteTrack.play(videoBox);
+        // עדכון פריסה
+  updateVideoLayout();
 }
 
     function removeParticipantVideo(userId) {
   const videoBox = document.getElementById(`participant-${userId}`);
   if (videoBox) {
-    videoBox.remove();
+        videoBox.remove();
+        updateVideoLayout();
   }
 }
+function updateVideoLayout() {
+  const participants = document.querySelectorAll('.video-box');
+  const count = participants.length;
+  if (count === 0) return;
+
+  const containerWidth = document.querySelector('.video-container').clientWidth;
+  const minBoxWidth = 320; // רוחב מינימום
+  const cols = Math.floor(containerWidth / minBoxWidth) || 1;
+  const rows = Math.ceil(count / cols);
+
+  // חישוב הגובה הזמין לכל שורה: 100vh - 50vh (תמלול/תרגום) - 60px (controls)
+  const availableHeight = window.innerHeight - (0.5 * window.innerHeight) - 60;
+  const maxHeightPerVideo = availableHeight / rows;
+
+  participants.forEach(box => {
+    box.style.width = `calc(${100 / Math.min(count, cols)}% - 10px)`;
+    box.style.maxHeight = `${maxHeightPerVideo}px`;
+    box.style.height = `${maxHeightPerVideo}px`;
+  });
+}
+
+    window.addEventListener('resize', updateVideoLayout);
 
     btn_mic.innerText = isRunning ? "🔇 Stop Transcription" : "🎤 Start Transcription";
 
