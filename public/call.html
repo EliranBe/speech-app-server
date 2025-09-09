@@ -477,6 +477,16 @@ async function stopMicAndTranscription() {
     stream.getTracks().forEach(track => track.stop());
     stream = null;
   }
+
+      // סגירת "session" מול Deepgram
+    if (socket && socket.readyState === WebSocket.OPEN) {
+        // שליחה של הודעת סיום ל־Deepgram לפי הפרוטוקול שלהם
+        try {
+            socket.send(JSON.stringify({ type: "stop" })); // אפשר לשנות בהתאם ל-API של Deepgram
+        } catch(e) {
+            console.warn("⚠️ Could not send stop to Deepgram:", e);
+        }
+    }
   
     // ✅ עדכון מצב וכפתור
   isRunning = false;
