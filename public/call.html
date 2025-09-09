@@ -143,7 +143,49 @@ video {
     let translation;
     let tts;
     let ttsPlayer = null;
+    let btn_mic = document.getElementById('btn_mic');
 
+      // תור TTS כדי למנוע השמעה מקבילה
+const ttsQueue = [];  // תור של משפטים
+let isTtsPlaying = false; // האם כרגע משמיעים משהו
+
+function enqueueTts(audioBase64) {
+  ttsQueue.push(audioBase64);
+  playNextTts();
+}
+
+function playNextTts() {
+  if (isTtsPlaying || ttsQueue.length === 0) return;
+
+ // הפיכת Base64 ל־Blob
+  const audioBase64 = ttsQueue.shift();
+  const byteChars = atob(audioBase64);
+  const byteNumbers = new Array(byteChars.length);
+  for (let i = 0; i < byteChars.length; i++) {
+    byteNumbers[i] = byteChars.charCodeAt(i);
+  }
+  const byteArray = new Uint8Array(byteNumbers);
+  const audioBlob = new Blob([byteArray], { type: "audio/mp3" });
+
+  // השמעה
+  const audioUrl = URL.createObjectURL(audioBlob);
+
+if (ttsPlayer) {
+  ttsPlayer.src = audioUrl;
+  isTtsPlaying = true;
+
+  ttsPlayer.play().catch(err => {
+    console.error("⚠️ Error playing TTS:", err);
+    isTtsPlaying = false;
+    playNextTts();
+  });
+
+  ttsPlayer.onended = () => {
+    isTtsPlaying = false;
+    playNextTts();
+  };
+}
+}
     async function leaveCall() {
     // 🔒 השבתת כל הכפתורים
     document.querySelectorAll("button").forEach(btn => {
@@ -183,6 +225,17 @@ video {
 
     window.onload = async () => {
 
+          if (!ttsPlayer) {
+    ttsPlayer = new Audio();
+    try {
+      // הפעלה ראשונה ריקה כדי "לפתוח" את הנגן
+      ttsPlayer.play().catch(() => {});
+      console.log("🔊 TTS player primed");
+    } catch (err) {
+      console.warn("⚠️ TTS player init failed:", err);
+    }
+  }
+      
   try {
     const res = await fetch('/appId');
     const data = await res.json();
@@ -285,7 +338,6 @@ client.on("user-left", (user) => {
       const tokenData = await tokenRes.json();
       captions = document.getElementById('captions');
       translation = document.getElementById('translation');
-      const btn_mic = window.document.getElementById('btn_mic');
 
       await client.join(AGORA_APP_ID, CHANNEL_NAME, tokenData.rtcToken, null);
         console.log("✅ Connected to Agora channel");
@@ -295,7 +347,9 @@ client.on("user-left", (user) => {
 
 async function startLocalTracks() {
     [agoraMicTrack, cameraTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
-     cameraTrack.play("local-player");
+if (!camMuted) {
+    cameraTrack.play("local-player");
+}
       await client.publish([agoraMicTrack, cameraTrack]);
 }
 
@@ -350,16 +404,12 @@ const maxHeightPerVideo = Math.min(availableHeight / rows, 400); // 400px גוב
     btn_mic.innerText = isRunning ? "🔇 Stop Transcription" : "🎤 Start Transcription";
 
 document.getElementById("btn_mic").onclick = async () => {
-    if (!ttsPlayer) {
-    ttsPlayer = new Audio();
-    try {
-      // הפעלה ראשונה ריקה כדי "לפתוח" את הנגן
-      ttsPlayer.play().catch(() => {});
-      console.log("🔊 TTS player primed");
-    } catch (err) {
-      console.warn("⚠️ TTS player init failed:", err);
+
+    isRunning = !isRunning;
+    micMuted = !isRunning;
+    if (agoraMicTrack) {
+        agoraMicTrack.setEnabled(!micMuted);
     }
-  }
 
   if (!isRunning) {
     await startMicAndTranscription();
@@ -389,60 +439,39 @@ document.getElementById("btn-leave").onclick = leaveCall;
 
     //שילוב עם Deppgram//
 
-async function startMicAndTranscription() {
-    try {
-      recorder = await getMicrophone();
-      // 🎤 הפעלת Agora
-      await openMicrophone(recorder, socket);
-      isRunning = true;
-      btn_mic.innerText = "🔇 Stop Transcription";
-    } catch (error) {
-      console.error("⚠️ error opening microphone:", error);
-    }
-
-  // תור TTS כדי למנוע השמעה מקבילה
-const ttsQueue = [];  // תור של משפטים
-let isTtsPlaying = false; // האם כרגע משמיעים משהו
-
-function enqueueTts(audioBase64) {
-  ttsQueue.push(audioBase64);
-  playNextTts();
-}
-
-function playNextTts() {
-  if (isTtsPlaying || ttsQueue.length === 0) return;
-
- // הפיכת Base64 ל־Blob
-  const audioBase64 = ttsQueue.shift();
-  const byteChars = atob(audioBase64);
-  const byteNumbers = new Array(byteChars.length);
-  for (let i = 0; i < byteChars.length; i++) {
-    byteNumbers[i] = byteChars.charCodeAt(i);
+    async function startMicAndTranscription() {
+  if (!socket || socket.readyState !== WebSocket.OPEN) {
+    console.error("⚠️ WebSocket not open");
+    return;
   }
-  const byteArray = new Uint8Array(byteNumbers);
-  const audioBlob = new Blob([byteArray], { type: "audio/mp3" });
 
-  // השמעה
-  const audioUrl = URL.createObjectURL(audioBlob);
+  // עצירת recorder קודם אם קיים
+  if (recorder && recorder.state !== "inactive") {
+    recorder.stop();
+  }
 
-if (ttsPlayer) {
-  ttsPlayer.src = audioUrl;
-  isTtsPlaying = true;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
 
-  ttsPlayer.play().catch(err => {
-    console.error("⚠️ Error playing TTS:", err);
-    isTtsPlaying = false;
-    playNextTts();
-  });
+    recorder.ondataavailable = (event) => {
+      if (event.data.size > 0 && socket.readyState === WebSocket.OPEN) {
+        STTaudioSendTime = Date.now();
+        socket.send(event.data);
+      }
+    };
 
-  ttsPlayer.onended = () => {
-    isTtsPlaying = false;
-    playNextTts();
-  };
+    recorder.onstart = () => console.log("🎙️ Microphone started");
+    recorder.onstop = () => console.log("🛑 Microphone stopped");
+
+    recorder.start(100); // שליחה כל 100ms
+    isRunning = true;
+    btn_mic.innerText = "🔇 Stop Transcription";
+  } catch (error) {
+    console.error("⚠️ error opening microphone:", error);
+  }
 }
-}
-}
-
+    
 async function stopMicAndTranscription() {
   // 🎤 סגירת Agora
     if (recorder && recorder.state !== "inactive") {
@@ -454,40 +483,6 @@ async function stopMicAndTranscription() {
   btn_mic.innerText = "🎤 Start Transcription";
 }
     
-  async function getMicrophone() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    return new MediaRecorder(stream, { mimeType: "audio/webm" });
-  } catch (error) {
-    console.error("⚠️ error accessing microphone:", error);
-    throw error;
-  }
-} 
-
-async function openMicrophone(recorder, socket) {
-  return new Promise((resolve) => {
-    recorder.onstart = () => {
-      console.log("🎙️ microphone opened");
-      document.body.classList.add("recording");
-      resolve();
-    };
-
-         recorder.onstop = () => {
-      console.log("🛑 Microphone closed");
-      document.body.classList.remove("recording");        
-    };
-        recorder.ondataavailable = (event) => {
-      console.log("🎙️ microphone data received");
-      if (event.data.size > 0 && socket && socket.readyState === WebSocket.OPEN) {
-        STTaudioSendTime = Date.now(); // זמן שליחת האודיו
-        socket.send(event.data);
-      }
-    };
-
-     recorder.start(100); // שולח כל 100 ms
-  });
-}
-
   </script>
 </body>
 </html>
