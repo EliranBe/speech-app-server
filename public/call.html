@@ -197,6 +197,61 @@ video {
   const clientId = crypto.randomUUID(); // מזהה ייחודי ללקוח
 socket = new WebSocket(`wss://${window.location.host}?clientId=${clientId}`);
 
+     socket.addEventListener("message", (event) => {
+    if (event.data === "") return;
+    let data;
+    try {
+      data = JSON.parse(event.data);
+    } catch (e) {
+      console.error("⚠️ Failed to parse JSON:", e);
+      return;
+    }
+      // ======== תמלול ========
+    if (data && data.channel && data.channel.alternatives[0].transcript !== "") {
+      const span = document.createElement("div");
+      span.textContent = data.channel.alternatives[0].transcript;
+      captions.appendChild(span);
+      captions.scrollTop = captions.scrollHeight;
+
+        // חישוב Latency
+  if (data.is_final) {  // רק כאשר התמלול סופי
+    STTtranscriptReceiveTime = Date.now(); // זמן קבלת התמלול
+    STTlatency = STTtranscriptReceiveTime - STTaudioSendTime; // חישוב ה-Latency
+    console.log(`STTLatency: ${STTlatency} ms`);
+  }
+    }
+
+      // ======== תרגום ========
+  if (data.type === "translation" && data.payload?.translated) {
+    const translated = data.payload.translated;
+
+  if (typeof translated === "string") {
+    // מחרוזת פשוטה
+    const span = document.createElement("div");
+    span.textContent = translated;
+    translation.appendChild(span);
+  } else if (typeof translated === "object") {
+    // אובייקט שפות
+    for (const [lang, text] of Object.entries(translated)) {
+      const span = document.createElement("div");
+      span.textContent = `[${lang}] ${text}`;
+      translation.appendChild(span);
+    }
+  }
+
+  translation.scrollTop = translation.scrollHeight;
+}
+
+      // ======== טקסט לדיבור (TTS) ========
+if (data.type === "tts" && data.payload?.audioBase64) {
+  enqueueTts(data.payload.audioBase64);
+}
+  });
+
+  socket.addEventListener("close", () => {
+    console.log("❌ disconnected from server");
+  });
+    
   socket.addEventListener("open", async () => {
     console.log("✅ connected to server");
   });
@@ -386,61 +441,6 @@ if (ttsPlayer) {
   };
 }
 }
-
-  socket.addEventListener("message", (event) => {
-    if (event.data === "") return;
-    let data;
-    try {
-      data = JSON.parse(event.data);
-    } catch (e) {
-      console.error("⚠️ Failed to parse JSON:", e);
-      return;
-    }
-      // ======== תמלול ========
-    if (data && data.channel && data.channel.alternatives[0].transcript !== "") {
-      const span = document.createElement("div");
-      span.textContent = data.channel.alternatives[0].transcript;
-      captions.appendChild(span);
-      captions.scrollTop = captions.scrollHeight;
-
-        // חישוב Latency
-  if (data.is_final) {  // רק כאשר התמלול סופי
-    STTtranscriptReceiveTime = Date.now(); // זמן קבלת התמלול
-    STTlatency = STTtranscriptReceiveTime - STTaudioSendTime; // חישוב ה-Latency
-    console.log(`STTLatency: ${STTlatency} ms`);
-  }
-    }
-
-      // ======== תרגום ========
-  if (data.type === "translation" && data.payload?.translated) {
-    const translated = data.payload.translated;
-
-  if (typeof translated === "string") {
-    // מחרוזת פשוטה
-    const span = document.createElement("div");
-    span.textContent = translated;
-    translation.appendChild(span);
-  } else if (typeof translated === "object") {
-    // אובייקט שפות
-    for (const [lang, text] of Object.entries(translated)) {
-      const span = document.createElement("div");
-      span.textContent = `[${lang}] ${text}`;
-      translation.appendChild(span);
-    }
-  }
-
-  translation.scrollTop = translation.scrollHeight;
-}
-
-      // ======== טקסט לדיבור (TTS) ========
-if (data.type === "tts" && data.payload?.audioBase64) {
-  enqueueTts(data.payload.audioBase64);
-}
-  });
-
-  socket.addEventListener("close", () => {
-    console.log("❌ disconnected from server");
-  });
 }
 
 async function stopMicAndTranscription() {
@@ -449,7 +449,7 @@ async function stopMicAndTranscription() {
     recorder.stop();
     recorder = undefined;
   }
-  // 📴 סגירת WebSocket
+    // ✅ עדכון מצב וכפתור
   isRunning = false;
   btn_mic.innerText = "🎤 Start Transcription";
 }
@@ -478,7 +478,7 @@ async function openMicrophone(recorder, socket) {
     };
         recorder.ondataavailable = (event) => {
       console.log("🎙️ microphone data received");
-      if (event.data.size > 0 && socket.readyState === WebSocket.OPEN) {
+      if (event.data.size > 0 && socket && socket.readyState === WebSocket.OPEN) {
         STTaudioSendTime = Date.now(); // זמן שליחת האודיו
         socket.send(event.data);
       }
