@@ -350,7 +350,7 @@ async function startMicAndTranscription() {
     } catch (error) {
       console.error("⚠️ error opening microphone:", error);
     }
-  };
+  });
 
   // תור TTS כדי למנוע השמעה מקבילה
 const ttsQueue = [];  // תור של משפטים
