@@ -134,7 +134,6 @@ video {
     let camMuted = false;
     let ws; 
     let stream;
-    let wsDeepgram; // WebSocket נפרד ל-Deepgram
     let socket;
     let isRunning = false; // מצב האם פועל או לא
     let STTaudioSendTime = 0;
@@ -144,49 +143,7 @@ video {
     let translation;
     let tts;
     let ttsPlayer = null;
-    let btn_mic = document.getElementById('btn_mic');
 
-      // תור TTS כדי למנוע השמעה מקבילה
-const ttsQueue = [];  // תור של משפטים
-let isTtsPlaying = false; // האם כרגע משמיעים משהו
-
-function enqueueTts(audioBase64) {
-  ttsQueue.push(audioBase64);
-  playNextTts();
-}
-
-function playNextTts() {
-  if (isTtsPlaying || ttsQueue.length === 0) return;
-
- // הפיכת Base64 ל־Blob
-  const audioBase64 = ttsQueue.shift();
-  const byteChars = atob(audioBase64);
-  const byteNumbers = new Array(byteChars.length);
-  for (let i = 0; i < byteChars.length; i++) {
-    byteNumbers[i] = byteChars.charCodeAt(i);
-  }
-  const byteArray = new Uint8Array(byteNumbers);
-  const audioBlob = new Blob([byteArray], { type: "audio/mp3" });
-
-  // השמעה
-  const audioUrl = URL.createObjectURL(audioBlob);
-
-if (ttsPlayer) {
-  ttsPlayer.src = audioUrl;
-  isTtsPlaying = true;
-
-  ttsPlayer.play().catch(err => {
-    console.error("⚠️ Error playing TTS:", err);
-    isTtsPlaying = false;
-    playNextTts();
-  });
-
-  ttsPlayer.onended = () => {
-    isTtsPlaying = false;
-    playNextTts();
-  };
-}
-}
     async function leaveCall() {
     // 🔒 השבתת כל הכפתורים
     document.querySelectorAll("button").forEach(btn => {
@@ -213,7 +170,6 @@ if (ttsPlayer) {
     if (socket && socket.readyState === WebSocket.OPEN) {
         socket.close();
         socket = null;
-      console.log("🔌 WebSocket closed on Leave");
     }
 
     // 📴 עזיבת ערוץ Agora
@@ -226,89 +182,12 @@ if (ttsPlayer) {
 
     window.onload = async () => {
 
-          if (!ttsPlayer) {
-    ttsPlayer = new Audio();
-    try {
-      // הפעלה ראשונה ריקה כדי "לפתוח" את הנגן
-      ttsPlayer.play().catch(() => {});
-      console.log("🔊 TTS player primed");
-    } catch (err) {
-      console.warn("⚠️ TTS player init failed:", err);
-    }
-  }
-      
   try {
     const res = await fetch('/appId');
     const data = await res.json();
     AGORA_APP_ID = data.appId;
 
     await startCall(); // עכשיו App ID כבר מוגדר
-        // ✅ בדיקה אם כבר קיים WebSocket פעיל
-  if (socket && socket.readyState === WebSocket.OPEN) {
-    console.log("⚠️ WebSocket already open, skipping creation");
-    return; // או אפשר לעצור את הפונקציה כדי למנוע כפילויות
-  }
-  const clientId = crypto.randomUUID(); // מזהה ייחודי ללקוח
-socket = new WebSocket(`wss://${window.location.host}?clientId=${clientId}`);
-
-     socket.addEventListener("message", (event) => {
-    if (event.data === "") return;
-    let data;
-    try {
-      data = JSON.parse(event.data);
-    } catch (e) {
-      console.error("⚠️ Failed to parse JSON:", e);
-      return;
-    }
-      // ======== תמלול ========
-    if (data && data.channel && data.channel.alternatives[0].transcript !== "") {
-      const span = document.createElement("div");
-      span.textContent = data.channel.alternatives[0].transcript;
-      captions.appendChild(span);
-      captions.scrollTop = captions.scrollHeight;
-
-        // חישוב Latency
-  if (data.is_final) {  // רק כאשר התמלול סופי
-    STTtranscriptReceiveTime = Date.now(); // זמן קבלת התמלול
-    STTlatency = STTtranscriptReceiveTime - STTaudioSendTime; // חישוב ה-Latency
-    console.log(`STTLatency: ${STTlatency} ms`);
-  }
-    }
-
-      // ======== תרגום ========
-  if (data.type === "translation" && data.payload?.translated) {
-    const translated = data.payload.translated;
-
-  if (typeof translated === "string") {
-    // מחרוזת פשוטה
-    const span = document.createElement("div");
-    span.textContent = translated;
-    translation.appendChild(span);
-  } else if (typeof translated === "object") {
-    // אובייקט שפות
-    for (const [lang, text] of Object.entries(translated)) {
-      const span = document.createElement("div");
-      span.textContent = `[${lang}] ${text}`;
-      translation.appendChild(span);
-    }
-  }
-
-  translation.scrollTop = translation.scrollHeight;
-}
-
-      // ======== טקסט לדיבור (TTS) ========
-if (data.type === "tts" && data.payload?.audioBase64) {
-  enqueueTts(data.payload.audioBase64);
-}
-  });
-
-  socket.addEventListener("close", () => {
-    console.log("❌ disconnected from server");
-  });
-    
-  socket.addEventListener("open", async () => {
-    console.log("✅ connected to server");
-  });
   } catch (err) {
     console.error("⚠️ Failed to fetch App ID:", err);
   }
@@ -339,6 +218,7 @@ client.on("user-left", (user) => {
       const tokenData = await tokenRes.json();
       captions = document.getElementById('captions');
       translation = document.getElementById('translation');
+      const btn_mic = window.document.getElementById('btn_mic');
 
       await client.join(AGORA_APP_ID, CHANNEL_NAME, tokenData.rtcToken, null);
         console.log("✅ Connected to Agora channel");
@@ -348,9 +228,7 @@ client.on("user-left", (user) => {
 
 async function startLocalTracks() {
     [agoraMicTrack, cameraTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
-if (!camMuted) {
-    cameraTrack.play("local-player");
-}
+     cameraTrack.play("local-player");
       await client.publish([agoraMicTrack, cameraTrack]);
 }
 
@@ -405,6 +283,17 @@ const maxHeightPerVideo = Math.min(availableHeight / rows, 400); // 400px גוב
     btn_mic.innerText = isRunning ? "🔇 Stop Transcription" : "🎤 Start Transcription";
 
 document.getElementById("btn_mic").onclick = async () => {
+    if (!ttsPlayer) {
+    ttsPlayer = new Audio();
+    try {
+      // הפעלה ראשונה ריקה כדי "לפתוח" את הנגן
+      ttsPlayer.play().catch(() => {});
+      console.log("🔊 TTS player primed");
+    } catch (err) {
+      console.warn("⚠️ TTS player init failed:", err);
+    }
+  }
+
   if (!isRunning) {
     await startMicAndTranscription();
     document.getElementById("btn_mic").innerText = "🔇 Stop Transcription";
@@ -433,101 +322,178 @@ document.getElementById("btn-leave").onclick = leaveCall;
 
     //שילוב עם Deppgram//
 
-    async function startMicAndTranscription() {
-// אם אין WS קיים או שהוא לא פתוח, יוצרים חדש
-if (!wsDeepgram || wsDeepgram.readyState !== WebSocket.OPEN) {
+async function startMicAndTranscription() {
+    // ✅ בדיקה אם כבר קיים WebSocket פעיל
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    console.log("⚠️ WebSocket already open, skipping creation");
+    return; // או אפשר לעצור את הפונקציה כדי למנוע כפילויות
+  }
+  const clientId = crypto.randomUUID(); // מזהה ייחודי ללקוח
+socket = new WebSocket(`wss://${window.location.host}?clientId=${clientId}`);
+
+  socket.addEventListener("open", async () => {
+    console.log("✅ connected to server");
     try {
-        wsDeepgram = new WebSocket(`wss://${window.location.host}?clientId=${clientId}`);
+      recorder = await getMicrophone();
+      // 🎤 הפעלת Agora
+      await openMicrophone(recorder, socket);
+      isRunning = true;
+      btn_mic.innerText = "🔇 Stop Transcription";
+    } catch (error) {
+      console.error("⚠️ error opening microphone:", error);
+    }
+  });
 
-        wsDeepgram.addEventListener("open", () => {
-            console.log("✅ Connected to Deepgram WS");
-        });
+  // תור TTS כדי למנוע השמעה מקבילה
+const ttsQueue = [];  // תור של משפטים
+let isTtsPlaying = false; // האם כרגע משמיעים משהו
 
-        wsDeepgram.addEventListener("message", (event) => {
-            if (!event.data) return;
-            let data;
-            try { 
-                data = JSON.parse(event.data); 
-            } catch(e) { 
-                console.error("⚠️ Failed to parse Deepgram message:", e); 
-                return; 
-            }
+function enqueueTts(audioBase64) {
+  ttsQueue.push(audioBase64);
+  playNextTts();
+}
 
+function playNextTts() {
+  if (isTtsPlaying || ttsQueue.length === 0) return;
+
+ // הפיכת Base64 ל־Blob
+  const audioBase64 = ttsQueue.shift();
+  const byteChars = atob(audioBase64);
+  const byteNumbers = new Array(byteChars.length);
+  for (let i = 0; i < byteChars.length; i++) {
+    byteNumbers[i] = byteChars.charCodeAt(i);
+  }
+  const byteArray = new Uint8Array(byteNumbers);
+  const audioBlob = new Blob([byteArray], { type: "audio/mp3" });
+
+  // השמעה
+  const audioUrl = URL.createObjectURL(audioBlob);
+
+if (ttsPlayer) {
+  ttsPlayer.src = audioUrl;
+  isTtsPlaying = true;
+
+  ttsPlayer.play().catch(err => {
+    console.error("⚠️ Error playing TTS:", err);
+    isTtsPlaying = false;
+    playNextTts();
+  });
+
+  ttsPlayer.onended = () => {
+    isTtsPlaying = false;
+    playNextTts();
+  };
+}
+}
+
+  socket.addEventListener("message", (event) => {
+    if (event.data === "") return;
+    let data;
+    try {
+      data = JSON.parse(event.data);
+    } catch (e) {
+      console.error("⚠️ Failed to parse JSON:", e);
+      return;
+    }
       // ======== תמלול ========
-      if (data && data.channel && data.channel.alternatives[0].transcript !== "") {
-        const span = document.createElement("div");
-        span.textContent = data.channel.alternatives[0].transcript;
-        captions.appendChild(span);
-        captions.scrollTop = captions.scrollHeight;
+    if (data && data.channel && data.channel.alternatives[0].transcript !== "") {
+      const span = document.createElement("div");
+      span.textContent = data.channel.alternatives[0].transcript;
+      captions.appendChild(span);
+      captions.scrollTop = captions.scrollHeight;
 
-        if (data.is_final) {
-          STTtranscriptReceiveTime = Date.now();
-          STTlatency = STTtranscriptReceiveTime - STTaudioSendTime;
-          console.log(`STTLatency: ${STTlatency} ms`);
-        }
-      }
-    });
+        // חישוב Latency
+  if (data.is_final) {  // רק כאשר התמלול סופי
+    STTtranscriptReceiveTime = Date.now(); // זמן קבלת התמלול
+    STTlatency = STTtranscriptReceiveTime - STTaudioSendTime; // חישוב ה-Latency
+    console.log(`STTLatency: ${STTlatency} ms`);
+  }
+    }
 
-        wsDeepgram.addEventListener("close", () => {
-            console.log("❌ Deepgram WS closed");
-        });
-    } catch (err) {
-        console.error("⚠️ WebSocket not open", err);
-    } 
-}
+      // ======== תרגום ========
+  if (data.type === "translation" && data.payload?.translated) {
+    const translated = data.payload.translated;
 
-  // עצירת recorder קודם אם קיים
-  if (recorder && recorder.state !== "inactive") {
-    recorder.stop();
+  if (typeof translated === "string") {
+    // מחרוזת פשוטה
+    const span = document.createElement("div");
+    span.textContent = translated;
+    translation.appendChild(span);
+  } else if (typeof translated === "object") {
+    // אובייקט שפות
+    for (const [lang, text] of Object.entries(translated)) {
+      const span = document.createElement("div");
+      span.textContent = `[${lang}] ${text}`;
+      translation.appendChild(span);
+    }
   }
 
-  try {
-    // השתמש במשתנה הגלובלי
-    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
-
-    recorder.ondataavailable = (event) => {
-      if (event.data.size > 0 && wsDeepgram.readyState === WebSocket.OPEN) {
-        STTaudioSendTime = Date.now();
-        wsDeepgram.send(event.data);
-      }
-    };
-
-    recorder.onstart = () => console.log("🎙️ Microphone started");
-    recorder.onstop = () => console.log("🛑 Microphone stopped");
-
-    recorder.start(100); // שליחה כל 100ms
-    isRunning = true;
-    btn_mic.innerText = "🔇 Stop Transcription";
-  } catch (error) {
-    console.error("⚠️ error opening microphone:", error);
-  }
+  translation.scrollTop = translation.scrollHeight;
 }
-    
+
+      // ======== טקסט לדיבור (TTS) ========
+if (data.type === "tts" && data.payload?.audioBase64) {
+  enqueueTts(data.payload.audioBase64);
+}
+  });
+
+  socket.addEventListener("close", () => {
+    console.log("❌ disconnected from server");
+  });
+}
+
 async function stopMicAndTranscription() {
   // 🎤 סגירת Agora
     if (recorder && recorder.state !== "inactive") {
     recorder.stop();
     recorder = undefined;
   }
-
-    if (stream) {
-    stream.getTracks().forEach(track => track.stop());
-    stream = null;
+  // 📴 סגירת WebSocket
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    socket.close();
   }
-
-    // סגירת ה-Deepgram WS
-  if (wsDeepgram && wsDeepgram.readyState === WebSocket.OPEN) {
-    wsDeepgram.close();
-    wsDeepgram = null;
-    console.log("🔌 Deepgram WS closed on Stop Transcription");
-  }
-  
-    // ✅ עדכון מצב וכפתור
   isRunning = false;
   btn_mic.innerText = "🎤 Start Transcription";
 }
-    
+
+  async function getMicrophone() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    return new MediaRecorder(stream, { mimeType: "audio/webm" });
+  } catch (error) {
+    console.error("⚠️ error accessing microphone:", error);
+    throw error;
+  }
+} 
+
+async function openMicrophone(recorder, socket) {
+  return new Promise((resolve) => {
+    recorder.onstart = () => {
+      console.log("🎙️ microphone opened");
+      document.body.classList.add("recording");
+      resolve();
+    };
+
+         recorder.onstop = () => {
+      console.log("🛑 Microphone closed");
+      document.body.classList.remove("recording");
+              if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.close();
+           console.log("🔌 WebSocket closed");
+                }               
+    };
+        recorder.ondataavailable = (event) => {
+      console.log("🎙️ microphone data received");
+      if (event.data.size > 0 && socket.readyState === WebSocket.OPEN) {
+        STTaudioSendTime = Date.now(); // זמן שליחת האודיו
+        socket.send(event.data);
+      }
+    };
+
+     recorder.start(100); // שולח כל 100 ms
+  });
+}
+
   </script>
 </body>
 </html>
