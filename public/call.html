@@ -404,13 +404,6 @@ const maxHeightPerVideo = Math.min(availableHeight / rows, 400); // 400px גוב
     btn_mic.innerText = isRunning ? "🔇 Stop Transcription" : "🎤 Start Transcription";
 
 document.getElementById("btn_mic").onclick = async () => {
-
-    isRunning = !isRunning;
-    micMuted = !isRunning;
-    if (agoraMicTrack) {
-        agoraMicTrack.setEnabled(!micMuted);
-    }
-
   if (!isRunning) {
     await startMicAndTranscription();
     document.getElementById("btn_mic").innerText = "🔇 Stop Transcription";
