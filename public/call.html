@@ -187,6 +187,18 @@ video {
     const data = await res.json();
     AGORA_APP_ID = data.appId;
 
+        // יצירת WebSocket מיד
+    const clientId = crypto.randomUUID(); // מזהה ייחודי
+    socket = new WebSocket(`wss://${window.location.host}?clientId=${clientId}`);
+
+    socket.addEventListener("open", () => {
+      console.log("✅ WebSocket connected immediately on load");
+    });
+
+    socket.addEventListener("close", () => {
+      console.log("❌ WebSocket disconnected");
+    });
+
     await startCall(); // עכשיו App ID כבר מוגדר
   } catch (err) {
     console.error("⚠️ Failed to fetch App ID:", err);
@@ -328,11 +340,7 @@ async function startMicAndTranscription() {
     console.log("⚠️ WebSocket already open, skipping creation");
     return; // או אפשר לעצור את הפונקציה כדי למנוע כפילויות
   }
-  const clientId = crypto.randomUUID(); // מזהה ייחודי ללקוח
-socket = new WebSocket(`wss://${window.location.host}?clientId=${clientId}`);
 
-  socket.addEventListener("open", async () => {
-    console.log("✅ connected to server");
     try {
       recorder = await getMicrophone();
       // 🎤 הפעלת Agora
@@ -342,7 +350,7 @@ socket = new WebSocket(`wss://${window.location.host}?clientId=${clientId}`);
     } catch (error) {
       console.error("⚠️ error opening microphone:", error);
     }
-  });
+  };
 
   // תור TTS כדי למנוע השמעה מקבילה
 const ttsQueue = [];  // תור של משפטים
@@ -448,10 +456,7 @@ async function stopMicAndTranscription() {
     recorder.stop();
     recorder = undefined;
   }
-  // 📴 סגירת WebSocket
-  if (socket && socket.readyState === WebSocket.OPEN) {
-    socket.close();
-  }
+
   isRunning = false;
   btn_mic.innerText = "🎤 Start Transcription";
 }
@@ -476,11 +481,7 @@ async function openMicrophone(recorder, socket) {
 
          recorder.onstop = () => {
       console.log("🛑 Microphone closed");
-                 document.body.classList.remove("recording");
-              if (socket && socket.readyState === WebSocket.OPEN) {
-                socket.close();
-           console.log("🔌 WebSocket closed");
-                }           
+                 document.body.classList.remove("recording");     
     };
         recorder.ondataavailable = (event) => {
       console.log("🎙️ microphone data received");
