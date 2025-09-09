@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { X, CameraOff } from 'lucide-react';
+import jsQR from 'jsqr';
 
 export default function QRCodeScanner({ onScanSuccess, onClose }) {
   const videoRef = useRef(null);
@@ -52,13 +53,13 @@ export default function QRCodeScanner({ onScanSuccess, onClose }) {
         
         try {
           // Simple QR code detection using pattern recognition
-          const qrResult = detectQRCode(imageData);
-          if (qrResult) {
-            onScanSuccess(qrResult);
+          const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
+          if (qrCode) {
+            onScanSuccess(qrCode.data);
             return;
           }
         } catch (e) {
-          console.log('QR detection attempt failed, continuing...');
+          console.log('QR code not detected. Please enter manually');
         }
       }
 
