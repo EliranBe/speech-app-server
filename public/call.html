@@ -444,7 +444,8 @@ document.getElementById("btn-leave").onclick = leaveCall;
   }
 
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    // השתמש במשתנה הגלובלי
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
 
     recorder.ondataavailable = (event) => {
@@ -471,6 +472,12 @@ async function stopMicAndTranscription() {
     recorder.stop();
     recorder = undefined;
   }
+
+    if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+    stream = null;
+  }
+  
     // ✅ עדכון מצב וכפתור
   isRunning = false;
   btn_mic.innerText = "🎤 Start Transcription";
