@@ -170,6 +170,7 @@ video {
     if (socket && socket.readyState === WebSocket.OPEN) {
         socket.close();
         socket = null;
+      console.log("🔌 WebSocket closed on Leave");
     }
 
     // 📴 עזיבת ערוץ Agora
@@ -188,6 +189,17 @@ video {
     AGORA_APP_ID = data.appId;
 
     await startCall(); // עכשיו App ID כבר מוגדר
+        // ✅ בדיקה אם כבר קיים WebSocket פעיל
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    console.log("⚠️ WebSocket already open, skipping creation");
+    return; // או אפשר לעצור את הפונקציה כדי למנוע כפילויות
+  }
+  const clientId = crypto.randomUUID(); // מזהה ייחודי ללקוח
+socket = new WebSocket(`wss://${window.location.host}?clientId=${clientId}`);
+
+  socket.addEventListener("open", async () => {
+    console.log("✅ connected to server");
+  });
   } catch (err) {
     console.error("⚠️ Failed to fetch App ID:", err);
   }
@@ -323,16 +335,6 @@ document.getElementById("btn-leave").onclick = leaveCall;
     //שילוב עם Deppgram//
 
 async function startMicAndTranscription() {
-    // ✅ בדיקה אם כבר קיים WebSocket פעיל
-  if (socket && socket.readyState === WebSocket.OPEN) {
-    console.log("⚠️ WebSocket already open, skipping creation");
-    return; // או אפשר לעצור את הפונקציה כדי למנוע כפילויות
-  }
-  const clientId = crypto.randomUUID(); // מזהה ייחודי ללקוח
-socket = new WebSocket(`wss://${window.location.host}?clientId=${clientId}`);
-
-  socket.addEventListener("open", async () => {
-    console.log("✅ connected to server");
     try {
       recorder = await getMicrophone();
       // 🎤 הפעלת Agora
@@ -342,7 +344,6 @@ socket = new WebSocket(`wss://${window.location.host}?clientId=${clientId}`);
     } catch (error) {
       console.error("⚠️ error opening microphone:", error);
     }
-  });
 
   // תור TTS כדי למנוע השמעה מקבילה
 const ttsQueue = [];  // תור של משפטים
@@ -449,9 +450,6 @@ async function stopMicAndTranscription() {
     recorder = undefined;
   }
   // 📴 סגירת WebSocket
-  if (socket && socket.readyState === WebSocket.OPEN) {
-    socket.close();
-  }
   isRunning = false;
   btn_mic.innerText = "🎤 Start Transcription";
 }
@@ -476,11 +474,7 @@ async function openMicrophone(recorder, socket) {
 
          recorder.onstop = () => {
       console.log("🛑 Microphone closed");
-      document.body.classList.remove("recording");
-              if (socket && socket.readyState === WebSocket.OPEN) {
-                socket.close();
-           console.log("🔌 WebSocket closed");
-                }               
+      document.body.classList.remove("recording");        
     };
         recorder.ondataavailable = (event) => {
       console.log("🎙️ microphone data received");
