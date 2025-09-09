@@ -437,7 +437,7 @@ document.getElementById("btn-leave").onclick = leaveCall;
 // אם אין WS קיים או שהוא לא פתוח, יוצרים חדש
 if (!wsDeepgram || wsDeepgram.readyState !== WebSocket.OPEN) {
     try {
-        wsDeepgram = new WebSocket(`wss://your-deepgram-endpoint`);
+        wsDeepgram = new WebSocket(`wss://${window.location.host}?clientId=${clientId}`);
 
         wsDeepgram.addEventListener("open", () => {
             console.log("✅ Connected to Deepgram WS");
