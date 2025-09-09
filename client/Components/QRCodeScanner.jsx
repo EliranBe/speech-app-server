@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { X, CameraOff } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 export default function QRCodeScanner({ onScanSuccess, onClose }) {
   const videoRef = useRef(null);
@@ -144,19 +143,22 @@ export default function QRCodeScanner({ onScanSuccess, onClose }) {
             <CameraOff className="w-12 h-12 mx-auto mb-4 text-red-500" />
             <h3 className="text-lg font-bold">Camera Access Required</h3>
             <p className="text-gray-300 text-sm mt-2">{error}</p>
-            <Button 
+            <button
               onClick={onClose}
-              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white"
+              className="mt-4 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-300"
             >
               Use Manual Entry Instead
-            </Button>
+            </button>
           </div>
         )}
 
         <div className="absolute top-2 right-2">
-          <Button variant="ghost" size="icon" onClick={onClose} className="text-white hover:bg-white/10 rounded-full">
-            <X className="w-6 h-6" />
-          </Button>
+        <button
+          onClick={onClose}
+          className="text-white hover:bg-white/10 rounded-full p-1"
+        >
+          <X className="w-6 h-6" />
+        </button>
         </div>
       </div>
       
