@@ -1,6 +1,6 @@
 // speech-app-server/routes/sessionRoutes.js
-import express from "express";
-import { validateSession } from "../validation/sessionValidator.js";
+const express = require("express");
+const { validateSession } = require("../validation/sessionValidator.js");
 
 const router = express.Router();
 
@@ -20,4 +20,4 @@ router.post("/session", (req, res) => {
   res.status(201).json({ message: "Session created successfully ✅" });
 });
 
-export default router;
+module.exports = router;
