@@ -44,6 +44,10 @@ app.use(express.static('public')); // מאפשר גישה לקבצי HTML כמו
     res.sendFile(__dirname + "/public/index.html");
   });
 
+//כל בקשה ל־/api/session תנותב לפי הקובץ sessionRoutes.js.//
+const sessionRoutes = require('./routes/sessionRoutes'); // CommonJS
+app.use('/api', sessionRoutes);
+
 // החזרת APP_ID בצורה בטוחה
 app.get('/appId', (req, res) => {
   res.json({ appId: process.env.AGORA_APP_ID });
