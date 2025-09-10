@@ -48,6 +48,10 @@ app.use(express.static('public')); // מאפשר גישה לקבצי HTML כמו
 const sessionRoutes = require('./routes/sessionRoutes'); // CommonJS
 app.use('/api', sessionRoutes);
 
+//כל בקשה ל־/api/session תנותב לפי הקובץ userPreferencesRoutes.js.//
+const userPreferencesRoutes = require("./routes/userPreferencesRoutes");
+app.use("/api", userPreferencesRoutes);
+
 // החזרת APP_ID בצורה בטוחה
 app.get('/appId', (req, res) => {
   res.json({ appId: process.env.AGORA_APP_ID });
