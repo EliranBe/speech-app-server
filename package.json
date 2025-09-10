@@ -19,6 +19,7 @@
     "axios": "^1.6.0",
     "@azure-rest/ai-translation-text": "^1.0.2",
     "@azure/identity": "^4.7.0",
-    "@google-cloud/text-to-speech": "^6.3.0"
+    "@google-cloud/text-to-speech": "^6.3.0",
+    "ajv": "^8.17.1"
   }
 }
