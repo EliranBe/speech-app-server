@@ -2,7 +2,7 @@
 const Ajv = require("ajv");
 const schema = require("../client/Entities/VerboSession.json");
 
-const ajv = new Ajv({ allErrors: true });
+const ajv = new Ajv({ allErrors: true, strict: false });
 const validate = ajv.compile(schema);
 
 function validateSession(session) {
