@@ -1,14 +1,16 @@
 // speech-app-server/validation/sessionValidator.js
-import Ajv from "ajv";
-import schema from "../VerboSession.json" assert { type: "json" };
+const Ajv = require("ajv");
+const schema = require("../VerboSession.json"); // CommonJS פשוט
 
 const ajv = new Ajv({ allErrors: true });
 const validate = ajv.compile(schema);
 
-export function validateSession(session) {
+function validateSession(session) {
   const valid = validate(session);
   if (!valid) {
     return { valid: false, errors: validate.errors };
   }
   return { valid: true };
 }
+
+module.exports = { validateSession };
