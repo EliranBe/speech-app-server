@@ -4,7 +4,7 @@ const dotenv = require("dotenv");
 dotenv.config();
 const supabase = require('./client/Utils/supabaseClient');
 const cors = require('cors');
-
+ 
 // בדיקה ש־Google TTS מוגדר
 if (!process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
   throw new Error("⚠️ Missing GOOGLE_APPLICATION_CREDENTIALS_JSON in environment variables");
