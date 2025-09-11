@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const dotenv = require("dotenv");
 dotenv.config();
+const supabase = require('./utils/supabaseClient');
 const cors = require('cors');
 
 // בדיקה ש־Google TTS מוגדר
