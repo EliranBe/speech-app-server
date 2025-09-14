@@ -110,6 +110,26 @@ video {
 </head>
 <body>
 
+      <div id="meeting-expired" style="
+  display:none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border: 2px solid #444;
+  border-radius: 12px;
+  padding: 20px 30px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.3);
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+  text-align: center;
+  z-index: 9999;
+">
+  The meeting has expired. Your session has ended.
+</div>
+  
   <div id="captions"></div>
   <div id="translation"></div>
 
@@ -143,6 +163,8 @@ video {
     let translation;
     let tts;
     let ttsPlayer = null;
+    let meetingStartTime = null; // נשמר מתי התחילה הפגישה
+    let meetingExpiryTimer = null; // טיימר לסגירת פגישה
 
     async function leaveCall() {
     // 🔒 השבתת כל הכפתורים
@@ -294,7 +316,17 @@ document.getElementById("btn_mic").onclick = async () => {
     }
   }
 
-  if (!isRunning) {
+    if (!isRunning) {
+    if (!meetingStartTime && !meetingExpiryTimer) {
+  meetingStartTime = Date.now();
+  console.log("🕒 meeting_Start_Time:", new Date(meetingStartTime).toISOString());
+
+  meetingExpiryTimer = setTimeout(() => {
+    leaveCall();
+    document.getElementById("meeting-expired").style.display = "block";
+  }, 60000);
+}
+
     await startMicAndTranscription();
     document.getElementById("btn_mic").innerText = "🔇 Stop Transcription";
   } else {
