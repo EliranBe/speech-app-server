@@ -123,20 +123,7 @@ if (translated) {
 
     return { deepgram, keepAlive };
   };
-
-  function endMeeting() {
-  console.log("⛔ Ending meeting for all clients");
-  wss.clients.forEach(client => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify({ type: "meeting-end" }));
-    }
-  });
-}
-  
-  setTimeout(() => {
-  endMeeting();
-}, 60000);
-  
+    
   wss.on('connection', (ws, req) => {
     console.log("🔗 Client connected to WebSocket");
     const url = new URL(req.url, `http://${req.headers.host}`);
