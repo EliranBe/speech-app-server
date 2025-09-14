@@ -109,27 +109,6 @@ video {
   </style>
 </head>
 <body>
-
-<div id="meeting-expired" style="
-  display: none;
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 300px;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.1); /* רקע שקוף חלקית */
-  backdrop-filter: blur(12px);           /* טשטוש כמו בוידאו */
-  border-radius: 20px;                   /* קצוות מעוגלות */
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2); /* צל עדין */
-  font-size: 18px;
-  font-weight: bold;
-  color: #333;
-  text-align: center;
-  z-index: 9999;
-">
-  The meeting has expired. Your session has ended.
-</div>
   
   <div id="captions"></div>
   <div id="translation"></div>
@@ -418,12 +397,6 @@ if (ttsPlayer) {
       console.error("⚠️ Failed to parse JSON:", e);
       return;
     }
-
-     if (data.type === "meeting-end") {
-  document.getElementById("meeting-expired").style.display = "block";
-  leaveCall();
-  return;
-}
     
       // ======== תמלול ========
     if (data && data.channel && data.channel.alternatives[0].transcript !== "") {
