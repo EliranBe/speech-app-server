@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { UserPreferencesAPI } from "../Entities/UserPreferencesAPI";
+import { Plus, ScanLine, Users, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import BrandedLoader from '../components/BrandedLoader';
 import { supabase } from "@/utils/supabaseClient";
@@ -62,7 +63,7 @@ export default function Home() {
         {/* Welcome Section */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 rounded-full px-4 py-2 mb-6">
-            <span className="text-blue-600 text-lg">⚡</span>
+            <Zap className="w-4 h-4 text-blue-600" />
             <span className="text-sm font-medium text-blue-700">Real-time Translation Ready</span>
           </div>
           
@@ -88,14 +89,14 @@ export default function Home() {
     onClick={handleCreateSession}
   >
     <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-xl">
-    <span className="text-white text-4xl">➕</span>
+    <Plus className="w-10 h-10 text-white" />
     </div>
     <h3 className="text-2xl font-bold text-gray-900 mb-3">Create Verbo</h3>
     <p className="text-gray-600 mb-6">
       Create a multilingual conversation powered by AI. Share your session code, link, or QR with others to connect instantly.
     </p>
     <div className="flex items-center justify-center gap-2 text-sm text-blue-600 font-medium">
-      <span className="text-blue-600 text-base">👥</span>
+      <Users className="w-4 h-4" />
       Host a conversation
     </div>
   </div>
@@ -106,14 +107,14 @@ export default function Home() {
     onClick={handleJoinSession}
   >
     <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-600 rounded-3xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-xl">
-      <span className="text-white text-4xl">📷</span> // מייצג סריקה
+      <ScanLine className="w-10 h-10 text-white" />
     </div>
     <h3 className="text-2xl font-bold text-gray-900 mb-3">Join Verbo</h3>
     <p className="text-gray-600 mb-6">
       Join a live AI-powered call using a QR code, session link, or Meeting ID.
     </p>
     <div className="flex items-center justify-center gap-2 text-sm text-purple-600 font-medium">
-      <span className="text-purple-600 text-base">📷</span>
+      <ScanLine className="w-4 h-4" />
       Scan to join
     </div>
   </div>
@@ -126,21 +127,21 @@ export default function Home() {
           <div className="grid md:grid-cols-3 gap-6">
             <div className="text-center">
               <div className="w-12 h-12 bg-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <span className="text-white text-2xl">⚡</span>
+                <Zap className="w-6 h-6 text-white" />
               </div>
               <h4 className="font-semibold text-gray-900 mb-2">Lightning Fast</h4>
               <p className="text-sm text-gray-600">Translation in under 0.5 seconds</p>
             </div>
             <div className="text-center">
               <div className="w-12 h-12 bg-green-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <span className="text-purple-600 text-base">📷</span>
+                <Users className="w-6 h-6 text-white" />
               </div>
               <h4 className="font-semibold text-gray-900 mb-2">Natural Flow</h4>
               <p className="text-sm text-gray-600">Simultaneous speaking like phone calls</p>
             </div>
             <div className="text-center">
               <div className="w-12 h-12 bg-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <span className="text-white text-2xl">⚡</span>
+                <Zap className="w-6 h-6 text-white" />
               </div>
               <h4 className="font-semibold text-gray-900 mb-2">Powered by AI</h4>
               <p className="text-sm text-gray-600">Speak your language. Hear conversations translated to your language in real time.</p>
