@@ -164,8 +164,6 @@ video {
     let translation;
     let tts;
     let ttsPlayer = null;
-    let meetingStartTime = null; // נשמר מתי התחילה הפגישה
-    let meetingExpiryTimer = null; // טיימר לסגירת פגישה
 
     async function leaveCall() {
     // 🔒 השבתת כל הכפתורים
@@ -318,17 +316,6 @@ document.getElementById("btn_mic").onclick = async () => {
   }
 
     if (!isRunning) {
-    if (!meetingStartTime && !meetingExpiryTimer) {
-  meetingStartTime = Date.now();
-  console.log("🕒 meeting_Start_Time:", new Date(meetingStartTime).toISOString());
-
-  meetingExpiryTimer = setTimeout(() => {
-    if (socket && socket.readyState === WebSocket.OPEN) {
-    socket.send(JSON.stringify({ type: "meeting-end" }));
-  }
-}, 60000);
-}
-
     await startMicAndTranscription();
     document.getElementById("btn_mic").innerText = "🔇 Stop Transcription";
   } else {
