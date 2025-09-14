@@ -110,17 +110,18 @@ video {
 </head>
 <body>
 
-      <div id="meeting-expired" style="
-  display:none;
+<div id="meeting-expired" style="
+  display: none;
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: white;
-  border: 2px solid #444;
-  border-radius: 12px;
-  padding: 20px 30px;
-  box-shadow: 0 0 20px rgba(0,0,0,0.3);
+  width: 300px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.1); /* רקע שקוף חלקית */
+  backdrop-filter: blur(12px);           /* טשטוש כמו בוידאו */
+  border-radius: 20px;                   /* קצוות מעוגלות */
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2); /* צל עדין */
   font-size: 18px;
   font-weight: bold;
   color: #333;
@@ -322,9 +323,10 @@ document.getElementById("btn_mic").onclick = async () => {
   console.log("🕒 meeting_Start_Time:", new Date(meetingStartTime).toISOString());
 
   meetingExpiryTimer = setTimeout(() => {
-    leaveCall();
-    document.getElementById("meeting-expired").style.display = "block";
-  }, 60000);
+    if (socket && socket.readyState === WebSocket.OPEN) {
+    socket.send(JSON.stringify({ type: "meeting-end" }));
+  }
+}, 60000);
 }
 
     await startMicAndTranscription();
@@ -429,6 +431,13 @@ if (ttsPlayer) {
       console.error("⚠️ Failed to parse JSON:", e);
       return;
     }
+
+     if (data.type === "meeting-end") {
+  document.getElementById("meeting-expired").style.display = "block";
+  leaveCall();
+  return;
+}
+    
       // ======== תמלול ========
     if (data && data.channel && data.channel.alternatives[0].transcript !== "") {
       const span = document.createElement("div");
