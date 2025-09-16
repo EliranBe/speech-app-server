@@ -4,7 +4,7 @@ const dotenv = require("dotenv");
 dotenv.config();
 const supabase = require('./client/Utils/supabaseClient');
 const cors = require('cors');
-const meetingsRouter = require("./routes/meetings"); // ניצור קובץ חדש
+const meetingsRouter = require("./server/meetings");
  
 // בדיקה ש־Google TTS מוגדר
 if (!process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
