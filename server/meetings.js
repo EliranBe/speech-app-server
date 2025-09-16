@@ -17,9 +17,15 @@ router.post("/create", async (req, res) => {
     }
 
     // יצירת מזהה פגישה ייחודי
-    const meeting_id = uuidv4();
-    const url_meeting = `https://yourapp.com/meetings/${meeting_id}`;
-    const qr_data = url_meeting;
+const meeting_id = uuidv4();
+
+// שימוש בכתובת BASE_URL מ־ENV
+const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
+const url_meeting = `${BASE_URL}/meetings/${meeting_id}`;
+const qr_data = url_meeting;
+
+// הוספת שדה expiry (פגישה פוגת לאחר שעה)
+const expiry = new Date(Date.now() + 60*60*1000).toISOString();
 
     const { data, error } = await supabase.from("Meetings").insert([
       {
@@ -29,7 +35,8 @@ router.post("/create", async (req, res) => {
         is_active: true,
         meeting_id,
         url_meeting,
-        qr_data
+        qr_data,
+        expiry
       }
     ]).select();
 
@@ -55,6 +62,18 @@ router.post("/join", async (req, res) => {
     if (!meeting_id || !user_id) {
       return res.status(400).json({ error: "meeting_id and user_id are required" });
     }
+
+    // בדיקה אם המשתמש כבר הצטרף
+const { data: existing, error: existError } = await supabase
+  .from("Participants")
+  .select()
+  .eq("meeting_id", meeting_id)
+  .eq("user_id", user_id)
+  .single();
+
+if (existing) {
+  return res.status(200).json({ participant: existing, message: "Already joined" });
+}
 
     const { data, error } = await supabase.from("Participants").insert([
       {
