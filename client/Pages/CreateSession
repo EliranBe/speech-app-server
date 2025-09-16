@@ -71,56 +71,32 @@ try {
     try {
       const sessionCode = generateSessionCode();
       const meetingId = generateMeetingId();
-      const createdAt = new Date().toISOString();
       
       // First, create the session to get its unique ID
-      const { data, error } = await supabase
-        .from("Meetings")
-        .insert([
-          {
-            meeting_id: meetingId,           // מזהה ייחודי לפגישה
-            host_user_id: userData.id,       // המשתמש שיצר את הפגישה
-            meeting_password: sessionCode,   // או סיסמה/קוד (אם אתה משתמש בזה כ-session_code)
-            expiry: null,                    // אם יש לך לוגיקה של תפוגה
-            created_at: new Date().toISOString(),
-            url_meeting: "placeholder",       // נעדכן אחרי שנבנה URL אמיתי
-            qr_data: "placeholder",
-            is_active: true
-          }
-        ])
-        .select()
-        .single();
-      
-      if (error) {
-        console.error("Error creating meeting:", error);
-        return;
-      }
-      
-      const newSession = data; // זה שווה ערך ל-newSession מהקוד הישן  
-
-// Construct the secure URL using the session's database ID
-const url_meeting = `${window.location.origin}/JoinCall?sessionId=${newSession.meeting_id}`;
-            
-      const { error: updateError } = await supabase
-        .from("Meetings")
-        .update({
-          url_meeting: url_meeting,
-          qr_data: url_meeting,    // נשמור את ה-URL גם לשימוש ב-QR
-          is_active: true         // נוודא שהפגישה מסומנת כפעילה
-        })
-        .eq("meeting_id", newSession.meeting_id);
-      
-      if (updateError) {
-        console.error("Error updating meeting URL:", updateError);
-      }    
-
-setSession({ 
-  ...newSession, 
-  session_url: url_meeting,  // URL להצגה
-  qr_data: url_meeting,      // נתון ל־QR
-  session_code: sessionCode  // הקוד של הפגישה להצגה
+      // קריאה ל-API של ה-server ליצירת פגישה
+const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || "http://localhost:3001"}/api/meetings/create`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    host_user_id: userData.id,
+    meeting_password: sessionCode
+  })
 });
 
+const { meeting: newSession, error: apiError } = await response.json();
+
+if (apiError) {
+  console.error("Error creating meeting:", apiError);
+  return;
+}
+
+setSession({
+  ...newSession,
+  session_url: newSession.url_meeting,
+  qr_data: newSession.qr_data,
+  session_code: sessionCode
+});
+     
     } catch (error) {
       console.error("Error creating session:", error);
       setSession(null);
