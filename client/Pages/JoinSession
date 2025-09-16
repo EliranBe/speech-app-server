@@ -6,7 +6,7 @@ import { Camera, ArrowLeft, Loader2, AlertCircle, ScanLine, X, RefreshCw, Zap, Z
 import { useNavigate } from "react-router-dom";
 import BrandedLoader from '../components/BrandedLoader';
 import QRCode from "../components/ui/QRCode";
-import { supabase } from "./Utils/supabaseClient";
+import { supabase } from "../utils/supabaseClient";
 
 async function loadUser() {
   const { data, error } = await supabase.auth.getUser();
