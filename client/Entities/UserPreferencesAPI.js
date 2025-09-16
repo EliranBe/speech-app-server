@@ -1,4 +1,4 @@
-import { supabase } from "../Utils/supabaseClient";
+import { supabase } from "../utils/supabaseClient";
 
 export const UserPreferencesAPI = {
   get: async (user_id) => {
