@@ -4,6 +4,7 @@ const dotenv = require("dotenv");
 dotenv.config();
 const supabase = require('./client/Utils/supabaseClient');
 const cors = require('cors');
+const meetingsRouter = require("./routes/meetings"); // ניצור קובץ חדש
  
 // בדיקה ש־Google TTS מוגדר
 if (!process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
@@ -52,6 +53,8 @@ app.use('/api', sessionRoutes);
 //כל בקשה ל־/api/session תנותב לפי הקובץ userPreferencesRoutes.js.//
 const userPreferencesRoutes = require("./routes/userPreferencesRoutes");
 app.use("/api", userPreferencesRoutes);
+
+app.use("/api/meetings", meetingsRouter);
 
 // החזרת APP_ID בצורה בטוחה
 app.get('/appId', (req, res) => {
