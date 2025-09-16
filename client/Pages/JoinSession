@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { UserPreferencesAPI } from "./Entities/UserPreferencesAPI";
-import VerboSession from "./Entities/VerboSession.json";
 import { Camera, ArrowLeft, Loader2, AlertCircle, ScanLine, X, RefreshCw, Zap, ZapOff, CheckCircle, Link } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import BrandedLoader from '../components/BrandedLoader';
@@ -106,32 +105,24 @@ setUser(userData);
     setError("");
 
     try {
-      const sessions = await VerboSession.filter({
-        meeting_id: meetingId.trim(),
-        session_code: sessionCode.trim().toUpperCase(),
-      });
+      // קריאה ל-API שלך
+const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || "http://localhost:3001"}/api/meetings/join`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    meeting_id: meetingId.trim(),
+    session_code: sessionCode.trim().toUpperCase(),
+    participant_id: user.id
+  })
+});
 
-      if (sessions.length === 0) {
-        setError("Session not found. Please check the Meeting ID and Session Code.");
-        setIsJoining(false);
-        return;
-      }
+const { session, error: apiError } = await response.json();
 
-      const session = sessions[0];
-
-      const TEN_MINUTES_IN_MS = 10 * 60 * 1000; // 10 minutes
-      const isExpired = session.created_at && (new Date() - new Date(session.created_at)) > TEN_MINUTES_IN_MS;
-
-      if (!session.is_active || isExpired) {
-        if (session.is_active && isExpired) { // Only update if it was active but just expired
-          await VerboSession.update(session.id, { is_active: false, expired_meeting: new Date().toISOString() });
-        }
-        setError("This session has expired.");
-        setIsJoining(false);
-        return;
-      }
-
-      await VerboSession.update(session.id, { participant_id: user.id });
+if (apiError) {
+  setError(apiError);
+  setIsJoining(false);
+  return;
+}
 
       navigate(`/Call?sessionId=${session.meeting_id}&role=participant`);
 
