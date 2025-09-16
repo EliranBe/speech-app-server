@@ -1,12 +1,12 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { UserPreferencesAPI } from "@/entities/UserPreferencesAPI";
-import { VerboSession } from "@/entities/VerboSession";
+import { UserPreferencesAPI } from "./Entities/UserPreferencesAPI";
+import VerboSession from "./Entities/VerboSession.json";
 import { Camera, ArrowLeft, Loader2, AlertCircle, ScanLine, X, RefreshCw, Zap, ZapOff, CheckCircle, Link } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import BrandedLoader from '../components/BrandedLoader';
 import QRCode from "../components/ui/QRCode";
-import { supabase } from "@/utils/supabaseClient";
+import { supabase } from "./Utils/supabaseClient";
 
 async function loadUser() {
   const { data, error } = await supabase.auth.getUser();
