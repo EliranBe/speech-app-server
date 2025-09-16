@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Settings } from "lucide-react";
 import BrandedLoader from '../components/BrandedLoader';
-import { supabase } from "@/utils/supabaseClient";
+import { supabase } from "./Utils/supabaseClient";
 
 async function loadUser() {
   const { data, error } = await supabase.auth.getUser();
