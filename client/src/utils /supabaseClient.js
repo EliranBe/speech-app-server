@@ -1,7 +1,9 @@
-const { createClient } = require('@supabase/supabase-js');
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_ANON_KEY;
+// client/src/utils/supabaseClient.js
+import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(supabaseUrl, supabaseKey);
-module.exports = supabase;
+const supabaseUrl = process.env.APP_SUPABASE_URL;
+const supabaseKey = process.env.APP_SUPABASE_ANON_KEY;
+
+export const supabase = createClient(supabaseUrl, supabaseKey);
+
