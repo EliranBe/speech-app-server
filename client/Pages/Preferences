@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { UserPreferencesAPI } from "../Entities/UserPreferencesAPI";
 import { Camera, Mic, Globe, User as UserIcon, ArrowRight, Info, ArrowLeft, ShieldCheck, Settings, CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "./Utils/supabaseClient";
+import { supabase } from "../utils/supabaseClient";
 
 async function loadUser() {
   const { data, error } = await supabase.auth.getUser();
