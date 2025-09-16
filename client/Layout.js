@@ -29,8 +29,12 @@ export default function Layout({ children, currentPageName }) {
         if (currentUser && !currentUser.user_id) {
           // לדוגמה, קריאה ל-API פנימי שלך או Supabase כדי להוסיף user_id
           await supabase
-            .from("user_preferences")
-              .upsert({ user_id: currentUser.id }, { onConflict: "user_id" });
+  .from("user_preferences")
+  .upsert({
+    user_id: currentUser.id,
+    system_language: navigator.language,
+    updated_at: new Date().toISOString()
+  }, { onConflict: "user_id" });
         }
       } catch (e) {
         console.error("Error in checkUser:", e);
