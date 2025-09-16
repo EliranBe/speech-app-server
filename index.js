@@ -1,3 +1,4 @@
+const path = require('path');
 const express = require('express');
 const http = require('http');
 const dotenv = require("dotenv");
@@ -42,9 +43,8 @@ if (!process.env.DEEPGRAM_PROJECT_ID) {
 
 app.use(cors());
 app.use(express.static('public')); // מאפשר גישה לקבצי HTML כמו stt-test.html
-  app.get("/", (req, res) => {
-    res.sendFile(__dirname + "/public/index.html");
-  });
+// Serve React build
+app.use(express.static(path.join(__dirname, 'client/build')));
 
 //כל בקשה ל־/api/session תנותב לפי הקובץ sessionRoutes.js.//
 const sessionRoutes = require('./routes/sessionRoutes'); // CommonJS
@@ -55,6 +55,11 @@ const userPreferencesRoutes = require("./routes/userPreferencesRoutes");
 app.use("/api", userPreferencesRoutes);
 
 app.use("/api/meetings", meetingsRouter);
+
+// כל route שלא מוגדר ב-API יוגש על ידי React
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
+});
 
 // החזרת APP_ID בצורה בטוחה
 app.get('/appId', (req, res) => {
@@ -89,11 +94,6 @@ app.get('/rte-token', (req, res) => {
     console.error('Failed to generate token:', err);
     res.status(500).json({ error: 'Failed to generate token' });
   }
-});
-
-// נקודת כניסה בסיסית לשרת
-app.get('/', (req, res) => {
-  res.send('🎉 השרת פועל בהצלחה!');
 });
 
 // חיבור WebSocket לשרת HTTP
