@@ -24,6 +24,10 @@ export default function Layout({ children, currentPageName }) {
       try {
         const currentUser = await loadUser(); // כאן קוראים לפונקציה החדשה
         setUser(currentUser);
+              if (!currentUser) {
+        navigate("/login");
+        return;
+      }
 
         // אם צריך לעדכן את הנתונים במסד שלך, אפשר לעשות זאת כאן
         if (currentUser && !currentUser.user_id) {
