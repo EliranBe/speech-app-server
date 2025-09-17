@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { UserPreferencesAPI } from "./Entities/UserPreferencesAPI";
+import { UserPreferencesAPI } from "../Entities/UserPreferencesAPI";
 import { Camera, ArrowLeft, Loader2, AlertCircle, ScanLine, X, RefreshCw, Zap, ZapOff, CheckCircle, Link } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import BrandedLoader from '../components/BrandedLoader';
@@ -38,13 +38,13 @@ if (!userData) {
 setUser(userData);
 
 
-      const userPrefs = await UserPreferencesAPI.filter({ created_by: userData.email });
-      if (userPrefs.length > 0) {
-        setPreferences(userPrefs[0]);
-      } else {
-        navigate("/Preferences");
-        return;
-      }
+      const userPrefs = await UserPreferencesAPI.get(userData.id);
+if (userPrefs) {
+  setPreferences(userPrefs);
+} else {
+  navigate("/Preferences");
+  return;
+}
     } catch (error) {
       console.error("Error loading user data:", error);
       navigate("/login");
