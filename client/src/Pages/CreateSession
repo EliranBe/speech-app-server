@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { UserPreferencesAPI } from "./Entities/UserPreferencesAPI";
+import { UserPreferencesAPI } from "../Entities/UserPreferencesAPI";
 import { useNavigate } from "react-router-dom";
 import QRCode from "../components/ui/QRCode";
 import { supabase } from "../utils/supabaseClient";
