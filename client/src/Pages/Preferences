@@ -47,6 +47,10 @@ export default function Preferences() {
   const loadUserData = async () => {
     try {
       const userData = await loadUser();
+      if (!userData) {
+            navigate("/login");
+            return;
+          }
       setUser(userData);
       
       const existingPrefs = await UserPreferencesAPI.get(userData.id);
