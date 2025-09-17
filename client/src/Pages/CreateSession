@@ -38,13 +38,13 @@ try {
   }
   setUser(userData);
 
-  const userPrefs = await UserPreferencesAPI.filter({ created_by: userData.id });
-  if (userPrefs.length > 0) {
-    setPreferences(userPrefs[0]);
-  } else {
-    navigate("/Preferences");
-    return;
-  }
+const userPrefs = await UserPreferencesAPI.get(userData.id);
+if (userPrefs) {
+  setPreferences(userPrefs);
+} else {
+  navigate("/Preferences");
+  return;
+}
   
   await createNewSession(userData, userPrefs[0] || null);
 } catch (error) {
