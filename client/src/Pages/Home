@@ -30,13 +30,13 @@ export default function Home() {
       const userData = await loadUser();
       setUser(userData);
       
-      const userPrefs = await UserPreferencesAPI.filter({ created_by: userData.id });
-      if (userPrefs.length > 0) {
-        setPreferences(userPrefs[0]);
-      } else {
-        navigate("/Preferences");
-        return;
-      }
+      const userPrefs = await UserPreferencesAPI.get(userData.id);
+if (userPrefs) {
+  setPreferences(userPrefs);
+} else {
+  navigate("/Preferences");
+  return;
+}
     } catch (error) {
       console.error("Error loading user data:", error);
       console.error("User not logged in");
