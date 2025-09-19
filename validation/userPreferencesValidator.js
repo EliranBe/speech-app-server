@@ -1,6 +1,6 @@
 // speech-app-server/validation/userPreferencesValidator.js
 const Ajv = require("ajv");
-const schema = require("../client/Entities/UserPreferences.json");
+const schema = require("../client/src/Entities/UserPreferences.json");
 
 const ajv = new Ajv({ allErrors: true, strict: false });
 const validate = ajv.compile(schema);
