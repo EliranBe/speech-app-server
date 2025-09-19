@@ -4,6 +4,8 @@
   "main": "index.js",
   "scripts": {
    "start": "node index.js",
+    "build": "cd client && npm install && npm run build",
+    "postinstall": "npm run build",
     "test:client": "jest public/stt-test.html",
     "test": "npm run test:client"
   },
