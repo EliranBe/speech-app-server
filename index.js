@@ -43,8 +43,8 @@ if (!process.env.DEEPGRAM_PROJECT_ID) {
 
 app.use(cors());
 // Serve React build
-app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname, 'client/build')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 //כל בקשה ל־/api/session תנותב לפי הקובץ sessionRoutes.js.//
 const sessionRoutes = require('./routes/sessionRoutes'); // CommonJS
