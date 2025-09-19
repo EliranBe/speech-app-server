@@ -2,7 +2,7 @@
 
 const express = require("express");
 const router = express.Router();
-const { supabase } = require("../utils/supabaseClient"); // חיבור ל-Supabase
+const { supabase } = require("../client/src/utils/supabaseClient"); // חיבור ל-Supabase
 const { v4: uuidv4 } = require("uuid"); // ליצירת מזהה ייחודי לפגישה
 
 // =======================================
