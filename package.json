@@ -3,9 +3,11 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+   "start": "node index.js",
+    "build": "cd client && npm install && npm run build",
+    "postinstall": "npm run build",
     "test:client": "jest public/stt-test.html",
-        "test": "npm run test:client"
+    "test": "npm run test:client"
   },
   "dependencies": {
     "express": "^4.18.2",
