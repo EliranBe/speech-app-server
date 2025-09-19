@@ -1,6 +1,6 @@
 // speech-app-server/validation/sessionValidator.js
 const Ajv = require("ajv");
-const schema = require("../client/Entities/VerboSession.json");
+const schema = require("../client/src/Entities/VerboSession.json");
 
 const ajv = new Ajv({ allErrors: true, strict: false });
 const validate = ajv.compile(schema);
