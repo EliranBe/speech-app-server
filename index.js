@@ -91,11 +91,6 @@ app.get('/rte-token', (req, res) => {
   }
 });
 
-// נקודת כניסה בסיסית לשרת
-app.get('/', (req, res) => {
-  res.send('🎉 השרת פועל בהצלחה!');
-});
-
 // כל route שלא מוגדר ב-API יוגש על ידי React
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
