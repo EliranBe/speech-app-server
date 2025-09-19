@@ -96,6 +96,11 @@ app.get('/rte-token', (req, res) => {
   }
 });
 
+// נקודת כניסה בסיסית לשרת
+app.get('/', (req, res) => {
+  res.send('🎉 השרת פועל בהצלחה!');
+});
+
 // חיבור WebSocket לשרת HTTP
 const startWebSocketServer = require('./deepgram');
 startWebSocketServer(server, app);
