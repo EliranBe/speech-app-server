@@ -44,7 +44,7 @@ if (!process.env.DEEPGRAM_PROJECT_ID) {
 app.use(cors());
 app.use(express.static('public')); // מאפשר גישה לקבצי HTML כמו stt-test.html
 // Serve React build
-app.use(express.static(path.join(__dirname, 'client/build')));
+app.use(express.static(path.join(__dirname, 'client/build', '/public/index.html')));
 
 //כל בקשה ל־/api/session תנותב לפי הקובץ sessionRoutes.js.//
 const sessionRoutes = require('./routes/sessionRoutes'); // CommonJS
@@ -58,7 +58,7 @@ app.use("/api/meetings", meetingsRouter);
 
 // כל route שלא מוגדר ב-API יוגש על ידי React
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
+  res.sendFile(path.join(__dirname, 'client/build', '/public/index.html'));
 });
 
 // החזרת APP_ID בצורה בטוחה
