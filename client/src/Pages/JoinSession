@@ -3,8 +3,8 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { UserPreferencesAPI } from "../Entities/UserPreferencesAPI";
 import { Camera, ArrowLeft, Loader2, AlertCircle, ScanLine, X, RefreshCw, Zap, ZapOff, CheckCircle, Link } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import BrandedLoader from '../components/BrandedLoader';
-import QRCode from "../components/ui/QRCode";
+import BrandedLoader from '../Components/BrandedLoader';
+import QRCode from "../Components/ui/QRCode";
 import { supabase } from "../utils/supabaseClient";
 
 async function loadUser() {
