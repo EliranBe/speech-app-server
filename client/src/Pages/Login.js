@@ -32,11 +32,12 @@ export default function Login() {
         background: "linear-gradient(135deg, #c9d6ff, #e2e2e2)",
       }}
     >
-      {/* לוגו מופרד לחלוטין */}
+      {/* לוגו במרכז המסך */}
       <img
         src={logo}
         alt="Verbo.io"
-        className="fixed top-4 left-4 w-10 h-10 md:w-12 md:h-12 rounded-lg shadow-md object-cover z-50"
+        className="absolute top-1/2 left-1/2 w-20 h-20 md:w-24 md:h-24 rounded-lg shadow-md object-cover z-50"
+        style={{ transform: "translate(-50%, -50%)" }}
       />
 
       {/* מרכז המסך */}
