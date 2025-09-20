@@ -43,7 +43,7 @@ export default function Login() {
       setEmailError(true);
       setPasswordError(true);
     } else {
-      navigate("/");
+      navigate("/Preferences");
     }
   };
 
