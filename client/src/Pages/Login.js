@@ -153,7 +153,7 @@ export default function Login() {
         <div style={{ fontSize: "0.9rem", marginTop: "1rem" }}>
           <span>Don't have an account?</span>
           <Link to="/register" style={{ display: "block", fontWeight: "600", marginTop: "0.5rem", color: "#333" }}>
-            Sign up
+            Sign Up
           </Link>
         </div>
       </div>
