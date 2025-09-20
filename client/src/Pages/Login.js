@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { supabase } from "../utils/supabaseClient";
 import { useNavigate } from "react-router-dom";
-import logo from "../../public/logo.jpg"; // קישור לקובץ הלוגו שהעלית
+import logo from "../images/logo-verbo.jpg"; 
 
 export default function Login() {
   const navigate = useNavigate();
