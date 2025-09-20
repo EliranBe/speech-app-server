@@ -71,7 +71,7 @@ export default function Register() {
     if (error) {
       setError("Failed to create account. Please try again.");
     } else {
-      navigate("/Login");
+      navigate("/Login", { state: { fromRegister: true } });
     }
   };
 
