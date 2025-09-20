@@ -67,6 +67,23 @@ export default function Register() {
       return;
     }
 
+      // בדיקה אם המשתמש כבר קיים
+  const { data: existingUsers, error: fetchError } = await supabase
+    .from('users') // או הטבלה שמכילה את המשתמשים שלך
+    .select('email')
+    .eq('email', email);
+
+  if (fetchError) {
+    setError("Error checking existing users. Please try again.");
+    return;
+  }
+
+  if (existingUsers.length > 0) {
+    setError("This email is already registered. Please try another email.");
+    setEmailError(true);
+    return;
+  }
+
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) {
       setError("Failed to create account. Please try again.");
