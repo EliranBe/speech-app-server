@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "../utils/supabaseClient";
 import { useNavigate, Link } from "react-router-dom";
 import logo from "../images/logo-verbo.png";
@@ -8,6 +8,13 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
+  const [fadeIn, setFadeIn] = useState(false);
+
+  useEffect(() => {
+    // הפעלת האנימציה כשהדף נטען
+    const timeout = setTimeout(() => setFadeIn(true), 50);
+    return () => clearTimeout(timeout);
+  }, []);
 
   const handleLogin = async () => {
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -18,15 +25,15 @@ export default function Login() {
     if (error) {
       setError(error.message);
     } else {
-      navigate("/"); // אחרי ההתחברות נלך ל-Home
+      navigate("/"); 
     }
   };
 
   return (
     <div
-      className="min-h-screen flex flex-col justify-center items-center relative px-4"
+      className="min-h-screen w-full flex justify-center items-center relative"
       style={{
-        background: "linear-gradient(135deg, #c9d6ff, #e2e2e2)",
+        background: "#c9d6ff", // צבע אחיד על כל המסך
         fontFamily: "'Segoe UI', sans-serif",
       }}
     >
@@ -39,9 +46,12 @@ export default function Login() {
         />
       </div>
 
-      {/* כרטיס התחברות */}
-      <div className="w-full max-w-sm sm:max-w-md bg-white/85 p-6 sm:p-8 rounded-3xl shadow-2xl backdrop-blur-md">
-        {/* כותרת ברוכים הבאים */}
+      {/* כרטיס התחברות עם fade-in */}
+      <div
+        className={`w-full max-w-sm sm:max-w-md bg-white/85 p-6 sm:p-8 rounded-3xl shadow-2xl backdrop-blur-md transition-opacity duration-700 ${
+          fadeIn ? "opacity-100" : "opacity-0"
+        }`}
+      >
         <h1 className="text-xl sm:text-2xl font-semibold text-center text-blue-700 mb-6">
           Welcome to Verbo.io
         </h1>
