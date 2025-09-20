@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { supabase } from "../utils/supabaseClient";
 import { useNavigate, Link } from "react-router-dom";
 import logo from "../images/logo-verbo.png";
-import "../styles/Login.css"; // אם אתה רוצה להפריד CSS לקובץ
 
 export default function Login() {
   const navigate = useNavigate();
