@@ -51,7 +51,7 @@ export default function Login() {
           fadeIn ? "opacity-100" : "opacity-0"
         }`}
         style={{
-          background: "rgba(255,255,255,0.1)", // חצי שקוף כמו ב-call.html
+          background: "rgba(255,255,255,0.1)", // שקיפות עדינה
           backdropFilter: "blur(12px)",
         }}
       >
@@ -63,6 +63,7 @@ export default function Login() {
           <p className="text-sm text-red-600 mb-4 text-center">{error}</p>
         )}
 
+        {/* Email */}
         <div className="w-full mb-4 flex flex-col items-center">
           <label className="text-sm font-medium text-gray-700 mb-2 w-full text-center">
             Email
@@ -76,6 +77,7 @@ export default function Login() {
           />
         </div>
 
+        {/* Password */}
         <div className="w-full mb-6 flex flex-col items-center">
           <label className="text-sm font-medium text-gray-700 mb-2 w-full text-center">
             Password
@@ -89,6 +91,7 @@ export default function Login() {
           />
         </div>
 
+        {/* Login button */}
         <button
           onClick={handleLogin}
           className="w-full py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors duration-200 shadow"
@@ -96,17 +99,16 @@ export default function Login() {
           Login
         </button>
 
-        <div className="mt-5 text-center text-sm sm:text-base w-full">
+        {/* Sign up */}
+        <div className="mt-5 text-center text-sm sm:text-base w-full flex flex-col items-center">
           <span className="text-gray-700">Don't have an account? </span>
-          <div className="mt-2">
-            <Link
-              to="/register"
-              className="inline-block font-semibold text-blue-600 hover:text-blue-800"
-            >
-              Sign up
-              <div className="h-[2px] bg-blue-600 mt-1 mx-auto w-16" />
-            </Link>
-          </div>
+          <Link
+            to="/register"
+            className="inline-block font-semibold text-blue-600 hover:text-blue-800 mt-2"
+          >
+            Sign up
+            <div className="h-[2px] bg-blue-600 mt-1 mx-auto w-16" />
+          </Link>
         </div>
       </div>
     </div>
