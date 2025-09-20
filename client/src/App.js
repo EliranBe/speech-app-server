@@ -4,6 +4,7 @@ import Home from "./Pages/Home";
 import Preferences from "./Pages/Preferences";
 import Login from "./Pages/Login";
 import Register from "./Pages/Register";
+import TermsAndPrivacy from "./Pages/legal/TermsAndPrivacy";
 
 
 function App() {
@@ -14,6 +15,7 @@ function App() {
         <Route path="/Preferences" element={<Preferences />} />
         <Route path="/" element={<Home />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/help/legal" element={<TermsAndPrivacy />} />
       </Routes>
     </Router>
   );
