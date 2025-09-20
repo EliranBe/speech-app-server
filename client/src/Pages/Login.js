@@ -24,6 +24,14 @@ export default function Login() {
       setEmailError(true);
       return;
     }
+
+        // בדיקה אם Email חוקי (מכיל @)
+    if (!email.includes("@")) {
+      setError("Please enter a valid email address.");
+      setEmailError(true);
+      return;
+    }
+    
     if (!password) {
       setPasswordError(true);
       return;
