@@ -32,16 +32,14 @@ export default function Login() {
     >
       {/* לוגו קטן בצד שמאל-למעלה */}
       <div className="absolute top-4 left-4">
-        <div className="w-12 h-12 rounded-xl overflow-hidden shadow-md bg-white/60 flex items-center justify-center">
-          <img
-            src={logo}
-            alt="Verbo.io"
-            className="w-full h-full object-cover"
-          />
-        </div>
+        <img
+          src={logo}
+          alt="Verbo.io"
+          className="w-10 h-10 rounded-lg shadow-md object-cover" 
+        />
       </div>
 
-      {/* כרטיס התחברות - רוחב צר וממוקד במרכז */}
+      {/* כרטיס התחברות */}
       <div className="w-full max-w-sm bg-white/85 p-8 rounded-3xl shadow-2xl backdrop-blur-md">
         {/* כותרת ברוכים הבאים */}
         <h1 className="text-2xl font-semibold text-center text-blue-700 mb-6">
@@ -94,7 +92,6 @@ export default function Login() {
             Don&apos;t have an account?{" "}
           </span>
           <div className="mt-2">
-            {/* המילה Sign up עם קו מתחת (border-bottom) שמייצגת קישור */}
             <Link to="/register" className="inline-block text-sm font-semibold">
               <span className="text-blue-600 hover:text-blue-800">Sign up</span>
               <div className="h-[2px] bg-blue-600 mt-1 mx-auto w-16" />
