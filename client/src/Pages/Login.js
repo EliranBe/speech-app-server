@@ -9,6 +9,8 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
   const [fadeIn, setFadeIn] = useState(false);
+  const [emailError, setEmailError] = useState(false);
+  const [passwordError, setPasswordError] = useState(false);
 
   useEffect(() => {
     const timeout = setTimeout(() => setFadeIn(true), 50);
@@ -16,9 +18,22 @@ export default function Login() {
   }, []);
 
   const handleLogin = async () => {
+        setEmailError(false);
+    setPasswordError(false);
+    if (!email) {
+      setEmailError(true);
+      return;
+    }
+    if (!password) {
+      setPasswordError(true);
+      return;
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      setError(error.message);
+      setError("Invalid Email or password. Please try again.");
+      setEmailError(true);
+      setPasswordError(true);
     } else {
       navigate("/");
     }
@@ -80,7 +95,7 @@ export default function Login() {
           <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500" }}>Email</label>
           <input
             type="email"
-            placeholder="Enter your email address"
+            placeholder="Enter your Email address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             style={{
@@ -89,7 +104,7 @@ export default function Login() {
               borderRadius: "12px",
               background: "rgba(255,255,255,0.1)",
               backdropFilter: "blur(6px)",
-              border: "none",
+              border: emailError ? "2px solid red" : "none",
               outline: "none",
             }}
           />
@@ -109,7 +124,7 @@ export default function Login() {
               borderRadius: "12px",
               background: "rgba(255,255,255,0.1)",
               backdropFilter: "blur(6px)",
-              border: "none",
+              border: passwordError ? "2px solid red" : "none",
               outline: "none",
             }}
           />
