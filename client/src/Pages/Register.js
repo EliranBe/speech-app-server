@@ -70,7 +70,9 @@ export default function Register() {
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) {
       setError("Failed to create account. Please try again.");
-    } 
+    } else {
+      navigate("/Login", { state: { fromRegister: true } });
+    }
   };
 
   return (
