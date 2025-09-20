@@ -11,7 +11,6 @@ export default function Login() {
   const [fadeIn, setFadeIn] = useState(false);
 
   useEffect(() => {
-    // הפעלת האנימציה כשהדף נטען
     const timeout = setTimeout(() => setFadeIn(true), 50);
     return () => clearTimeout(timeout);
   }, []);
@@ -33,7 +32,7 @@ export default function Login() {
     <div
       className="min-h-screen w-full flex justify-center items-center relative"
       style={{
-        background: "#c9d6ff", // צבע אחיד על כל המסך
+        backgroundColor: "#c9d6ff", // צבע אחיד לכל המסך
         fontFamily: "'Segoe UI', sans-serif",
       }}
     >
@@ -48,10 +47,14 @@ export default function Login() {
 
       {/* כרטיס התחברות עם fade-in */}
       <div
-        className={`w-full max-w-sm sm:max-w-md bg-white/85 p-6 sm:p-8 rounded-3xl shadow-2xl backdrop-blur-md transition-opacity duration-700 ${
+        className={`w-full max-w-sm sm:max-w-md p-6 sm:p-8 rounded-3xl shadow-2xl transition-opacity duration-700 flex flex-col justify-center items-center ${
           fadeIn ? "opacity-100" : "opacity-0"
         }`}
+        style={{
+          backgroundColor: "rgba(255,255,255,0.85)", // כרטיס עם רקע חצי שקוף
+        }}
       >
+        {/* כותרת */}
         <h1 className="text-xl sm:text-2xl font-semibold text-center text-blue-700 mb-6">
           Welcome to Verbo.io
         </h1>
@@ -61,8 +64,8 @@ export default function Login() {
         )}
 
         {/* Email */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+        <div className="w-full mb-4 flex flex-col items-center">
+          <label className="block text-sm font-medium text-gray-700 mb-2 text-center w-full">
             Email
           </label>
           <input
@@ -75,8 +78,8 @@ export default function Login() {
         </div>
 
         {/* Password */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+        <div className="w-full mb-6 flex flex-col items-center">
+          <label className="block text-sm font-medium text-gray-700 mb-2 text-center w-full">
             Password
           </label>
           <input
@@ -97,7 +100,7 @@ export default function Login() {
         </button>
 
         {/* Sign up */}
-        <div className="mt-5 text-center text-sm sm:text-base">
+        <div className="mt-5 text-center text-sm sm:text-base w-full">
           <span className="text-gray-700">Don't have an account? </span>
           <div className="mt-2">
             <Link
