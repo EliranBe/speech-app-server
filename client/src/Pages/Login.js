@@ -24,7 +24,7 @@ export default function Login() {
     if (error) {
       setError(error.message);
     } else {
-      navigate("/"); 
+      navigate("/");
     }
   };
 
@@ -32,11 +32,11 @@ export default function Login() {
     <div
       className="min-h-screen w-full flex justify-center items-center relative"
       style={{
-        backgroundColor: "#c9d6ff", // צבע אחיד לכל המסך
         fontFamily: "'Segoe UI', sans-serif",
+        background: "linear-gradient(135deg, #c9d6ff, #e2e2e2)", // רקע אחיד
       }}
     >
-      {/* לוגו קטן בצד שמאל-למעלה */}
+      {/* לוגו */}
       <div className="absolute top-4 left-4">
         <img
           src={logo}
@@ -45,17 +45,17 @@ export default function Login() {
         />
       </div>
 
-      {/* כרטיס התחברות עם fade-in */}
+      {/* כרטיס התחברות */}
       <div
         className={`w-full max-w-sm sm:max-w-md p-6 sm:p-8 rounded-3xl shadow-2xl transition-opacity duration-700 flex flex-col justify-center items-center ${
           fadeIn ? "opacity-100" : "opacity-0"
         }`}
         style={{
-          backgroundColor: "rgba(255,255,255,0.85)", // כרטיס עם רקע חצי שקוף
+          background: "rgba(255,255,255,0.1)", // חצי שקוף כמו ב-call.html
+          backdropFilter: "blur(12px)",
         }}
       >
-        {/* כותרת */}
-        <h1 className="text-xl sm:text-2xl font-semibold text-center text-blue-700 mb-6">
+        <h1 className="text-2xl font-semibold text-center text-blue-700 mb-6">
           Welcome to Verbo.io
         </h1>
 
@@ -63,9 +63,8 @@ export default function Login() {
           <p className="text-sm text-red-600 mb-4 text-center">{error}</p>
         )}
 
-        {/* Email */}
         <div className="w-full mb-4 flex flex-col items-center">
-          <label className="block text-sm font-medium text-gray-700 mb-2 text-center w-full">
+          <label className="text-sm font-medium text-gray-700 mb-2 w-full text-center">
             Email
           </label>
           <input
@@ -77,9 +76,8 @@ export default function Login() {
           />
         </div>
 
-        {/* Password */}
         <div className="w-full mb-6 flex flex-col items-center">
-          <label className="block text-sm font-medium text-gray-700 mb-2 text-center w-full">
+          <label className="text-sm font-medium text-gray-700 mb-2 w-full text-center">
             Password
           </label>
           <input
@@ -91,7 +89,6 @@ export default function Login() {
           />
         </div>
 
-        {/* Login button */}
         <button
           onClick={handleLogin}
           className="w-full py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors duration-200 shadow"
@@ -99,7 +96,6 @@ export default function Login() {
           Login
         </button>
 
-        {/* Sign up */}
         <div className="mt-5 text-center text-sm sm:text-base w-full">
           <span className="text-gray-700">Don't have an account? </span>
           <div className="mt-2">
