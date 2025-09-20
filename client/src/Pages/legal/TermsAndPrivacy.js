@@ -78,8 +78,7 @@ export default function TermsAndPrivacy() {
           <h3>7. Changes to Terms</h3>
           <p>We may update these Terms at any time; continued use constitutes acceptance.</p>
 
-          <h3>8. Governing Law</h3>
-        </section>
+          </section>
 
         <hr style={{ margin: "3rem 0", border: "1px solid #ccc" }} />
 
