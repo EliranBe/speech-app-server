@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { supabase } from "../utils/supabaseClient";
 import { useNavigate, Link } from "react-router-dom";
 import logo from "../images/logo-verbo.png";
+import "../styles/Login.css"; // אם אתה רוצה להפריד CSS לקובץ
 
 export default function Login() {
   const navigate = useNavigate();
@@ -26,77 +27,125 @@ export default function Login() {
 
   return (
     <div
-      className="w-screen h-screen relative flex justify-center items-center"
+      className="login-container"
       style={{
         fontFamily: "'Segoe UI', sans-serif",
         background: "linear-gradient(135deg, #c9d6ff, #e2e2e2)",
+        height: "100vh",
+        width: "100vw",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
-      {/* לוגו בפינה, מופרד לחלוטין */}
-      <div className="absolute top-4 left-4 z-50">
-        <img
-          src={logo}
-          alt="Verbo.io"
-          className="w-12 h-12 md:w-16 md:h-16 rounded-lg shadow-md object-cover"
-        />
-      </div>
-
-      {/* כרטיס התחברות במרכז */}
-      <div
-        className={`w-full max-w-sm sm:max-w-md p-6 sm:p-8 rounded-[20px] transition-opacity duration-700 flex flex-col justify-center items-center text-center ${
-          fadeIn ? "opacity-100" : "opacity-0"
-        }`}
+      {/* לוגו במרכז או בפינה */}
+      <img
+        src={logo}
+        alt="Verbo.io"
+        className="logo"
         style={{
-          background: "rgba(255, 255, 255, 0.15)",
+          position: "fixed",
+          top: "4px",
+          left: "4px",
+          width: "50px",
+          height: "50px",
+          borderRadius: "12px",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+          zIndex: 50,
+        }}
+      />
+
+      {/* כרטיס התחברות */}
+      <div
+        className={`login-card ${fadeIn ? "fade-in" : ""}`}
+        style={{
+          width: "100%",
+          maxWidth: "400px",
+          padding: "2rem",
+          borderRadius: "20px",
+          background: "rgba(255,255,255,0.1)",
           backdropFilter: "blur(12px)",
           boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          textAlign: "center",
+          transition: "opacity 0.7s",
+          opacity: fadeIn ? 1 : 0,
         }}
       >
-        <h1 className="text-2xl font-semibold text-gray-800 mb-6">Welcome to Verbo.io</h1>
+        <h1 style={{ fontSize: "2rem", fontWeight: "600", marginBottom: "1.5rem", color: "#333" }}>
+          Welcome to Verbo.io
+        </h1>
 
-        {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
+        {error && <p style={{ color: "red", marginBottom: "1rem" }}>{error}</p>}
 
         {/* Email */}
-        <div className="w-full mb-4 flex flex-col items-center">
-          <label className="text-sm font-medium text-gray-700 mb-2">Email</label>
+        <div style={{ width: "100%", marginBottom: "1rem" }}>
+          <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500" }}>Email</label>
           <input
             type="email"
             placeholder="Enter your email address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full max-w-xs p-3 rounded-xl bg-white/10 backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+            style={{
+              width: "100%",
+              padding: "0.75rem",
+              borderRadius: "12px",
+              background: "rgba(255,255,255,0.1)",
+              backdropFilter: "blur(6px)",
+              border: "none",
+              outline: "none",
+            }}
           />
         </div>
 
         {/* Password */}
-        <div className="w-full mb-6 flex flex-col items-center">
-          <label className="text-sm font-medium text-gray-700 mb-2">Password</label>
+        <div style={{ width: "100%", marginBottom: "1.5rem" }}>
+          <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500" }}>Password</label>
           <input
             type="password"
             placeholder="Enter your password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full max-w-xs p-3 rounded-xl bg-white/10 backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+            style={{
+              width: "100%",
+              padding: "0.75rem",
+              borderRadius: "12px",
+              background: "rgba(255,255,255,0.1)",
+              backdropFilter: "blur(6px)",
+              border: "none",
+              outline: "none",
+            }}
           />
         </div>
 
         {/* Login button */}
         <button
           onClick={handleLogin}
-          className="w-full max-w-xs py-3 rounded-[30px] bg-white/30 backdrop-blur-md font-semibold text-gray-900 hover:bg-white/50 transition-colors duration-200 shadow-md"
+          style={{
+            width: "100%",
+            padding: "0.75rem",
+            borderRadius: "30px",
+            background: "rgba(255,255,255,0.3)",
+            backdropFilter: "blur(6px)",
+            fontWeight: "600",
+            color: "#333",
+            cursor: "pointer",
+            transition: "0.2s",
+            marginBottom: "1rem",
+          }}
         >
           Login
         </button>
 
         {/* Sign up */}
-        <div className="mt-5 text-sm sm:text-base flex flex-col items-center">
-          <span className="text-gray-700">Don't have an account?</span>
-          <Link
-            to="/register"
-            className="inline-block font-semibold text-gray-800 hover:text-gray-900 mt-2"
-          >
+        <div style={{ fontSize: "0.9rem", marginTop: "1rem" }}>
+          <span>Don't have an account?</span>
+          <Link to="/register" style={{ display: "block", fontWeight: "600", marginTop: "0.5rem", color: "#333" }}>
             Sign up
-            <div className="h-[2px] bg-gray-800 mt-1 mx-auto w-16" />
           </Link>
         </div>
       </div>
