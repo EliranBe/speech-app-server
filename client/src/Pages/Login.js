@@ -39,23 +39,6 @@ export default function Login() {
         overflow: "hidden",
       }}
     >
-      {/* לוגו במרכז או בפינה */}
-      <img
-        src={logo}
-        alt="Verbo.io"
-        className="logo"
-        style={{
-          position: "fixed",
-          top: "4px",
-          left: "4px",
-          width: "50px",
-          height: "50px",
-          borderRadius: "12px",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-          zIndex: 50,
-        }}
-      />
-
       {/* כרטיס התחברות */}
       <div
         className={`login-card ${fadeIn ? "fade-in" : ""}`}
@@ -75,6 +58,19 @@ export default function Login() {
           opacity: fadeIn ? 1 : 0,
         }}
       >
+        {/* לוגו מעל הכותרת */}
+        <img
+          src={logo}
+          alt="Verbo.io"
+          style={{
+            width: "70px",
+            height: "70px",
+            marginBottom: "1rem",
+            borderRadius: "12px",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+          }}
+        />
+
         <h1 style={{ fontSize: "2rem", fontWeight: "600", marginBottom: "1.5rem", color: "#333" }}>
           Welcome to Verbo.io
         </h1>
