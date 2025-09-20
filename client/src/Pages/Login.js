@@ -63,11 +63,9 @@ export default function Login() {
           src={logo}
           alt="Verbo.io"
           style={{
-            width: "70px",
-            height: "70px",
+            width: "140px",
+            height: "140px",
             marginBottom: "1rem",
-            borderRadius: "12px",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
           }}
         />
 
