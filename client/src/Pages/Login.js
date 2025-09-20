@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../utils/supabaseClient";
 import { useNavigate, Link } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import logo from "../images/logo-verbo.png";
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromRegister = location.state?.fromRegister || false;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
@@ -98,12 +101,18 @@ export default function Login() {
 
         {error && <p style={{ color: "red", marginBottom: "1rem" }}>{error}</p>}
 
+{fromRegister && (
+  <p style={{ color: "green", marginBottom: "1rem" }}>
+    Please confirm your email to activate your account.
+  </p>
+)}
+
         {/* Email */}
         <div style={{ width: "100%", marginBottom: "1rem" }}>
           <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500" }}>Email</label>
           <input
             type="email"
-            placeholder="Enter your Email address"
+            placeholder="Enter your email address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             style={{
