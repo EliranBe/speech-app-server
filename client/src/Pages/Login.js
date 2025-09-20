@@ -30,21 +30,11 @@ export default function Login() {
 
   return (
     <div
-      className="w-screen h-screen flex justify-center items-center relative"
+      className="w-screen h-screen flex justify-center items-center relative bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500"
       style={{
         fontFamily: "'Segoe UI', sans-serif",
-        background: "linear-gradient(135deg, #c9d6ff, #e2e2e2)", // רקע אחיד
       }}
     >
-      {/* לוגו */}
-      <div className="absolute top-4 left-4">
-        <img
-          src={logo}
-          alt="Verbo.io"
-          className="w-10 h-10 md:w-12 md:h-12 rounded-lg shadow-md object-cover"
-        />
-      </div>
-
       {/* כרטיס התחברות */}
       <div
         className={`w-full max-w-sm sm:max-w-md p-6 sm:p-8 rounded-3xl shadow-2xl transition-opacity duration-700 flex flex-col justify-center items-center text-center ${
