@@ -24,7 +24,7 @@ export default function Login() {
 
   return (
     <div
-      className="min-h-screen relative flex items-center justify-center px-4"
+      className="min-h-screen flex flex-col justify-center items-center relative px-4"
       style={{
         background: "linear-gradient(135deg, #c9d6ff, #e2e2e2)",
         fontFamily: "'Segoe UI', sans-serif",
@@ -32,17 +32,17 @@ export default function Login() {
     >
       {/* לוגו קטן בצד שמאל-למעלה */}
       <div className="absolute top-4 left-4">
-          <img
+        <img
           src={logo}
           alt="Verbo.io"
-          className="w-10 h-10 rounded-lg shadow-md object-cover" 
+          className="w-10 h-10 md:w-12 md:h-12 rounded-lg shadow-md object-cover"
         />
-            </div>
+      </div>
 
-      {/* כרטיס התחברות - רוחב צר וממוקד במרכז */}
-      <div className="w-full max-w-sm bg-white/85 p-8 rounded-3xl shadow-2xl backdrop-blur-md">
+      {/* כרטיס התחברות */}
+      <div className="w-full max-w-sm sm:max-w-md bg-white/85 p-6 sm:p-8 rounded-3xl shadow-2xl backdrop-blur-md">
         {/* כותרת ברוכים הבאים */}
-        <h1 className="text-2xl font-semibold text-center text-blue-700 mb-6">
+        <h1 className="text-xl sm:text-2xl font-semibold text-center text-blue-700 mb-6">
           Welcome to Verbo.io
         </h1>
 
@@ -87,14 +87,14 @@ export default function Login() {
         </button>
 
         {/* Sign up */}
-        <div className="mt-5 text-center">
-          <span className="text-sm text-gray-700">
-            Don&apos;t have an account?{" "}
-          </span>
+        <div className="mt-5 text-center text-sm sm:text-base">
+          <span className="text-gray-700">Don't have an account? </span>
           <div className="mt-2">
-            {/* המילה Sign up עם קו מתחת (border-bottom) שמייצגת קישור */}
-            <Link to="/register" className="inline-block text-sm font-semibold">
-              <span className="text-blue-600 hover:text-blue-800">Sign up</span>
+            <Link
+              to="/register"
+              className="inline-block font-semibold text-blue-600 hover:text-blue-800"
+            >
+              Sign up
               <div className="h-[2px] bg-blue-600 mt-1 mx-auto w-16" />
             </Link>
           </div>
