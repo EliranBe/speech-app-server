@@ -12,10 +12,30 @@ export default function Register() {
   const [emailError, setEmailError] = useState(false);
   const [passwordError, setPasswordError] = useState(false);
 
+  // סטטוס דרישות סיסמה
+  const [passwordCriteria, setPasswordCriteria] = useState({
+    length: false,
+    uppercase: false,
+    lowercase: false,
+    number: false,
+    specialChar: false,
+  });
+
   useEffect(() => {
     const timeout = setTimeout(() => setFadeIn(true), 50);
     return () => clearTimeout(timeout);
   }, []);
+
+  // בדיקה חיה של הסיסמה בזמן הקלדה
+  useEffect(() => {
+    setPasswordCriteria({
+      length: password.length >= 8,
+      uppercase: /[A-Z]/.test(password),
+      lowercase: /[a-z]/.test(password),
+      number: /\d/.test(password),
+      specialChar: /[\W_]/.test(password),
+    });
+  }, [password]);
 
   const handleRegister = async () => {
     setEmailError(false);
@@ -26,14 +46,23 @@ export default function Register() {
       return;
     }
 
-        // בדיקה אם Email חוקי (מכיל @)
     if (!email.includes("@")) {
       setError("Please enter a valid email address.");
       setEmailError(true);
       return;
     }
-    
+
     if (!password) {
+      setPasswordError(true);
+      return;
+    }
+
+    // בדיקה סופית של דרישות סיסמה
+    const allCriteriaMet = Object.values(passwordCriteria).every(Boolean);
+    if (!allCriteriaMet) {
+      setError(
+        "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character."
+      );
       setPasswordError(true);
       return;
     }
@@ -61,7 +90,6 @@ export default function Register() {
         overflow: "hidden",
       }}
     >
-      {/* כרטיס הרשמה */}
       <div
         className={`register-card ${fadeIn ? "fade-in" : ""}`}
         style={{
@@ -80,7 +108,6 @@ export default function Register() {
           opacity: fadeIn ? 1 : 0,
         }}
       >
-        {/* לוגו */}
         <img
           src={logo}
           alt="Verbo.io"
@@ -97,7 +124,6 @@ export default function Register() {
 
         {error && <p style={{ color: "red", marginBottom: "1rem" }}>{error}</p>}
 
-        {/* Email */}
         <div style={{ width: "100%", marginBottom: "1rem" }}>
           <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500" }}>Email</label>
           <input
@@ -117,7 +143,6 @@ export default function Register() {
           />
         </div>
 
-        {/* Password */}
         <div style={{ width: "100%", marginBottom: "1.5rem" }}>
           <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500" }}>Password</label>
           <input
@@ -135,9 +160,17 @@ export default function Register() {
               outline: "none",
             }}
           />
+
+          {/* תצוגת דרישות הסיסמה */}
+          <ul style={{ textAlign: "left", marginTop: "0.5rem", fontSize: "0.75rem", color: "#333" }}>
+            <li style={{ color: passwordCriteria.length ? "green" : "red" }}>At least 8 characters</li>
+            <li style={{ color: passwordCriteria.uppercase ? "green" : "red" }}>At least 1 uppercase letter</li>
+            <li style={{ color: passwordCriteria.lowercase ? "green" : "red" }}>At least 1 lowercase letter</li>
+            <li style={{ color: passwordCriteria.number ? "green" : "red" }}>At least 1 number</li>
+            <li style={{ color: passwordCriteria.specialChar ? "green" : "red" }}>At least 1 special character</li>
+          </ul>
         </div>
 
-        {/* Sign Up button */}
         <button
           onClick={handleRegister}
           style={{
@@ -156,10 +189,9 @@ export default function Register() {
           Sign Up
         </button>
 
-        {/* תנאים */}
         <div style={{ fontSize: "0.85rem", marginTop: "1rem", color: "#333" }}>
           By signing up, you confirm that you accept our{" "}
-           <a href="/help/legal" style={{ fontWeight: "600", color: "#333" }}>
+          <a href="/help/legal" style={{ fontWeight: "600", color: "#333" }}>
             Terms of Service and Privacy Policy
           </a>.
         </div>
@@ -167,4 +199,3 @@ export default function Register() {
     </div>
   );
 }
- 
