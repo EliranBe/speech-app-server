@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { supabase } from "../utils/supabaseClient";
 import { useNavigate, Link } from "react-router-dom";
 import logo from "../images/logo-verbo.jpg";
-import './Login.css'; // אם יש קובץ CSS
 
 export default function Login() {
   const navigate = useNavigate();
@@ -33,14 +32,12 @@ export default function Login() {
     >
       {/* לוגו קטן בצד שמאל-למעלה */}
       <div className="absolute top-4 left-4">
-        <div className="w-12 h-12 rounded-xl overflow-hidden shadow-md bg-white/60 flex items-center justify-center">
           <img
-            src={logo}
-            alt="Verbo.io"
-            className="logo-small" // השתמש במחלקה החדשה
-          />
-        </div>
-      </div>
+          src={logo}
+          alt="Verbo.io"
+          className="w-10 h-10 rounded-lg shadow-md object-cover" 
+        />
+            </div>
 
       {/* כרטיס התחברות - רוחב צר וממוקד במרכז */}
       <div className="w-full max-w-sm bg-white/85 p-8 rounded-3xl shadow-2xl backdrop-blur-md">
