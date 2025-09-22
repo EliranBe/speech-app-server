@@ -211,7 +211,7 @@ export default function Preferences() {
               marginBottom: "1rem",
               cursor: "pointer",
             }}
-            onClick={() => navigate("/home")}
+            onClick={() => navigate("/")}
           />
           <h1
             style={{
