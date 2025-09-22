@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Globe, User, ArrowLeft } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "../utils/supabaseClient";
 import logo from "../images/logo-verbo.png";
 import { UserPreferencesAPI } from "../Entities/UserPreferencesAPI";
@@ -50,6 +50,7 @@ const BrandedLoader = ({ text }) => (
 
 export default function Preferences() {
   const navigate = useNavigate();
+  const location = useLocation(); // <-- הוספתי את זה
   const [user, setUser] = useState(null);
   const [preferences, setPreferences] = useState({
     native_language: "",
@@ -92,7 +93,9 @@ export default function Preferences() {
         }
       } catch (prefError) {
         console.error("Error loading preferences:", prefError);
-        setSaveError("Failed to load your preferences at the moment. Please try again later");
+        setSaveError(
+          "Failed to load your preferences at the moment. Please try again later"
+        );
       }
     } catch (error) {
       console.error("Error loading user data:", error);
@@ -139,7 +142,9 @@ export default function Preferences() {
       setSaveSuccess(true);
     } catch (error) {
       console.error("Error saving preferences:", error);
-      setSaveError("Failed to save preferences. Please ensure your display name contains only letters (A-Z, a-z), numbers, or allowed special characters.");
+      setSaveError(
+        "Failed to save preferences. Please ensure your display name contains only letters (A-Z, a-z), numbers, or allowed special characters."
+      );
     }
     setIsSaving(false);
   };
@@ -177,8 +182,11 @@ export default function Preferences() {
           opacity: fadeIn ? 1 : 0,
         }}
       >
+        {/* כפתור Back / Home */}
         <button
-          onClick={() => navigate(-1)}
+          onClick={() =>
+            location.state?.fromLogin ? navigate("/") : navigate(-1)
+          }
           style={{
             display: "flex",
             alignItems: "center",
@@ -191,7 +199,7 @@ export default function Preferences() {
           }}
         >
           <ArrowLeft size={20} style={{ marginRight: "8px" }} />
-          Back
+          {location.state?.fromLogin ? "Home" : "Back"}
         </button>
 
         <div
@@ -228,6 +236,7 @@ export default function Preferences() {
           </p>
         </div>
 
+        {/* Language & Voice */}
         <div
           style={{
             padding: "1rem",
@@ -250,7 +259,9 @@ export default function Preferences() {
             <b>Language & Voice</b>
           </h2>
 
-          <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500" }}>
+          <label
+            style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500" }}
+          >
             Native Language
           </label>
           <select
@@ -260,9 +271,10 @@ export default function Preferences() {
               width: "100%",
               padding: "0.5rem",
               borderRadius: "10px",
-              border: errorField === "native_language"
-                ? "2px solid red"
-                : "1px solid rgba(0,0,0,0.2)",
+              border:
+                errorField === "native_language"
+                  ? "2px solid red"
+                  : "1px solid rgba(0,0,0,0.2)",
             }}
           >
             <option value="">Select your native language</option>
@@ -305,9 +317,10 @@ export default function Preferences() {
               width: "100%",
               padding: "0.5rem",
               borderRadius: "10px",
-              border: errorField === "gender"
-                ? "2px solid red"
-                : "1px solid rgba(0,0,0,0.2)",
+              border:
+                errorField === "gender"
+                  ? "2px solid red"
+                  : "1px solid rgba(0,0,0,0.2)",
             }}
           >
             <option value="">Select voice gender</option>
@@ -320,6 +333,7 @@ export default function Preferences() {
           </p>
         </div>
 
+        {/* Display Name */}
         <div
           style={{
             padding: "1rem",
@@ -350,9 +364,10 @@ export default function Preferences() {
               width: "100%",
               padding: "0.5rem",
               borderRadius: "10px",
-              border: errorField === "display_name"
-                ? "2px solid red"
-                : "1px solid rgba(0,0,0,0.2)",
+              border:
+                errorField === "display_name"
+                  ? "2px solid red"
+                  : "1px solid rgba(0,0,0,0.2)",
             }}
           />
         </div>
@@ -373,7 +388,7 @@ export default function Preferences() {
 
         <button
           onClick={savePreferences}
-          disabled={isSaving || saveSuccess} // <--- כפתור לא לחיץ אם בשמירה או אחרי הצלחה
+          disabled={isSaving || saveSuccess} // כפתור לא לחיץ אם בשמירה או אחרי הצלחה
           style={{
             width: "100%",
             padding: "1rem",
