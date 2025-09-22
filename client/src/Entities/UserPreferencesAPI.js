@@ -14,7 +14,7 @@ export const UserPreferencesAPI = {
   createOrUpdate: async (user_id, preferences) => {
     const { data, error } = await supabase
       .from('user_preferences')
-      .upsert({ user_id, ...preferences }, { onConflict: ['user_id'] });
+      .upsert({ user_id, ...preferences }, { onConflict: ['user_id'], returning: "representation" });
     if (error) throw error;
     return data;
   }
