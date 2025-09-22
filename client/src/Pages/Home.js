@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { UserPreferencesAPI } from "../Entities/UserPreferencesAPI";
-import { Plus, ScanLine, Users, Zap } from "lucide-react";
+import { Plus, ScanLine, Menu, Settings, LogOut, Bot, Globe2, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import BrandedLoader from "../Components/BrandedLoader";
 import { supabase } from "../utils/supabaseClient";
@@ -21,6 +21,10 @@ export default function Home() {
   const [preferences, setPreferences] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [fadeIn, setFadeIn] = useState(false);
+
+  // state for menu + logout modal
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   useEffect(() => {
     loadUserData();
@@ -59,6 +63,11 @@ export default function Home() {
     navigate("/JoinSession");
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/login");
+  };
+
   if (isLoading) {
     return <BrandedLoader text="Loading Verbo.io..." />;
   }
@@ -90,20 +99,82 @@ export default function Home() {
           textAlign: "center",
           transition: "opacity 0.7s",
           opacity: fadeIn ? 1 : 0,
+          position: "relative",
         }}
       >
-        {/* Logo */}
-        <img
-          src={logo}
-          alt="Verbo.io"
+        {/* Top bar with Logo + Menu */}
+        <div
           style={{
-            width: "120px",
-            height: "120px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
             marginBottom: "1rem",
-            cursor: "pointer",
           }}
-          onClick={() => navigate("/home")}
-        />
+        >
+          <img
+            src={logo}
+            alt="Verbo.io"
+            style={{
+              width: "80px",
+              height: "80px",
+              marginBottom: "0",
+            }}
+          />
+          <div style={{ position: "relative" }}>
+            <Menu
+              size={32}
+              style={{ cursor: "pointer" }}
+              onClick={() => setMenuOpen(!menuOpen)}
+            />
+            {menuOpen && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "40px",
+                  right: 0,
+                  background: "white",
+                  borderRadius: "12px",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                  padding: "0.5rem 0",
+                  zIndex: 10,
+                }}
+              >
+                <div
+                  onClick={() => {
+                    navigate("/Preferences");
+                    setMenuOpen(false);
+                  }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "0.5rem 1rem",
+                    cursor: "pointer",
+                    fontSize: "0.95rem",
+                  }}
+                >
+                  <Settings size={18} /> Preferences
+                </div>
+                <div
+                  onClick={() => {
+                    setShowLogoutConfirm(true);
+                    setMenuOpen(false);
+                  }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "0.5rem 1rem",
+                    cursor: "pointer",
+                    fontSize: "0.95rem",
+                  }}
+                >
+                  <LogOut size={18} /> Log out
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Welcome Section */}
         <h1
@@ -114,8 +185,8 @@ export default function Home() {
             marginBottom: "0.5rem",
           }}
         >
-          Welcome back,{" "}
-          {user?.user_metadata?.full_name?.split(" ")[0] || user?.email}
+          Welcome back{" "}
+          {preferences?.display_name ? preferences.display_name : ""}
         </h1>
         <p style={{ color: "#555", marginBottom: "1rem" }}>
           Ready to break language barriers?
@@ -216,7 +287,7 @@ export default function Home() {
               Join Verbo
             </h3>
             <p style={{ color: "#555", fontSize: "0.95rem" }}>
-              Join a live AI-powered call using a QR code or session link.
+              Join a live AI-powered call using a QR code or session link or Meeting ID.
             </p>
           </div>
         </div>
@@ -237,21 +308,109 @@ export default function Home() {
               fontSize: "1.5rem",
               fontWeight: "700",
               color: "#3b82f6",
-              marginBottom: "1rem",
+              marginBottom: "1.5rem",
             }}
           >
             Why Verbo.io?
           </h3>
-          <p style={{ color: "#555", marginBottom: "1.5rem" }}>
-            Translation in under 0.5 seconds. Natural flow. Powered by AI.
-          </p>
-        </div>
 
-        {/* Footer Info */}
-        <p style={{ fontSize: "0.85rem", color: "#666" }}>
-          🔒 Secure • 🌍 Real-time • 💬 No recordings saved
-        </p>
+          {/* Feature 1 */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "1rem" }}>
+            <Bot size={28} color="#3b82f6" />
+            <div style={{ textAlign: "left" }}>
+              <strong>Powered by AI</strong>
+              <p style={{ margin: 0, fontSize: "0.9rem", color: "#555" }}>
+                Speak your language. Hear conversations translated to your language in real time.
+              </p>
+            </div>
+          </div>
+
+          {/* Feature 2 */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "1rem" }}>
+            <Globe2 size={28} color="#9333ea" />
+            <div style={{ textAlign: "left" }}>
+              <strong>Real-time Translation</strong>
+              <p style={{ margin: 0, fontSize: "0.9rem", color: "#555" }}>
+                Seamless communication across languages without delays.
+              </p>
+            </div>
+          </div>
+
+          {/* Feature 3 */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <Shield size={28} color="#10b981" />
+            <div style={{ textAlign: "left" }}>
+              <strong>Privacy First</strong>
+              <p style={{ margin: 0, fontSize: "0.9rem", color: "#555" }}>
+                Your conversations are secure and never stored.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "rgba(0,0,0,0.4)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 100,
+          }}
+        >
+          <div
+            style={{
+              background: "white",
+              padding: "2rem",
+              borderRadius: "16px",
+              width: "90%",
+              maxWidth: "400px",
+              textAlign: "center",
+              boxShadow: "0 6px 20px rgba(0,0,0,0.25)",
+            }}
+          >
+            <h3 style={{ marginBottom: "1rem", fontWeight: "700", color: "#333" }}>
+              Are you sure you want to log out?
+            </h3>
+            <div style={{ display: "flex", justifyContent: "center", gap: "1rem" }}>
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                style={{
+                  padding: "0.5rem 1.5rem",
+                  borderRadius: "8px",
+                  border: "none",
+                  background: "#e5e7eb",
+                  cursor: "pointer",
+                  fontWeight: "600",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleLogout}
+                style={{
+                  padding: "0.5rem 1.5rem",
+                  borderRadius: "8px",
+                  border: "none",
+                  background: "#ef4444",
+                  color: "white",
+                  cursor: "pointer",
+                  fontWeight: "600",
+                }}
+              >
+                Log out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
