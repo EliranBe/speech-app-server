@@ -55,7 +55,7 @@ UK
 
 עבור en-GB לנקבה en-GB-Chirp3-HD-Sulafat
 
-US
+USA
 
 עבור en-US לזכר en-US-Chirp3-HD-Schedar
 
@@ -85,11 +85,17 @@ Germany
 
 עבור de-DE לנקבה de-DE-Chirp3-HD-Sulafat
 
-India
+India-לא נתמך ע"י Deepgram
 
 עבור hi-IN לזכר hi-IN-Chirp3-HD-Schedar
 
 עבור hi-IN לנקבה hi-IN-Chirp3-HD-Sulafat
+
+India
+
+עבור en-IN לזכר en-IN-Chirp3-HD-Schedar
+
+עבור en-IN לנקבה en-IN-Chirp3-HD-Sulafat
 
 Russia
 
@@ -133,4 +139,34 @@ Belgium
 
 עבור nl-BE לנקבה nl-BE-Chirp3-HD-Sulafat
 
+Sweden 
+
+עבור sv-SE לזכר sv-SE-Chirp3-HD-Schedar
+
+עבור sv-SE לנקבה sv-SE-Chirp3-HD-Sulafat
+
+Denmark 
+
+עבור da-DK לזכר da-DK-Chirp3-HD-Schedar
+
+עבור da-DK לנקבה da-DK-Chirp3-HD-Sulafat
+
+Turkey 
+
+עבור tr-TR לזכר tr-TR-Chirp3-HD-Schedar
+
+עבור tr-TR לנקבה tr-TR-Chirp3-HD-Sulafat
+
+Norway 
+
+עבור nb-NO לזכר nb-NO-Chirp3-HD-Schedar
+
+עבור nb-NO לנקבה nb-NO-Chirp3-HD-Sulafat
+
+
+Indonesia  
+
+עבור id-ID לזכר id-ID-Chirp3-HD-Schedar
+
+עבור id-ID לנקבה id-ID-Chirp3-HD-Sulafat
 
