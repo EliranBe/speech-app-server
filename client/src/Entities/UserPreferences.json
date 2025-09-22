@@ -4,21 +4,18 @@
   "properties": {
     "native_language": {
       "type": "string",
-      "enum": [
-        "english",
-        "hebrew"
-      ],
       "default": "english",
       "description": "User's native language"
     },
     "gender": {
       "type": "string",
-      "enum": [
-        "male",
-        "female"
-      ],
       "default": "male",
       "description": "User's gender for voice synthesis"
+    },
+    "display_name": {
+      "type": "string",
+      "default": "",
+      "description": "User's display name"
     },
     "camera_permission": {
       "type": "boolean",
@@ -31,16 +28,13 @@
       "description": "Microphone access permission"
     }
   },
-  "required": [
-    "native_language",
-    "gender"
-  ],
+  "required": ["native_language", "gender", "display_name"],
   "rls": {
     "read": {
-      "created_by": "{{user.email}}"
+      "user_id": "auth.uid()"
     },
     "write": {
-      "created_by": "{{user.email}}"
+      "user_id": "auth.uid()"
     }
   }
 }
