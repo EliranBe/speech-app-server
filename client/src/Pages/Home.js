@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { UserPreferencesAPI } from "../Entities/UserPreferencesAPI";
-import { Plus, ScanLine, Menu, Settings, LogOut, Zap, Lightning } from "lucide-react";
+import { Plus, ScanLine, Menu, Settings, LogOut, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import BrandedLoader from "../Components/BrandedLoader";
 import { supabase } from "../utils/supabaseClient";
@@ -315,7 +315,7 @@ export default function Home() {
 
           {/* Feature 2 */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", flex: 1 }}>
-            <Lightning size={28} color="#9333ea" />
+            <Zap size={28} color="#9333ea" />
             <strong>Real-time Translation</strong>
             <p style={{ fontSize: "0.9rem", color: "#555", textAlign: "center" }}>
               Verbo.io makes cross-language communication smooth and intuitive.
