@@ -107,12 +107,44 @@ export default function Preferences() {
       [key]: value,
     }));
     if (errorField === key) setErrorField(""); // ניקוי שגיאה כשמשנים את השדה
+
+    // החזרת הכפתור ללחיץ וצבעו המקורי אם המשתמש משנה משהו
+    if (saveSuccess) setSaveSuccess(false);
+
+    // שמירה אוטומטית של שדות לא ריקים בלבד
+    if (value) {
+      autoSave({ ...preferences, [key]: value });
+    }
+  };
+
+  const autoSave = async (prefs) => {
+    if (!user) return;
+
+    setIsSaving(true);
+    setSaveError(null);
+    setErrorField("");
+
+    // יוציא שדות ריקים
+    const filteredPrefs = {};
+    for (const key in prefs) {
+      if (prefs[key]) filteredPrefs[key] = prefs[key];
+    }
+
+    try {
+      console.log("Auto-saving preferences for user_id:", user.id, filteredPrefs);
+      await UserPreferencesAPI.createOrUpdate(user.id, filteredPrefs);
+      setSaveSuccess(true);
+    } catch (error) {
+      console.error("Error auto-saving preferences:", error);
+      setSaveError("Failed to auto-save preferences.");
+    }
+    setIsSaving(false);
   };
 
   const savePreferences = async () => {
     if (!user) return;
 
-    // בדיקה של כל השדות
+    // בדיקה של כל השדות לפני שמירה ידנית
     if (!preferences.native_language) {
       setErrorField("native_language");
       setSaveError("Native Language cannot be empty.");
@@ -130,22 +162,17 @@ export default function Preferences() {
     }
 
     setIsSaving(true);
-    setSaveSuccess(false);
     setSaveError(null);
     setErrorField("");
 
     try {
       console.log("Saving preferences for user_id:", user.id, preferences);
-      const data = await UserPreferencesAPI.createOrUpdate(user.id, preferences);
-      console.log("Preferences saved successfully:", data);
-
+      await UserPreferencesAPI.createOrUpdate(user.id, preferences);
       setSaveSuccess(true);
-      setTimeout(() => navigate("/home"), 1000);
     } catch (error) {
       console.error("Error saving preferences:", error);
-      setSaveError(`Failed to save preferences. Check RLS policies and DB schema.`);
+      setSaveError("Failed to save preferences. Check RLS policies and DB schema.");
     }
-
     setIsSaving(false);
   };
 
@@ -153,7 +180,6 @@ export default function Preferences() {
     return <BrandedLoader text="Loading your preferences..." />;
   }
 
-  // UI
   return (
     <div
       style={{
@@ -385,17 +411,19 @@ export default function Preferences() {
         {/* Save Button */}
         <button
           onClick={savePreferences}
-          disabled={isSaving}
+          disabled={isSaving || saveSuccess}
           style={{
             width: "100%",
             padding: "1rem",
             borderRadius: "30px",
             background: isSaving
               ? "rgba(59,130,246,0.3)"
+              : saveSuccess
+              ? "rgba(59,130,246,0.3)"
               : "rgba(59,130,246,0.9)",
             color: "white",
             fontWeight: "600",
-            cursor: isSaving ? "not-allowed" : "pointer",
+            cursor: isSaving || saveSuccess ? "not-allowed" : "pointer",
             marginBottom: "1rem",
             border: "none",
           }}
