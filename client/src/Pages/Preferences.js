@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Globe, Info, ArrowLeft } from "lucide-react";
+import { Globe, User, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../utils/supabaseClient";
 import logo from "../images/logo-verbo.png";
@@ -45,7 +45,7 @@ export default function Preferences() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [preferences, setPreferences] = useState({
-    native_language: "english",
+    native_language: "USA (English)",
     gender: "male",
     display_name: "",
   });
@@ -53,9 +53,12 @@ export default function Preferences() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState(null);
+  const [fadeIn, setFadeIn] = useState(false); // ✅ כמו ב־Login.js
 
   useEffect(() => {
     loadUserData();
+    const timeout = setTimeout(() => setFadeIn(true), 50); // ✅
+    return () => clearTimeout(timeout);
   }, []);
 
   const loadUserData = async () => {
@@ -123,6 +126,7 @@ export default function Preferences() {
       }}
     >
       <div
+        className={`preferences-card ${fadeIn ? "fade-in" : ""}`}
         style={{
           width: "100%",
           maxWidth: "500px",
@@ -132,15 +136,61 @@ export default function Preferences() {
           backdropFilter: "blur(12px)",
           boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
           textAlign: "left",
+          transition: "opacity 0.7s",
+          opacity: fadeIn ? 1 : 0, // ✅ זהה ל־Login.js
         }}
       >
+        {/* Back Button */}
+        <button
+          onClick={() => navigate(-1)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            marginBottom: "1rem",
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+            color: "#3b82f6",
+            fontWeight: "600",
+          }}
+        >
+          <ArrowLeft size={20} style={{ marginRight: "8px" }} />
+          Back
+        </button>
+
         {/* Header */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: "2rem" }}>
-          <img src={logo} alt="Verbo.io" style={{ width: "140px", height: "140px", marginBottom: "1rem" }} />
-          <h1 style={{ fontSize: "1.8rem", fontWeight: "600", color: "#3b82f6", marginBottom: "0.5rem" }}>
-            Setup Your Profile
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            marginBottom: "2rem",
+          }}
+        >
+          <img
+            src={logo}
+            alt="Verbo.io"
+            style={{
+              width: "140px",
+              height: "140px",
+              marginBottom: "1rem",
+              cursor: "pointer",
+            }}
+            onClick={() => navigate("/home")}
+          />
+          <h1
+            style={{
+              fontSize: "1.8rem",
+              fontWeight: "700",
+              color: "#3b82f6",
+              marginBottom: "0.5rem",
+            }}
+          >
+            <b>Setup Your Profile</b>
           </h1>
-          <p style={{ color: "#555", textAlign: "center" }}>Configure your preferences for the best experience</p>
+          <p style={{ color: "#555", textAlign: "center" }}>
+            Configure your preferences for the best experience
+          </p>
         </div>
 
         {/* Language & Voice Card */}
@@ -154,22 +204,58 @@ export default function Preferences() {
             marginBottom: "1.5rem",
           }}
         >
-          <h2 style={{ fontSize: "1.2rem", fontWeight: "600", color: "#3b82f6", marginBottom: "1rem" }}>
+          <h2
+            style={{
+              fontSize: "1.2rem",
+              fontWeight: "700",
+              color: "#3b82f6",
+              marginBottom: "1rem",
+            }}
+          >
             <Globe size={18} style={{ marginRight: "8px", display: "inline" }} />
-            Language & Voice
+            <b>Language & Voice</b>
           </h2>
 
-          <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500" }}>Native Language</label>
+          <label
+            style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500" }}
+          >
+            Native Language
+          </label>
           <select
             value={preferences.native_language}
             onChange={(e) => updatePreference("native_language", e.target.value)}
             style={{ width: "100%", padding: "0.5rem", borderRadius: "10px" }}
           >
-            <option value="english">🇺🇸 English</option>
-            <option value="hebrew">🇮🇱 עברית</option>
+            <option>Australia (English)</option>
+            <option>Belgium (Dutch)</option>
+            <option>Brazil (Portuguese)</option>
+            <option>Denmark (Danish)</option>
+            <option>France (French)</option>
+            <option>Germany (German)</option>
+            <option>India (English)</option>
+            <option>Indonesia (Indonesian)</option>
+            <option>Italy (Italian)</option>
+            <option>Japan (Japanese)</option>
+            <option>Netherlands (Dutch)</option>
+            <option>Norway (Norwegian)</option>
+            <option>Portugal (Portuguese)</option>
+            <option>Russia (Russian)</option>
+            <option>Spain (Spanish)</option>
+            <option>Sweden (Swedish)</option>
+            <option>Turkey (Turkish)</option>
+            <option>UK (English)</option>
+            <option>USA (English)</option>
+            <option>USA (Spanish)</option>
           </select>
 
-          <label style={{ display: "block", marginTop: "1rem", marginBottom: "0.5rem", fontWeight: "500" }}>
+          <label
+            style={{
+              display: "block",
+              marginTop: "1rem",
+              marginBottom: "0.5rem",
+              fontWeight: "500",
+            }}
+          >
             Voice Gender
           </label>
           <select
@@ -180,6 +266,10 @@ export default function Preferences() {
             <option value="male">👨 Male</option>
             <option value="female">👩 Female</option>
           </select>
+          <p style={{ fontSize: "0.85rem", color: "#444", marginTop: "0.5rem" }}>
+            Voice characteristics are adjusted based on your selected native
+            language and gender.
+          </p>
         </div>
 
         {/* Display Name Card */}
@@ -193,8 +283,16 @@ export default function Preferences() {
             marginBottom: "1.5rem",
           }}
         >
-          <h2 style={{ fontSize: "1.2rem", fontWeight: "600", color: "#3b82f6", marginBottom: "1rem" }}>
-            Display Name
+          <h2
+            style={{
+              fontSize: "1.2rem",
+              fontWeight: "700",
+              color: "#3b82f6",
+              marginBottom: "1rem",
+            }}
+          >
+            <User size={18} style={{ marginRight: "8px", display: "inline" }} />
+            <b>Display Name</b>
           </h2>
           <input
             type="text"
@@ -218,18 +316,33 @@ export default function Preferences() {
             width: "100%",
             padding: "1rem",
             borderRadius: "30px",
-            background: isSaving ? "rgba(59,130,246,0.3)" : "rgba(59,130,246,0.9)",
+            background: isSaving
+              ? "rgba(59,130,246,0.3)"
+              : "rgba(59,130,246,0.9)",
             color: "white",
             fontWeight: "600",
             cursor: isSaving ? "not-allowed" : "pointer",
             marginBottom: "1rem",
+            border: "none",
           }}
         >
-          {isSaving ? "Saving..." : saveSuccess ? "Preferences Saved!" : "Save Preferences"}
+          {isSaving
+            ? "Saving..."
+            : saveSuccess
+            ? "Preferences Saved!"
+            : "Save Preferences"}
         </button>
 
         {saveError && (
-          <p style={{ color: "red", fontSize: "0.9rem", marginBottom: "0.5rem" }}>{saveError}</p>
+          <p
+            style={{
+              color: "red",
+              fontSize: "0.9rem",
+              marginBottom: "0.5rem",
+            }}
+          >
+            {saveError}
+          </p>
         )}
       </div>
     </div>
