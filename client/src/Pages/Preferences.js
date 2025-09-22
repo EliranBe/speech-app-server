@@ -45,9 +45,9 @@ export default function Preferences() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [preferences, setPreferences] = useState({
-    native_language: "USA (English)",
-    gender: "male",
-    display_name: "",
+    native_language: "", // ✅ מתחיל ריק
+    gender: "",          // ✅ מתחיל ריק
+    display_name: "",    // ✅ מתחיל ריק
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -57,7 +57,7 @@ export default function Preferences() {
 
   useEffect(() => {
     loadUserData();
-    const timeout = setTimeout(() => setFadeIn(true), 50); // ✅
+    const timeout = setTimeout(() => setFadeIn(true), 50); // ✅ Fade-In
     return () => clearTimeout(timeout);
   }, []);
 
@@ -72,8 +72,13 @@ export default function Preferences() {
 
       const existingPrefs = await UserPreferencesAPI.get(userData.id);
       if (existingPrefs) {
-        setPreferences((prev) => ({ ...prev, ...existingPrefs }));
+        setPreferences({
+          native_language: existingPrefs.native_language || "",
+          gender: existingPrefs.gender || "",
+          display_name: existingPrefs.display_name || "",
+        });
       }
+      // אם אין העדפות קיימות – השדות נשארים ריקים (כפי שהגדרנו במצב ההתחלתי)
     } catch (error) {
       console.error("Error loading user data:", error);
     }
@@ -226,6 +231,7 @@ export default function Preferences() {
             onChange={(e) => updatePreference("native_language", e.target.value)}
             style={{ width: "100%", padding: "0.5rem", borderRadius: "10px" }}
           >
+            <option value="">Select your native language</option>
             <option>Australia (English)</option>
             <option>Belgium (Dutch)</option>
             <option>Brazil (Portuguese)</option>
@@ -263,6 +269,7 @@ export default function Preferences() {
             onChange={(e) => updatePreference("gender", e.target.value)}
             style={{ width: "100%", padding: "0.5rem", borderRadius: "10px" }}
           >
+            <option value="">Select voice gender</option>
             <option value="male">👨 Male</option>
             <option value="female">👩 Female</option>
           </select>
@@ -300,7 +307,7 @@ export default function Preferences() {
             onChange={(e) => updatePreference("display_name", e.target.value)}
             placeholder="Enter your display name"
             style={{
-              width: "100%",
+              width: "100%", // ✅ זהה לאורך Voice Gender
               padding: "0.5rem",
               borderRadius: "10px",
               border: "1px solid rgba(0,0,0,0.2)",
