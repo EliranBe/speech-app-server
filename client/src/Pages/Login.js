@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../utils/supabaseClient";
-import { useNavigate, Link } from "react-router-dom";
-import { useLocation } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import logo from "../images/logo-verbo.png";
 
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const fromRegister = location.state?.fromRegister || false;
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
@@ -21,32 +21,48 @@ export default function Login() {
   }, []);
 
   const handleLogin = async () => {
-        setEmailError(false);
+    setEmailError(false);
     setPasswordError(false);
+    setError(null);
+
     if (!email) {
       setEmailError(true);
       return;
     }
 
-        // בדיקה אם Email חוקי (מכיל @)
     if (!email.includes("@")) {
       setError("Please enter a valid email address.");
       setEmailError(true);
       return;
     }
-    
+
     if (!password) {
       setPasswordError(true);
       return;
     }
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
+    // כניסה עם סיסמה
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (signInError) {
       setError("Invalid Email or password. Please try again.");
       setEmailError(true);
       setPasswordError(true);
+      return;
+    }
+
+    // בדיקה אם קיימת רשומה ב-user_preferences
+    const userId = signInData.user.id;
+    const { data: prefsData, error: prefsError } = await supabase
+      .from("user_preferences")
+      .select("*")
+      .eq("user_id", userId)
+      .single();
+
+    if (prefsError || !prefsData) {
+      navigate("/Preferences"); // אין נתונים – לכיוון Preferences
     } else {
-      navigate("/Preferences");
+      navigate("/Home"); // יש נתונים – לכיוון Home
     }
   };
 
@@ -99,13 +115,15 @@ export default function Login() {
           Welcome to Verbo.io
         </h1>
 
+        {/* הודעת שגיאה */}
         {error && <p style={{ color: "red", marginBottom: "1rem" }}>{error}</p>}
 
-{fromRegister && (
-  <p style={{ color: "green", marginBottom: "1rem" }}>
-    Please confirm your email to activate your account.
-  </p>
-)}
+        {/* הודעה אם המשתמש הגיע מרישום */}
+        {fromRegister && (
+          <p style={{ color: "green", marginBottom: "1rem" }}>
+            Please confirm your email to activate your account.
+          </p>
+        )}
 
         {/* Email */}
         <div style={{ width: "100%", marginBottom: "1rem" }}>
@@ -115,6 +133,7 @@ export default function Login() {
             placeholder="Enter your email address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleLogin()}
             style={{
               width: "100%",
               padding: "0.75rem",
@@ -135,6 +154,7 @@ export default function Login() {
             placeholder="Enter your password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleLogin()}
             style={{
               width: "100%",
               padding: "0.75rem",
