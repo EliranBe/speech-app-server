@@ -6,7 +6,7 @@ export const UserPreferencesAPI = {
       .from('user_preferences')
       .select('*')
       .eq('user_id', user_id)
-      .single();
+      .maybeSingle(); 
     if (error && error.code !== 'PGRST116') throw error; // PGRST116 = אין רשומות
     return data;
   },
