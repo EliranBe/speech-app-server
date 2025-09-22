@@ -5,6 +5,7 @@ import { supabase } from "../utils/supabaseClient";
 import logo from "../images/logo-verbo.png";
 import { UserPreferencesAPI } from "../Entities/UserPreferencesAPI";
 
+// Load current logged-in user
 async function loadUser() {
   const { data, error } = await supabase.auth.getUser();
   if (error) {
@@ -14,6 +15,7 @@ async function loadUser() {
   return data.user;
 }
 
+// Loader component
 const BrandedLoader = ({ text }) => (
   <div
     style={{
@@ -53,7 +55,7 @@ export default function Preferences() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState(null);
-  const [errorField, setErrorField] = useState(""); // ✅ איזה שדה עם שגיאה
+  const [errorField, setErrorField] = useState(""); // איזה שדה עם שגיאה
   const [fadeIn, setFadeIn] = useState(false);
 
   useEffect(() => {
@@ -96,7 +98,17 @@ export default function Preferences() {
   const savePreferences = async () => {
     if (!user) return;
 
-    // דוגמה לבדיקת שדות ריקים
+    // בדיקה של כל השדות
+    if (!preferences.native_language) {
+      setErrorField("native_language");
+      setSaveError("Native Language cannot be empty.");
+      return;
+    }
+    if (!preferences.gender) {
+      setErrorField("gender");
+      setSaveError("Voice Gender cannot be empty.");
+      return;
+    }
     if (!preferences.display_name) {
       setErrorField("display_name");
       setSaveError("Display Name cannot be empty.");
@@ -109,9 +121,10 @@ export default function Preferences() {
     setErrorField("");
 
     try {
+      // שמירה בטבלת user_preferences ב-Supabase
       await UserPreferencesAPI.createOrUpdate(user.id, preferences);
-      setSaveSuccess(true);
 
+      setSaveSuccess(true);
       setTimeout(() => {
         navigate("/home");
       }, 1000);
@@ -126,6 +139,7 @@ export default function Preferences() {
     return <BrandedLoader text="Loading your preferences..." />;
   }
 
+  // UI
   return (
     <div
       style={{
@@ -237,7 +251,14 @@ export default function Preferences() {
           <select
             value={preferences.native_language}
             onChange={(e) => updatePreference("native_language", e.target.value)}
-            style={{ width: "100%", padding: "0.5rem", borderRadius: "10px" }}
+            style={{
+              width: "100%",
+              padding: "0.5rem",
+              borderRadius: "10px",
+              border: errorField === "native_language"
+                ? "2px solid red"
+                : "1px solid rgba(0,0,0,0.2)",
+            }}
           >
             <option value="">Select your native language</option>
             <option>Australia (English)</option>
@@ -275,7 +296,14 @@ export default function Preferences() {
           <select
             value={preferences.gender}
             onChange={(e) => updatePreference("gender", e.target.value)}
-            style={{ width: "100%", padding: "0.5rem", borderRadius: "10px" }}
+            style={{
+              width: "100%",
+              padding: "0.5rem",
+              borderRadius: "10px",
+              border: errorField === "gender"
+                ? "2px solid red"
+                : "1px solid rgba(0,0,0,0.2)",
+            }}
           >
             <option value="">Select voice gender</option>
             <option value="male">👨 Male</option>
@@ -315,12 +343,12 @@ export default function Preferences() {
             onChange={(e) => updatePreference("display_name", e.target.value)}
             placeholder="Enter your display name"
             style={{
-              width: "100%", // ✅ עכשיו זהה לשדות האחרים
+              width: "100%",
               padding: "0.5rem",
               borderRadius: "10px",
               border: errorField === "display_name"
                 ? "2px solid red"
-                : "1px solid rgba(0,0,0,0.2)", // ✅ סימון שגיאה
+                : "1px solid rgba(0,0,0,0.2)",
             }}
           />
         </div>
