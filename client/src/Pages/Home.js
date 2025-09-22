@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { UserPreferencesAPI } from "../Entities/UserPreferencesAPI";
-import { Plus, ScanLine, Menu, Settings, LogOut, Zap } from "lucide-react";
+import { Rocket, Plus, ScanLine, Menu, Bot, Settings, LogOut, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import BrandedLoader from "../Components/BrandedLoader";
 import { supabase } from "../utils/supabaseClient";
@@ -304,9 +304,11 @@ export default function Home() {
             justifyContent: "space-between",
           }}
         >
+            Why Verbo.io?
+          </h3>
           {/* Feature 1 */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", flex: 1 }}>
-            <Zap size={28} color="#3b82f6" />
+            <Bot size={28} color="#3b82f6" />
             <strong>Powered by AI</strong>
             <p style={{ fontSize: "0.9rem", color: "#555", textAlign: "center" }}>
               Speak your language. let AI translate conversations for you.
@@ -324,7 +326,7 @@ export default function Home() {
 
           {/* Feature 3 */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", flex: 1 }}>
-            <Plus size={28} color="#10b981" />
+            <Rocket size={28} color="#10b981" />
             <strong>Easy to Use</strong>
             <p style={{ fontSize: "0.9rem", color: "#555", textAlign: "center" }}>
               Verbo.io offers a smooth, user friendly experience for effortless communication.
