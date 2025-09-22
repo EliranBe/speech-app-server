@@ -302,7 +302,7 @@ export default function Home() {
             marginBottom: "2rem",
           }}
         >
-          <h3 style={{ textAlign: "center", marginBottom: "1.5rem" }}>Why Verbo.io?</h3>
+          <h3 style={{ textAlign: "center",color: "#3b82f6", marginBottom: "1.5rem" }}>Why Verbo.io?</h3>
           <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem" }}>
             {/* Feature 1 */}
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", flex: 1 }}>
