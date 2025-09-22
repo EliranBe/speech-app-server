@@ -300,37 +300,36 @@ export default function Home() {
             backdropFilter: "blur(10px)",
             boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
             marginBottom: "2rem",
-            display: "flex",
-            justifyContent: "space-between",
           }}
         >
-            Why Verbo.io?
-          </h3>
-          {/* Feature 1 */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", flex: 1 }}>
-            <Bot size={28} color="#3b82f6" />
-            <strong>Powered by AI</strong>
-            <p style={{ fontSize: "0.9rem", color: "#555", textAlign: "center" }}>
-              Speak your language. let AI translate conversations for you.
-            </p>
-          </div>
+          <h3 style={{ textAlign: "center", marginBottom: "1.5rem" }}>Why Verbo.io?</h3>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem" }}>
+            {/* Feature 1 */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", flex: 1 }}>
+              <Bot size={28} color="#3b82f6" />
+              <strong>Powered by AI</strong>
+              <p style={{ fontSize: "0.9rem", color: "#555", textAlign: "center" }}>
+                Speak your language. let AI translate conversations for you.
+              </p>
+            </div>
 
-          {/* Feature 2 */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", flex: 1 }}>
-            <Zap size={28} color="#9333ea" />
-            <strong>Real-time Translation</strong>
-            <p style={{ fontSize: "0.9rem", color: "#555", textAlign: "center" }}>
-              Verbo.io makes cross-language communication smooth and intuitive.
-            </p>
-          </div>
+            {/* Feature 2 */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", flex: 1 }}>
+              <Zap size={28} color="#9333ea" />
+              <strong>Real-time Translation</strong>
+              <p style={{ fontSize: "0.9rem", color: "#555", textAlign: "center" }}>
+                Verbo.io makes cross-language communication smooth and intuitive.
+              </p>
+            </div>
 
-          {/* Feature 3 */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", flex: 1 }}>
-            <Rocket size={28} color="#10b981" />
-            <strong>Easy to Use</strong>
-            <p style={{ fontSize: "0.9rem", color: "#555", textAlign: "center" }}>
-              Verbo.io offers a smooth, user friendly experience for effortless communication.
-            </p>
+            {/* Feature 3 */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", flex: 1 }}>
+              <Rocket size={28} color="#10b981" />
+              <strong>Easy to Use</strong>
+              <p style={{ fontSize: "0.9rem", color: "#555", textAlign: "center" }}>
+                Verbo.io offers a smooth, user friendly experience for effortless communication.
+              </p>
+            </div>
           </div>
         </div>
       </div>
