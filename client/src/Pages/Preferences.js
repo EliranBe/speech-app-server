@@ -12,6 +12,11 @@ async function loadUser() {
     console.error("Error fetching user:", error);
     return null;
   }
+  if (!data.user || !data.user.id) {
+    console.error("No user logged in or missing UUID");
+    return null;
+  }
+  console.log("Logged-in user:", data.user);
   return data.user;
 }
 
@@ -65,6 +70,7 @@ export default function Preferences() {
   }, []);
 
   const loadUserData = async () => {
+    setIsLoading(true);
     try {
       const userData = await loadUser();
       if (!userData) {
@@ -73,16 +79,24 @@ export default function Preferences() {
       }
       setUser(userData);
 
-      const existingPrefs = await UserPreferencesAPI.get(userData.id);
-      if (existingPrefs) {
-        setPreferences({
-          native_language: existingPrefs.native_language || "",
-          gender: existingPrefs.gender || "",
-          display_name: existingPrefs.display_name || "",
-        });
+      try {
+        console.log("Fetching preferences for user_id:", userData.id);
+        const existingPrefs = await UserPreferencesAPI.get(userData.id);
+        console.log("Existing preferences:", existingPrefs);
+        if (existingPrefs) {
+          setPreferences({
+            native_language: existingPrefs.native_language || "",
+            gender: existingPrefs.gender || "",
+            display_name: existingPrefs.display_name || "",
+          });
+        }
+      } catch (prefError) {
+        console.error("Error loading preferences:", prefError);
+        setSaveError("Failed to load preferences. Check RLS policies.");
       }
     } catch (error) {
       console.error("Error loading user data:", error);
+      setSaveError("Failed to load user data.");
     }
     setIsLoading(false);
   };
@@ -121,17 +135,17 @@ export default function Preferences() {
     setErrorField("");
 
     try {
-      // שמירה בטבלת user_preferences ב-Supabase
-      await UserPreferencesAPI.createOrUpdate(user.id, preferences);
+      console.log("Saving preferences for user_id:", user.id, preferences);
+      const data = await UserPreferencesAPI.createOrUpdate(user.id, preferences);
+      console.log("Preferences saved successfully:", data);
 
       setSaveSuccess(true);
-      setTimeout(() => {
-        navigate("/home");
-      }, 1000);
+      setTimeout(() => navigate("/home"), 1000);
     } catch (error) {
       console.error("Error saving preferences:", error);
-      setSaveError("Failed to save preferences. Please try again.");
+      setSaveError(`Failed to save preferences. Check RLS policies and DB schema.`);
     }
+
     setIsSaving(false);
   };
 
