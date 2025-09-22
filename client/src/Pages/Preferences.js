@@ -60,7 +60,7 @@ export default function Preferences() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState(null);
-  const [errorField, setErrorField] = useState(""); // איזה שדה עם שגיאה
+  const [errorField, setErrorField] = useState("");
   const [fadeIn, setFadeIn] = useState(false);
 
   useEffect(() => {
@@ -106,45 +106,13 @@ export default function Preferences() {
       ...prev,
       [key]: value,
     }));
-    if (errorField === key) setErrorField(""); // ניקוי שגיאה כשמשנים את השדה
-
-    // החזרת הכפתור ללחיץ וצבעו המקורי אם המשתמש משנה משהו
-    if (saveSuccess) setSaveSuccess(false);
-
-    // שמירה אוטומטית של שדות לא ריקים בלבד
-    if (value) {
-      autoSave({ ...preferences, [key]: value });
-    }
-  };
-
-  const autoSave = async (prefs) => {
-    if (!user) return;
-
-    setIsSaving(true);
-    setSaveError(null);
-    setErrorField("");
-
-    // יוציא שדות ריקים
-    const filteredPrefs = {};
-    for (const key in prefs) {
-      if (prefs[key]) filteredPrefs[key] = prefs[key];
-    }
-
-    try {
-      console.log("Auto-saving preferences for user_id:", user.id, filteredPrefs);
-      await UserPreferencesAPI.createOrUpdate(user.id, filteredPrefs);
-      setSaveSuccess(true);
-    } catch (error) {
-      console.error("Error auto-saving preferences:", error);
-      setSaveError("Failed to auto-save preferences.");
-    }
-    setIsSaving(false);
+    if (errorField === key) setErrorField(""); 
+    if (saveSuccess) setSaveSuccess(false); // כפתור חוזר לפעול והודעת ההצלחה מוסרת
   };
 
   const savePreferences = async () => {
     if (!user) return;
 
-    // בדיקה של כל השדות לפני שמירה ידנית
     if (!preferences.native_language) {
       setErrorField("native_language");
       setSaveError("Native Language cannot be empty.");
@@ -209,7 +177,6 @@ export default function Preferences() {
           opacity: fadeIn ? 1 : 0,
         }}
       >
-        {/* Back Button */}
         <button
           onClick={() => navigate(-1)}
           style={{
@@ -227,7 +194,6 @@ export default function Preferences() {
           Back
         </button>
 
-        {/* Header */}
         <div
           style={{
             display: "flex",
@@ -262,7 +228,6 @@ export default function Preferences() {
           </p>
         </div>
 
-        {/* Language & Voice Card */}
         <div
           style={{
             padding: "1rem",
@@ -355,7 +320,6 @@ export default function Preferences() {
           </p>
         </div>
 
-        {/* Display Name Card */}
         <div
           style={{
             padding: "1rem",
@@ -393,7 +357,6 @@ export default function Preferences() {
           />
         </div>
 
-        {/* Success Message */}
         {saveSuccess && (
           <p
             style={{
@@ -408,31 +371,24 @@ export default function Preferences() {
           </p>
         )}
 
-        {/* Save Button */}
         <button
           onClick={savePreferences}
-          disabled={isSaving || saveSuccess}
+          disabled={isSaving}
           style={{
             width: "100%",
             padding: "1rem",
             borderRadius: "30px",
             background: isSaving
               ? "rgba(59,130,246,0.3)"
-              : saveSuccess
-              ? "rgba(59,130,246,0.3)"
               : "rgba(59,130,246,0.9)",
             color: "white",
             fontWeight: "600",
-            cursor: isSaving || saveSuccess ? "not-allowed" : "pointer",
+            cursor: isSaving ? "not-allowed" : "pointer",
             marginBottom: "1rem",
             border: "none",
           }}
         >
-          {isSaving
-            ? "Saving..."
-            : saveSuccess
-            ? "Preferences Saved!"
-            : "Save Preferences"}
+          {isSaving ? "Saving..." : "Save Preferences"}
         </button>
 
         {saveError && (
