@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect } from "react";
 import { UserPreferencesAPI } from "../Entities/UserPreferencesAPI";
 import { Plus, ScanLine, Users, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import BrandedLoader from '../Components/BrandedLoader';
+import BrandedLoader from "../Components/BrandedLoader";
 import { supabase } from "../utils/supabaseClient";
+import logo from "../images/logo-verbo.png";
 
 async function loadUser() {
   const { data, error } = await supabase.auth.getUser();
@@ -12,7 +12,7 @@ async function loadUser() {
     console.error("Error fetching user:", error);
     return null;
   }
-  return data.user; // זה המשתמש האמיתי המחובר
+  return data.user;
 }
 
 export default function Home() {
@@ -20,37 +20,43 @@ export default function Home() {
   const [user, setUser] = useState(null);
   const [preferences, setPreferences] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [fadeIn, setFadeIn] = useState(false);
 
   useEffect(() => {
     loadUserData();
+    const timeout = setTimeout(() => setFadeIn(true), 50);
+    return () => clearTimeout(timeout);
   }, []);
 
   const loadUserData = async () => {
     try {
       const userData = await loadUser();
+      if (!userData) {
+        navigate("/login");
+        return;
+      }
       setUser(userData);
-      
+
       const userPrefs = await UserPreferencesAPI.get(userData.id);
-if (userPrefs) {
-  setPreferences(userPrefs);
-} else {
-  navigate("/Preferences");
-  return;
-}
+      if (userPrefs) {
+        setPreferences(userPrefs);
+      } else {
+        navigate("/Preferences");
+        return;
+      }
     } catch (error) {
       console.error("Error loading user data:", error);
-      console.error("User not logged in");
-      navigate("/login"); // נוביל למסך login
+      navigate("/login");
     }
     setIsLoading(false);
   };
 
   const handleCreateSession = () => {
-        navigate("/CreateSession");
+    navigate("/CreateSession");
   };
 
   const handleJoinSession = () => {
-        navigate("/JoinSession");
+    navigate("/JoinSession");
   };
 
   if (isLoading) {
@@ -58,101 +64,193 @@ if (userPrefs) {
   }
 
   return (
-    <div className="min-h-screen p-4 pt-8">
-      <div className="max-w-4xl mx-auto">
+    <div
+      style={{
+        fontFamily: "'Segoe UI', sans-serif",
+        background: "linear-gradient(135deg, #c9d6ff, #e2e2e2)",
+        minHeight: "100vh",
+        width: "100vw",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "flex-start",
+        paddingTop: "3rem",
+        overflowY: "auto",
+      }}
+    >
+      <div
+        className={`home-card ${fadeIn ? "fade-in" : ""}`}
+        style={{
+          width: "100%",
+          maxWidth: "1000px",
+          padding: "2rem",
+          borderRadius: "20px",
+          background: "rgba(255,255,255,0.1)",
+          backdropFilter: "blur(12px)",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
+          textAlign: "center",
+          transition: "opacity 0.7s",
+          opacity: fadeIn ? 1 : 0,
+        }}
+      >
+        {/* Logo */}
+        <img
+          src={logo}
+          alt="Verbo.io"
+          style={{
+            width: "120px",
+            height: "120px",
+            marginBottom: "1rem",
+            cursor: "pointer",
+          }}
+          onClick={() => navigate("/home")}
+        />
+
         {/* Welcome Section */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 rounded-full px-4 py-2 mb-6">
-            <Zap className="w-4 h-4 text-blue-600" />
-            <span className="text-sm font-medium text-blue-700">Real-time Translation Ready</span>
+        <h1
+          style={{
+            fontSize: "2rem",
+            fontWeight: "700",
+            color: "#3b82f6",
+            marginBottom: "0.5rem",
+          }}
+        >
+          Welcome back,{" "}
+          {user?.user_metadata?.full_name?.split(" ")[0] || user?.email}
+        </h1>
+        <p style={{ color: "#555", marginBottom: "1rem" }}>
+          Ready to break language barriers?
+        </p>
+
+        {preferences && (
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "12px",
+              padding: "0.5rem 1rem",
+              borderRadius: "12px",
+              background: "rgba(255,255,255,0.3)",
+              fontSize: "0.9rem",
+              color: "#444",
+              marginBottom: "2rem",
+            }}
+          >
+            🌍 {preferences.native_language}
+            <span>•</span>
+            {preferences.gender === "male" ? "👨 Male voice" : "👩 Female voice"}
           </div>
-          
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-4">
-            Welcome back, {user?.user_metadata?.full_name?.split(' ')[0] || user?.email}
-          </h1>
-          <p className="text-xl text-gray-600 mb-2">Ready to break language barriers?</p>
-          
-          {preferences && (
-            <div className="inline-flex items-center gap-4 text-sm text-gray-500 bg-white/50 rounded-full px-4 py-2">
-              <span>🌍 {preferences.native_language === 'english' ? 'English' : 'עברית'}</span>
-              <span>•</span>
-              <span>{preferences.gender === 'male' ? '👨' : '👩'} {preferences.gender === 'male' ? 'Male' : 'Female'} voice</span>
+        )}
+
+        {/* Main Actions */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "2rem",
+            marginBottom: "2rem",
+          }}
+        >
+          {/* Create Session Card */}
+          <div
+            onClick={handleCreateSession}
+            style={{
+              padding: "2rem",
+              borderRadius: "20px",
+              background: "rgba(255,255,255,0.2)",
+              backdropFilter: "blur(10px)",
+              boxShadow: "0 6px 20px rgba(0,0,0,0.2)",
+              cursor: "pointer",
+              transition: "all 0.3s",
+            }}
+          >
+            <div
+              style={{
+                width: "64px",
+                height: "64px",
+                background: "linear-gradient(135deg, #3b82f6, #6366f1)",
+                borderRadius: "16px",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                margin: "0 auto 1rem auto",
+              }}
+            >
+              <Plus size={32} color="white" />
             </div>
-          )}
+            <h3 style={{ fontSize: "1.3rem", fontWeight: "700", marginBottom: "0.5rem" }}>
+              Create Verbo
+            </h3>
+            <p style={{ color: "#555", fontSize: "0.95rem" }}>
+              Create a multilingual conversation powered by AI.
+            </p>
+          </div>
+
+          {/* Join Session Card */}
+          <div
+            onClick={handleJoinSession}
+            style={{
+              padding: "2rem",
+              borderRadius: "20px",
+              background: "rgba(255,255,255,0.2)",
+              backdropFilter: "blur(10px)",
+              boxShadow: "0 6px 20px rgba(0,0,0,0.2)",
+              cursor: "pointer",
+              transition: "all 0.3s",
+            }}
+          >
+            <div
+              style={{
+                width: "64px",
+                height: "64px",
+                background: "linear-gradient(135deg, #9333ea, #ec4899)",
+                borderRadius: "16px",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                margin: "0 auto 1rem auto",
+              }}
+            >
+              <ScanLine size={32} color="white" />
+            </div>
+            <h3 style={{ fontSize: "1.3rem", fontWeight: "700", marginBottom: "0.5rem" }}>
+              Join Verbo
+            </h3>
+            <p style={{ color: "#555", fontSize: "0.95rem" }}>
+              Join a live AI-powered call using a QR code or session link.
+            </p>
+          </div>
         </div>
-
-{/* Main Actions */}
-<div className="grid md:grid-cols-2 gap-8 mb-12">
-  {/* Create Session Card */}
-  <div
-    className="glass-morphism border-0 shadow-2xl hover:shadow-3xl transition-all duration-500 cursor-pointer group p-8 text-center rounded-3xl"
-    onClick={handleCreateSession}
-  >
-    <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-xl">
-    <Plus className="w-10 h-10 text-white" />
-    </div>
-    <h3 className="text-2xl font-bold text-gray-900 mb-3">Create Verbo</h3>
-    <p className="text-gray-600 mb-6">
-      Create a multilingual conversation powered by AI. Share your session code, link, or QR with others to connect instantly.
-    </p>
-    <div className="flex items-center justify-center gap-2 text-sm text-blue-600 font-medium">
-      <Users className="w-4 h-4" />
-      Host a conversation
-    </div>
-  </div>
-
-  {/* Join Session Card */}
-  <div
-    className="glass-morphism border-0 shadow-2xl hover:shadow-3xl transition-all duration-500 cursor-pointer group p-8 text-center rounded-3xl"
-    onClick={handleJoinSession}
-  >
-    <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-600 rounded-3xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-xl">
-      <ScanLine className="w-10 h-10 text-white" />
-    </div>
-    <h3 className="text-2xl font-bold text-gray-900 mb-3">Join Verbo</h3>
-    <p className="text-gray-600 mb-6">
-      Join a live AI-powered call using a QR code, session link, or Meeting ID.
-    </p>
-    <div className="flex items-center justify-center gap-2 text-sm text-purple-600 font-medium">
-      <ScanLine className="w-4 h-4" />
-      Scan to join
-    </div>
-  </div>
-</div>
-
 
         {/* Feature Highlights */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-3xl p-8 mb-8">
-          <h3 className="text-2xl font-bold text-center text-gray-900 mb-8">Why Verbo.io?</h3>
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="text-center">
-              <div className="w-12 h-12 bg-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Zap className="w-6 h-6 text-white" />
-              </div>
-              <h4 className="font-semibold text-gray-900 mb-2">Lightning Fast</h4>
-              <p className="text-sm text-gray-600">Translation in under 0.5 seconds</p>
-            </div>
-            <div className="text-center">
-              <div className="w-12 h-12 bg-green-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Users className="w-6 h-6 text-white" />
-              </div>
-              <h4 className="font-semibold text-gray-900 mb-2">Natural Flow</h4>
-              <p className="text-sm text-gray-600">Simultaneous speaking like phone calls</p>
-            </div>
-            <div className="text-center">
-              <div className="w-12 h-12 bg-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Zap className="w-6 h-6 text-white" />
-              </div>
-              <h4 className="font-semibold text-gray-900 mb-2">Powered by AI</h4>
-              <p className="text-sm text-gray-600">Speak your language. Hear conversations translated to your language in real time.</p>
-            </div>
-          </div>
+        <div
+          style={{
+            padding: "2rem",
+            borderRadius: "20px",
+            background: "rgba(255,255,255,0.2)",
+            backdropFilter: "blur(10px)",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            marginBottom: "2rem",
+          }}
+        >
+          <h3
+            style={{
+              fontSize: "1.5rem",
+              fontWeight: "700",
+              color: "#3b82f6",
+              marginBottom: "1rem",
+            }}
+          >
+            Why Verbo.io?
+          </h3>
+          <p style={{ color: "#555", marginBottom: "1.5rem" }}>
+            Translation in under 0.5 seconds. Natural flow. Powered by AI.
+          </p>
         </div>
 
-        {/* Quick Stats */}
-        <div className="text-center text-gray-500">
-          <p className="text-sm">🔒 Secure • 🌍 Real-time • 💬 No recordings saved</p>
-        </div>
+        {/* Footer Info */}
+        <p style={{ fontSize: "0.85rem", color: "#666" }}>
+          🔒 Secure • 🌍 Real-time • 💬 No recordings saved
+        </p>
       </div>
     </div>
   );
