@@ -106,7 +106,7 @@ export default function Preferences() {
       ...prev,
       [key]: value,
     }));
-    if (errorField === key) setErrorField(""); 
+    if (errorField === key) setErrorField("");
     if (saveSuccess) setSaveSuccess(false); // כפתור חוזר לפעול והודעת ההצלחה מוסרת
   };
 
@@ -367,28 +367,28 @@ export default function Preferences() {
               textAlign: "center",
             }}
           >
-            Preferences saved successfully!
+            Preferences Saved!
           </p>
         )}
 
         <button
           onClick={savePreferences}
-          disabled={isSaving}
+          disabled={isSaving || saveSuccess} // <--- כפתור לא לחיץ אם בשמירה או אחרי הצלחה
           style={{
             width: "100%",
             padding: "1rem",
             borderRadius: "30px",
-            background: isSaving
-              ? "rgba(59,130,246,0.3)"
+            background: isSaving || saveSuccess
+              ? "rgba(59,130,246,0.3)" // צבע בהיר יותר
               : "rgba(59,130,246,0.9)",
             color: "white",
             fontWeight: "600",
-            cursor: isSaving ? "not-allowed" : "pointer",
+            cursor: isSaving || saveSuccess ? "not-allowed" : "pointer",
             marginBottom: "1rem",
             border: "none",
           }}
         >
-          {isSaving ? "Saving..." : "Save Preferences"}
+          {isSaving ? "Saving..." : saveSuccess ? "Preferences Saved!" : "Save Preferences"}
         </button>
 
         {saveError && (
