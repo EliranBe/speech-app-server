@@ -92,7 +92,7 @@ export default function Preferences() {
         }
       } catch (prefError) {
         console.error("Error loading preferences:", prefError);
-        setSaveError("Failed to load preferences. Check RLS policies.");
+        setSaveError("Failed to load your preferences at the moment. Please try again later");
       }
     } catch (error) {
       console.error("Error loading user data:", error);
@@ -139,7 +139,7 @@ export default function Preferences() {
       setSaveSuccess(true);
     } catch (error) {
       console.error("Error saving preferences:", error);
-      setSaveError("Failed to save preferences. Check RLS policies and DB schema.");
+      setSaveError("Failed to save preferences. Please ensure your display name contains only letters (A-Z, a-z), numbers, or allowed special characters.");
     }
     setIsSaving(false);
   };
