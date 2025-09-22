@@ -62,7 +62,7 @@ export default function Login() {
     if (prefsError || !prefsData) {
       navigate("/Preferences"); // אין נתונים – לכיוון Preferences
     } else {
-      navigate("/Home"); // יש נתונים – לכיוון Home
+      navigate("/"); // יש נתונים – לכיוון Home
     }
   };
 
