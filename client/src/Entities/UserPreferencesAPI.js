@@ -3,7 +3,7 @@ import { supabase } from "../utils/supabaseClient";
 export const UserPreferencesAPI = {
   get: async (user_id) => {
     const { data, error } = await supabase
-      .from('UserPreferences')
+      .from('user_preferences')
       .select('*')
       .eq('user_id', user_id)
       .single();
@@ -13,7 +13,7 @@ export const UserPreferencesAPI = {
 
   createOrUpdate: async (user_id, preferences) => {
     const { data, error } = await supabase
-      .from('UserPreferences')
+      .from('user_preferences')
       .upsert({ user_id, ...preferences }, { onConflict: ['user_id'] });
     if (error) throw error;
     return data;
