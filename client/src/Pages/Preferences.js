@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { UserPreferencesAPI } from "../Entities/UserPreferencesAPI";
-import { Camera, Mic, Globe, Info, ArrowLeft, ShieldCheck, Settings, CheckCircle } from "lucide-react";
+import { Globe, Info, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../utils/supabaseClient";
+import logo from "../images/logo-verbo.png";
+import { UserPreferencesAPI } from "../Entities/UserPreferencesAPI";
 
 async function loadUser() {
   const { data, error } = await supabase.auth.getUser();
@@ -46,9 +47,7 @@ export default function Preferences() {
   const [preferences, setPreferences] = useState({
     native_language: "english",
     gender: "male",
-    camera_permission: false,
-    microphone_permission: false,
-    system_language: "english",
+    display_name: "",
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -83,36 +82,6 @@ export default function Preferences() {
       ...prev,
       [key]: value,
     }));
-  };
-
-  const requestPermissions = async () => {
-    let cameraGranted = false;
-    let microphoneGranted = false;
-
-    try {
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        try {
-          const cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
-          cameraGranted = true;
-          cameraStream.getTracks().forEach((track) => track.stop());
-        } catch (err) {
-          console.log("Camera permission denied");
-        }
-
-        try {
-          const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          microphoneGranted = true;
-          micStream.getTracks().forEach((track) => track.stop());
-        } catch (err) {
-          console.log("Microphone permission denied");
-        }
-      }
-    } catch (error) {
-      console.error("Error requesting permissions:", error);
-    }
-
-    updatePreference("camera_permission", cameraGranted);
-    updatePreference("microphone_permission", microphoneGranted);
   };
 
   const savePreferences = async () => {
@@ -166,84 +135,26 @@ export default function Preferences() {
         }}
       >
         {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "2rem" }}>
-          <button
-            onClick={() => navigate("/home")}
-            style={{
-              background: "rgba(255,255,255,0.3)",
-              border: "none",
-              padding: "0.5rem",
-              borderRadius: "50%",
-              cursor: "pointer",
-            }}
-          >
-            <ArrowLeft size={16} />
-          </button>
-          <div>
-            <h1 style={{ fontSize: "1.8rem", fontWeight: "600", color: "#333" }}>Setup Your Profile</h1>
-            <p style={{ color: "#666" }}>Configure your preferences for the best experience</p>
-          </div>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: "2rem" }}>
+          <img src={logo} alt="Verbo.io" style={{ width: "140px", height: "140px", marginBottom: "1rem" }} />
+          <h1 style={{ fontSize: "1.8rem", fontWeight: "600", color: "#3b82f6", marginBottom: "0.5rem" }}>
+            Setup Your Profile
+          </h1>
+          <p style={{ color: "#555", textAlign: "center" }}>Configure your preferences for the best experience</p>
         </div>
 
-        {/* Permissions */}
-        <div style={{ marginBottom: "1.5rem" }}>
-          <h2 style={{ fontSize: "1.2rem", fontWeight: "600", marginBottom: "1rem", color: "#333" }}>
-            <ShieldCheck size={18} style={{ marginRight: "8px", display: "inline" }} />
-            Permissions
-          </h2>
-
-          {/* Camera */}
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem" }}>
-            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-              <Camera size={18} />
-              <div>
-                <p style={{ fontWeight: "500" }}>Camera Access</p>
-                <p style={{ fontSize: "0.85rem", color: "#555" }}>Required for QR scanning and video calls</p>
-              </div>
-            </div>
-            <input
-              type="checkbox"
-              checked={preferences.camera_permission}
-              onChange={(e) => updatePreference("camera_permission", e.target.checked)}
-            />
-          </div>
-
-          {/* Microphone */}
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-              <Mic size={18} />
-              <div>
-                <p style={{ fontWeight: "500" }}>Microphone Access</p>
-                <p style={{ fontSize: "0.85rem", color: "#555" }}>Essential for voice translation</p>
-              </div>
-            </div>
-            <input
-              type="checkbox"
-              checked={preferences.microphone_permission}
-              onChange={(e) => updatePreference("microphone_permission", e.target.checked)}
-            />
-          </div>
-
-          <button
-            onClick={requestPermissions}
-            style={{
-              width: "100%",
-              marginTop: "1rem",
-              padding: "0.75rem",
-              borderRadius: "12px",
-              background: "rgba(255,255,255,0.3)",
-              cursor: "pointer",
-              border: "none",
-              fontWeight: "500",
-            }}
-          >
-            Grant Permissions
-          </button>
-        </div>
-
-        {/* Language */}
-        <div style={{ marginBottom: "1.5rem" }}>
-          <h2 style={{ fontSize: "1.2rem", fontWeight: "600", marginBottom: "1rem", color: "#333" }}>
+        {/* Language & Voice Card */}
+        <div
+          style={{
+            padding: "1rem",
+            borderRadius: "16px",
+            background: "rgba(255,255,255,0.2)",
+            backdropFilter: "blur(10px)",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            marginBottom: "1.5rem",
+          }}
+        >
+          <h2 style={{ fontSize: "1.2rem", fontWeight: "600", color: "#3b82f6", marginBottom: "1rem" }}>
             <Globe size={18} style={{ marginRight: "8px", display: "inline" }} />
             Language & Voice
           </h2>
@@ -271,42 +182,46 @@ export default function Preferences() {
           </select>
         </div>
 
-        {/* System */}
-        <div style={{ marginBottom: "1.5rem" }}>
-          <h2 style={{ fontSize: "1.2rem", fontWeight: "600", marginBottom: "1rem", color: "#333" }}>
-            <Settings size={18} style={{ marginRight: "8px", display: "inline" }} />
-            System Settings
+        {/* Display Name Card */}
+        <div
+          style={{
+            padding: "1rem",
+            borderRadius: "16px",
+            background: "rgba(255,255,255,0.2)",
+            backdropFilter: "blur(10px)",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            marginBottom: "1.5rem",
+          }}
+        >
+          <h2 style={{ fontSize: "1.2rem", fontWeight: "600", color: "#3b82f6", marginBottom: "1rem" }}>
+            Display Name
           </h2>
-
-          <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500" }}>System Language</label>
-          <select
-            value={preferences.system_language}
-            onChange={(e) => updatePreference("system_language", e.target.value)}
-            style={{ width: "100%", padding: "0.5rem", borderRadius: "10px" }}
-          >
-            <option value="english">🇺🇸 English</option>
-            <option value="hebrew">🇮🇱 עברית</option>
-          </select>
+          <input
+            type="text"
+            value={preferences.display_name}
+            onChange={(e) => updatePreference("display_name", e.target.value)}
+            placeholder="Enter your display name"
+            style={{
+              width: "100%",
+              padding: "0.5rem",
+              borderRadius: "10px",
+              border: "1px solid rgba(0,0,0,0.2)",
+            }}
+          />
         </div>
 
         {/* Save Button */}
         <button
           onClick={savePreferences}
-          disabled={isSaving || !preferences.camera_permission || !preferences.microphone_permission}
+          disabled={isSaving}
           style={{
             width: "100%",
             padding: "1rem",
             borderRadius: "30px",
-            background:
-              isSaving || !preferences.camera_permission || !preferences.microphone_permission
-                ? "rgba(59,130,246,0.3)"
-                : "rgba(59,130,246,0.9)",
+            background: isSaving ? "rgba(59,130,246,0.3)" : "rgba(59,130,246,0.9)",
             color: "white",
             fontWeight: "600",
-            cursor:
-              isSaving || !preferences.camera_permission || !preferences.microphone_permission
-                ? "not-allowed"
-                : "pointer",
+            cursor: isSaving ? "not-allowed" : "pointer",
             marginBottom: "1rem",
           }}
         >
@@ -315,12 +230,6 @@ export default function Preferences() {
 
         {saveError && (
           <p style={{ color: "red", fontSize: "0.9rem", marginBottom: "0.5rem" }}>{saveError}</p>
-        )}
-
-        {(!preferences.camera_permission || !preferences.microphone_permission) && (
-          <p style={{ color: "orange", fontSize: "0.9rem" }}>
-            Both camera and microphone permissions are required.
-          </p>
         )}
       </div>
     </div>
