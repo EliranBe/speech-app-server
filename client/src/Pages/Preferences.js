@@ -45,19 +45,20 @@ export default function Preferences() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [preferences, setPreferences] = useState({
-    native_language: "", // ✅ מתחיל ריק
-    gender: "",          // ✅ מתחיל ריק
-    display_name: "",    // ✅ מתחיל ריק
+    native_language: "",
+    gender: "",
+    display_name: "",
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState(null);
-  const [fadeIn, setFadeIn] = useState(false); // ✅ כמו ב־Login.js
+  const [errorField, setErrorField] = useState(""); // ✅ איזה שדה עם שגיאה
+  const [fadeIn, setFadeIn] = useState(false);
 
   useEffect(() => {
     loadUserData();
-    const timeout = setTimeout(() => setFadeIn(true), 50); // ✅ Fade-In
+    const timeout = setTimeout(() => setFadeIn(true), 50);
     return () => clearTimeout(timeout);
   }, []);
 
@@ -78,7 +79,6 @@ export default function Preferences() {
           display_name: existingPrefs.display_name || "",
         });
       }
-      // אם אין העדפות קיימות – השדות נשארים ריקים (כפי שהגדרנו במצב ההתחלתי)
     } catch (error) {
       console.error("Error loading user data:", error);
     }
@@ -90,14 +90,24 @@ export default function Preferences() {
       ...prev,
       [key]: value,
     }));
+    if (errorField === key) setErrorField(""); // ניקוי שגיאה כשמשנים את השדה
   };
 
   const savePreferences = async () => {
     if (!user) return;
 
+    // דוגמה לבדיקת שדות ריקים
+    if (!preferences.display_name) {
+      setErrorField("display_name");
+      setSaveError("Display Name cannot be empty.");
+      return;
+    }
+
     setIsSaving(true);
     setSaveSuccess(false);
     setSaveError(null);
+    setErrorField("");
+
     try {
       await UserPreferencesAPI.createOrUpdate(user.id, preferences);
       setSaveSuccess(true);
@@ -142,7 +152,7 @@ export default function Preferences() {
           boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
           textAlign: "left",
           transition: "opacity 0.7s",
-          opacity: fadeIn ? 1 : 0, // ✅ זהה ל־Login.js
+          opacity: fadeIn ? 1 : 0,
         }}
       >
         {/* Back Button */}
@@ -221,9 +231,7 @@ export default function Preferences() {
             <b>Language & Voice</b>
           </h2>
 
-          <label
-            style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500" }}
-          >
+          <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500" }}>
             Native Language
           </label>
           <select
@@ -307,13 +315,30 @@ export default function Preferences() {
             onChange={(e) => updatePreference("display_name", e.target.value)}
             placeholder="Enter your display name"
             style={{
-              width: "100%", // ✅ זהה לאורך Voice Gender
+              width: "100%", // ✅ עכשיו זהה לשדות האחרים
               padding: "0.5rem",
               borderRadius: "10px",
-              border: "1px solid rgba(0,0,0,0.2)",
+              border: errorField === "display_name"
+                ? "2px solid red"
+                : "1px solid rgba(0,0,0,0.2)", // ✅ סימון שגיאה
             }}
           />
         </div>
+
+        {/* Success Message */}
+        {saveSuccess && (
+          <p
+            style={{
+              color: "green",
+              fontSize: "1rem",
+              fontWeight: "600",
+              marginBottom: "0.5rem",
+              textAlign: "center",
+            }}
+          >
+            Preferences saved successfully!
+          </p>
+        )}
 
         {/* Save Button */}
         <button
