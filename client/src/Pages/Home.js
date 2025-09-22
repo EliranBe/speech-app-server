@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { UserPreferencesAPI } from "../Entities/UserPreferencesAPI";
-import { Plus, ScanLine, Menu, Settings, LogOut, Bot, Globe2, Shield } from "lucide-react";
+import { Plus, ScanLine, Menu, Settings, LogOut, Zap, Lightning } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import BrandedLoader from "../Components/BrandedLoader";
 import { supabase } from "../utils/supabaseClient";
@@ -21,15 +21,25 @@ export default function Home() {
   const [preferences, setPreferences] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [fadeIn, setFadeIn] = useState(false);
-
-  // state for menu + logout modal
   const [menuOpen, setMenuOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  const menuRef = useRef();
 
   useEffect(() => {
     loadUserData();
     const timeout = setTimeout(() => setFadeIn(true), 50);
     return () => clearTimeout(timeout);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const loadUserData = async () => {
@@ -55,22 +65,14 @@ export default function Home() {
     setIsLoading(false);
   };
 
-  const handleCreateSession = () => {
-    navigate("/CreateSession");
-  };
-
-  const handleJoinSession = () => {
-    navigate("/JoinSession");
-  };
-
+  const handleCreateSession = () => navigate("/CreateSession");
+  const handleJoinSession = () => navigate("/JoinSession");
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/login");
   };
 
-  if (isLoading) {
-    return <BrandedLoader text="Loading Verbo.io..." />;
-  }
+  if (isLoading) return <BrandedLoader text="Loading Verbo.io..." />;
 
   return (
     <div
@@ -102,78 +104,75 @@ export default function Home() {
           position: "relative",
         }}
       >
-        {/* Top bar with Logo + Menu */}
-        <div
+        {/* Logo Centered */}
+        <img
+          src={logo}
+          alt="Verbo.io"
           style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "1rem",
+            width: "120px",
+            height: "120px",
+            margin: "0 auto 1.5rem auto",
           }}
-        >
-          <img
-            src={logo}
-            alt="Verbo.io"
-            style={{
-              width: "80px",
-              height: "80px",
-              marginBottom: "0",
-            }}
+        />
+
+        {/* Dropdown Menu Button */}
+        <div style={{ position: "absolute", top: "2rem", right: "2rem" }} ref={menuRef}>
+          <Menu
+            size={32}
+            style={{ cursor: "pointer" }}
+            onClick={() => setMenuOpen(!menuOpen)}
           />
-          <div style={{ position: "relative" }}>
-            <Menu
-              size={32}
-              style={{ cursor: "pointer" }}
-              onClick={() => setMenuOpen(!menuOpen)}
-            />
-            {menuOpen && (
+          {menuOpen && (
+            <div
+              style={{
+                position: "absolute",
+                top: "40px",
+                right: 0,
+                background: "rgba(255,255,255,0.2)",
+                backdropFilter: "blur(12px)",
+                borderRadius: "12px",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                padding: "0.5rem 0",
+                zIndex: 10,
+                width: "180px",
+              }}
+            >
               <div
+                onClick={() => {
+                  navigate("/Preferences");
+                  setMenuOpen(false);
+                }}
                 style={{
-                  position: "absolute",
-                  top: "40px",
-                  right: 0,
-                  background: "white",
-                  borderRadius: "12px",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                  padding: "0.5rem 0",
-                  zIndex: 10,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "0.5rem 1rem",
+                  cursor: "pointer",
+                  fontSize: "0.95rem",
+                  color: "#333",
                 }}
               >
-                <div
-                  onClick={() => {
-                    navigate("/Preferences");
-                    setMenuOpen(false);
-                  }}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    padding: "0.5rem 1rem",
-                    cursor: "pointer",
-                    fontSize: "0.95rem",
-                  }}
-                >
-                  <Settings size={18} /> Preferences
-                </div>
-                <div
-                  onClick={() => {
-                    setShowLogoutConfirm(true);
-                    setMenuOpen(false);
-                  }}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    padding: "0.5rem 1rem",
-                    cursor: "pointer",
-                    fontSize: "0.95rem",
-                  }}
-                >
-                  <LogOut size={18} /> Log out
-                </div>
+                <Settings size={18} /> Preferences
               </div>
-            )}
-          </div>
+              <div
+                onClick={() => {
+                  setShowLogoutConfirm(true);
+                  setMenuOpen(false);
+                }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "0.5rem 1rem",
+                  cursor: "pointer",
+                  fontSize: "0.95rem",
+                  color: "#333",
+                }}
+              >
+                <LogOut size={18} /> Log out
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Welcome Section */}
@@ -301,50 +300,35 @@ export default function Home() {
             backdropFilter: "blur(10px)",
             boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
             marginBottom: "2rem",
+            display: "flex",
+            justifyContent: "space-between",
           }}
         >
-          <h3
-            style={{
-              fontSize: "1.5rem",
-              fontWeight: "700",
-              color: "#3b82f6",
-              marginBottom: "1.5rem",
-            }}
-          >
-            Why Verbo.io?
-          </h3>
-
           {/* Feature 1 */}
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "1rem" }}>
-            <Bot size={28} color="#3b82f6" />
-            <div style={{ textAlign: "left" }}>
-              <strong>Powered by AI</strong>
-              <p style={{ margin: 0, fontSize: "0.9rem", color: "#555" }}>
-                Speak your language. Hear conversations translated to your language in real time.
-              </p>
-            </div>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", flex: 1 }}>
+            <Zap size={28} color="#3b82f6" />
+            <strong>Powered by AI</strong>
+            <p style={{ fontSize: "0.9rem", color: "#555", textAlign: "center" }}>
+              Speak your language. let AI translate conversations for you.
+            </p>
           </div>
 
           {/* Feature 2 */}
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "1rem" }}>
-            <Globe2 size={28} color="#9333ea" />
-            <div style={{ textAlign: "left" }}>
-              <strong>Real-time Translation</strong>
-              <p style={{ margin: 0, fontSize: "0.9rem", color: "#555" }}>
-                Seamless communication across languages without delays.
-              </p>
-            </div>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", flex: 1 }}>
+            <Lightning size={28} color="#9333ea" />
+            <strong>Real-time Translation</strong>
+            <p style={{ fontSize: "0.9rem", color: "#555", textAlign: "center" }}>
+              Verbo.io makes cross-language communication smooth and intuitive.
+            </p>
           </div>
 
           {/* Feature 3 */}
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <Shield size={28} color="#10b981" />
-            <div style={{ textAlign: "left" }}>
-              <strong>Privacy First</strong>
-              <p style={{ margin: 0, fontSize: "0.9rem", color: "#555" }}>
-                Your conversations are secure and never stored.
-              </p>
-            </div>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", flex: 1 }}>
+            <Plus size={28} color="#10b981" />
+            <strong>Easy to Use</strong>
+            <p style={{ fontSize: "0.9rem", color: "#555", textAlign: "center" }}>
+              Verbo.io offers a smooth, user friendly experience for effortless communication.
+            </p>
           </div>
         </div>
       </div>
@@ -367,7 +351,8 @@ export default function Home() {
         >
           <div
             style={{
-              background: "white",
+              background: "rgba(255,255,255,0.2)",
+              backdropFilter: "blur(12px)",
               padding: "2rem",
               borderRadius: "16px",
               width: "90%",
