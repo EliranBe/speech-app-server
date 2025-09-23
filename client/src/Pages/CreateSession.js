@@ -367,6 +367,7 @@ export default function CreateSession() {
                 alignItems: "center",
                 justifyContent: "center",
                 gap: "0.5rem",
+                fontFamily: "'Segoe UI', sans-serif",
               }}
             >
               {icon}
