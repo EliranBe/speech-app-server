@@ -42,6 +42,8 @@ if (!process.env.DEEPGRAM_PROJECT_ID) {
 }
 
 app.use(cors());
+app.use(express.json());
+
 // Serve React build
 app.use(express.static(path.join(__dirname, 'client/build')));
 app.use(express.static(path.join(__dirname, 'public')));
