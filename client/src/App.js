@@ -5,6 +5,8 @@ import Preferences from "./Pages/Preferences";
 import Login from "./Pages/Login";
 import Register from "./Pages/Register";
 import TermsAndPrivacy from "./Pages/legal/TermsAndPrivacy";
+import CreateSession from "./Pages/CreateSession";
+import JoinSession from "./Pages/JoinSession";
 
 
 function App() {
@@ -16,6 +18,8 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/register" element={<Register />} />
         <Route path="/help/legal" element={<TermsAndPrivacy />} />
+        <Route path="/CreateSession" element={<CreateSession />} />
+        <Route path="/JoinSession" element={<JoinSession />} />
       </Routes>
     </Router>
   );
