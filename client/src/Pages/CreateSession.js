@@ -95,7 +95,6 @@ export default function CreateSession() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             host_user_id: userData.id,
-            meeting_password: sessionCode,
           }),
         }
       );
