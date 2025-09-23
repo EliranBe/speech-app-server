@@ -43,6 +43,36 @@ async function loadUser() {
   return data.user;
 }
 
+// =======================================
+// פונקציות עזר ליצירת מזהה, סיסמה ו‑URL
+// =======================================
+function generateMeetingId() {
+  let id = "";
+  while (id.length < 20) {
+    id += Math.floor(Math.random() * 10);
+  }
+  return id;
+}
+
+function generateMeetingPassword() {
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let pwd = "";
+  for (let i = 0; i < 8; i++) {
+    pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return pwd;
+}
+
+function generateMeetingUrl() {
+  const randomString = Math.random().toString(36).substring(2, 12);
+  const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
+  return `${BASE_URL}/Call?sessionId=${randomString}`;
+}
+
+// =======================================
+// Component
+// =======================================
 export default function CreateSession() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -85,34 +115,41 @@ export default function CreateSession() {
     }
   };
 
+  // =======================================
+  // יצירת פגישה – באמצעות Supabase client ישירות
+  // =======================================
   const createNewSession = async (userData) => {
     setIsCreating(true);
     try {
-      const response = await fetch(
-        `https://speech-app-server.onrender.com/api/meetings/create`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+      const { data: newSession, error } = await supabase
+        .from("Meetings")
+        .insert([
+          {
             host_user_id: userData.id,
-          }),
-        }
-      );
+            meeting_id: generateMeetingId(),
+            meeting_password: generateMeetingPassword(),
+            url_meeting: generateMeetingUrl(),
+            qr_data: generateMeetingUrl(),
+            created_at: new Date().toISOString(),
+            expiry: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+            is_active: true,
+          },
+        ])
+        .select()
+        .single(); // מחזיר רשומה אחת במקום מערך
 
-      if (!response.ok) {
-        console.error("Error creating meeting: ", response.statusText);
+      if (error) {
+        console.error("Error creating meeting:", error);
         setSession(null);
         setIsCreating(false);
         return;
       }
 
-      const { meeting: newSession } = await response.json();
-
       setSession({
         ...newSession,
         session_url: newSession.url_meeting,
         qr_data: newSession.qr_data,
-        session_code: newSession.meeting_password, // שימוש במידע מהשרת
+        session_code: newSession.meeting_password,
       });
     } catch (error) {
       console.error("Error creating session:", error);
@@ -330,14 +367,16 @@ export default function CreateSession() {
                 {value}
               </span>
               <button
-                onClick={() => copyToClipboard(
-                  type === "id"
-                    ? session.meeting_id
-                    : type === "url"
-                    ? session.session_url
-                    : session.session_code,
-                  type
-                )}
+                onClick={() =>
+                  copyToClipboard(
+                    type === "id"
+                      ? session.meeting_id
+                      : type === "url"
+                      ? session.session_url
+                      : session.session_code,
+                    type
+                  )
+                }
                 style={{
                   border: "none",
                   background: "transparent",
