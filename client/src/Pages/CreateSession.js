@@ -78,54 +78,41 @@ export default function CreateSession() {
         return;
       }
 
-      await createNewSession(userData, userPrefs[0] || null);
+      await createNewSession(userData);
     } catch (error) {
       console.error("Error loading user:", error);
       navigate("/login");
     }
   };
 
-  const generateSessionCode = () => {
-    const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    return Array.from({ length: 8 }, () =>
-      characters.charAt(Math.floor(Math.random() * characters.length))
-    ).join("");
-  };
-
-  const generateMeetingId = () =>
-    Array.from({ length: 20 }, () => Math.floor(Math.random() * 10)).join("");
-
   const createNewSession = async (userData) => {
     setIsCreating(true);
     try {
-      const sessionCode = generateSessionCode();
-      const meetingId = generateMeetingId();
-
       const response = await fetch(
-        `${
-          process.env.REACT_APP_API_BASE_URL || "http://localhost:3001"
-        }/api/meetings/create`,
+        `http://localhost:3000/api/meetings/create`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             host_user_id: userData.id,
-            meeting_password: sessionCode,
           }),
         }
       );
 
-      const { meeting: newSession, error: apiError } = await response.json();
-      if (apiError) {
-        console.error("Error creating meeting:", apiError);
+      if (!response.ok) {
+        console.error("Error creating meeting: ", response.statusText);
+        setSession(null);
+        setIsCreating(false);
         return;
       }
+
+      const { meeting: newSession } = await response.json();
 
       setSession({
         ...newSession,
         session_url: newSession.url_meeting,
         qr_data: newSession.qr_data,
-        session_code: sessionCode,
+        session_code: newSession.meeting_password, // שימוש במידע מהשרת
       });
     } catch (error) {
       console.error("Error creating session:", error);
