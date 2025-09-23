@@ -7,6 +7,7 @@ import {
   Link,
   ShieldUser,
   KeyRound,
+  CircleHelp,
 } from "lucide-react";
 import { UserPreferencesAPI } from "../Entities/UserPreferencesAPI";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -355,21 +356,23 @@ export default function CreateSession() {
               marginBottom: "1rem",
             }}
           >
+            {/* כותרת - כמו Scan to Join */}
             <p
               style={{
-                fontSize: "0.9rem",
-                color: "#555",
+                fontSize: "1.2rem",
+                fontWeight: "700",
+                color: "#3b82f6",
                 marginBottom: "0.5rem",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 gap: "0.4rem",
-                fontWeight: "600",
               }}
             >
               {icon}
               {label}
             </p>
+            {/* ערך */}
             <div
               style={{
                 display: "flex",
@@ -444,15 +447,18 @@ export default function CreateSession() {
               color: "#3b82f6",
               fontSize: "1.2rem",
               marginBottom: "1rem",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
             }}
           >
-            How Others Can Join
+            How to Join <CircleHelp size={18} color="#3b82f6" />
           </h3>
           {[
-            "Share the URL, QR code, or Meeting ID + Password",
-            'They open Verbo and choose "Join Verbo"',
-            "They scan QR code, paste URL, or enter Meeting ID + Password",
-            "Start your translated conversation!",
+            "Share the Meeting URL, QR code, or Meeting ID + Session Password",
+            'Ask your guest to open Verbo.io and choose "Join Verbo"',
+            "Then Ask to scan QR code, paste Meeting URL, or enter Meeting ID + Session Password",
+            "Start translated conversation!",
           ].map((step, i) => (
             <div
               key={i}
