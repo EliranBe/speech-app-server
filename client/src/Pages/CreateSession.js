@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { ArrowLeft, QrCode } from "lucide-react";
+import {
+  ArrowLeft,
+  QrCode,
+  BookCopy,
+  Video,
+  Link,
+  ShieldUser,
+  KeyRound,
+} from "lucide-react";
 import { UserPreferencesAPI } from "../Entities/UserPreferencesAPI";
 import { useNavigate, useLocation } from "react-router-dom";
 import QRCode from "../Components/ui/QRCode";
@@ -44,7 +52,7 @@ async function loadUser() {
 }
 
 // =======================================
-// פונקציות עזר ליצירת מזהה, סיסמה ו‑URL
+// פונקציות עזר ליצירת מזהה, סיסמה ו-URL
 // =======================================
 function generateMeetingId() {
   let id = "";
@@ -136,7 +144,7 @@ export default function CreateSession() {
           },
         ])
         .select()
-        .single(); // מחזיר רשומה אחת במקום מערך
+        .single();
 
       if (error) {
         console.error("Error creating meeting:", error);
@@ -247,8 +255,8 @@ export default function CreateSession() {
             src={logo}
             alt="Verbo.io"
             style={{
-              width: "120px",
-              height: "120px",
+              width: "140px",
+              height: "140px",
               marginBottom: "1rem",
               cursor: "pointer",
             }}
@@ -287,9 +295,13 @@ export default function CreateSession() {
               fontWeight: "700",
               color: "#3b82f6",
               marginBottom: "1rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "0.5rem",
             }}
           >
-            <QrCode size={18} style={{ marginRight: "8px" }} /> Scan to Join
+            <QrCode size={18} /> Scan to Join
           </h2>
           <div
             style={{
@@ -311,27 +323,27 @@ export default function CreateSession() {
         {/* Session Details */}
         {[
           {
-            label: "Shareable URL",
+            label: "Meeting URL",
             value: session.session_url,
-            color: "#16a34a",
             type: "url",
             copied: copiedUrl,
+            icon: <Link size={18} color="#3b82f6" />,
           },
           {
             label: "Meeting ID",
             value: session.meeting_id?.replace(/(\d{5})/g, "$1 ").trim(),
-            color: "#2563eb",
             type: "id",
             copied: copiedId,
+            icon: <ShieldUser size={18} color="#3b82f6" />,
           },
           {
             label: "Session Password",
             value: session.session_code,
-            color: "#9333ea",
             type: "code",
             copied: copiedCode,
+            icon: <KeyRound size={18} color="#3b82f6" />,
           },
-        ].map(({ label, value, color, type, copied }) => (
+        ].map(({ label, value, type, copied, icon }) => (
           <div
             key={type}
             style={{
@@ -343,7 +355,19 @@ export default function CreateSession() {
               marginBottom: "1rem",
             }}
           >
-            <p style={{ fontSize: "0.9rem", color: "#555", marginBottom: "0.5rem" }}>
+            <p
+              style={{
+                fontSize: "0.9rem",
+                color: "#555",
+                marginBottom: "0.5rem",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.4rem",
+                fontWeight: "600",
+              }}
+            >
+              {icon}
               {label}
             </p>
             <div
@@ -360,7 +384,7 @@ export default function CreateSession() {
                   fontFamily: "monospace",
                   fontWeight: "600",
                   fontSize: type === "id" ? "1.3rem" : "1rem",
-                  color,
+                  color: "#3b82f6",
                   wordBreak: "break-all",
                 }}
               >
@@ -381,15 +405,22 @@ export default function CreateSession() {
                   border: "none",
                   background: "transparent",
                   cursor: "pointer",
-                  color,
+                  color: "#3b82f6",
                   fontWeight: "600",
                 }}
               >
-                📋
+                <BookCopy size={18} color="#3b82f6" />
               </button>
             </div>
             {copied && (
-              <p style={{ fontSize: "0.8rem", color: "green", marginTop: "0.3rem" }}>
+              <p
+                style={{
+                  fontSize: "0.8rem",
+                  color: "green",
+                  marginTop: "0.3rem",
+                  textAlign: "center",
+                }}
+              >
                 Copied to clipboard!
               </p>
             )}
@@ -407,7 +438,14 @@ export default function CreateSession() {
             marginBottom: "1.5rem",
           }}
         >
-          <h3 style={{ fontWeight: "700", color: "#3b82f6", marginBottom: "1rem" }}>
+          <h3
+            style={{
+              fontWeight: "700",
+              color: "#3b82f6",
+              fontSize: "1.2rem",
+              marginBottom: "1rem",
+            }}
+          >
             How Others Can Join
           </h3>
           {[
@@ -416,7 +454,15 @@ export default function CreateSession() {
             "They scan QR code, paste URL, or enter Meeting ID + Password",
             "Start your translated conversation!",
           ].map((step, i) => (
-            <div key={i} style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}>
+            <div
+              key={i}
+              style={{
+                display: "flex",
+                gap: "0.5rem",
+                marginBottom: "0.5rem",
+                alignItems: "center", // מרכז אנכי
+              }}
+            >
               <div
                 style={{
                   width: "24px",
@@ -433,7 +479,7 @@ export default function CreateSession() {
               >
                 {i === 3 ? "✓" : i + 1}
               </div>
-              <p style={{ color: "#333" }}>{step}</p>
+              <p style={{ color: "#333", margin: 0 }}>{step}</p>
             </div>
           ))}
         </div>
@@ -450,9 +496,13 @@ export default function CreateSession() {
             fontWeight: "600",
             cursor: "pointer",
             border: "none",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "0.5rem",
           }}
         >
-          👥 Start Verbo Call
+          <Video size={20} /> Start Verbo Call
         </button>
       </div>
     </div>
