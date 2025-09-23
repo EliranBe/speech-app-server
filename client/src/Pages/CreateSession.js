@@ -385,9 +385,9 @@ export default function CreateSession() {
               <span
                 style={{
                   fontFamily: "monospace",
-                  fontWeight: "600",
+                  fontWeight: "400",
                   fontSize: type === "id" ? "1.3rem" : "1rem",
-                  color: "#3b82f6",
+                  color: "#000",
                   wordBreak: "break-all",
                 }}
               >
@@ -452,7 +452,7 @@ export default function CreateSession() {
               gap: "0.5rem",
             }}
           >
-            How to Join <CircleHelp size={18} color="#3b82f6" />
+            How to Join ?
           </h3>
           {[
             "Share the Meeting URL, QR code, or Meeting ID + Session Password",
