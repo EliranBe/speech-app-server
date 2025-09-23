@@ -362,11 +362,11 @@ export default function CreateSession() {
                 fontSize: "1.2rem",
                 fontWeight: "700",
                 color: "#3b82f6",
-                marginBottom: "0.5rem",
+                marginBottom: "1rem",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: "0.4rem",
+                gap: "0.5rem",
               }}
             >
               {icon}
@@ -384,9 +384,9 @@ export default function CreateSession() {
             >
               <span
                 style={{
-                  fontFamily: "monospace",
+                  fontFamily: "'Segoe UI', sans-serif",
                   fontWeight: "400",
-                  fontSize: type === "id" ? "1.3rem" : "1rem",
+                  fontSize: "rem",
                   color: "#000",
                   wordBreak: "break-all",
                 }}
