@@ -386,7 +386,7 @@ export default function CreateSession() {
                 style={{
                   fontFamily: "'Segoe UI', sans-serif",
                   fontWeight: "400",
-                  fontSize: "rem",
+                  fontSize: "1rem",
                   color: "#000",
                   wordBreak: "break-all",
                 }}
