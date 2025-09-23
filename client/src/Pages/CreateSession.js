@@ -89,12 +89,13 @@ export default function CreateSession() {
     setIsCreating(true);
     try {
       const response = await fetch(
-        `http://localhost:3000/api/meetings/create`,
+        `https://speech-app-server.onrender.com/api/meetings/create`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             host_user_id: userData.id,
+            meeting_password: sessionCode,
           }),
         }
       );
