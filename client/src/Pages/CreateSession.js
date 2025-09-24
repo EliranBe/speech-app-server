@@ -143,7 +143,6 @@ const { data: newSession, error } = await supabase
       url_meeting: meetingUrl,
       qr_data: meetingUrl,
       created_at: new Date().toISOString(),
-      expiry: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
       is_active: true,
     },
   ])
