@@ -75,7 +75,7 @@ function generateMeetingPassword() {
 
 function generateMeetingUrl() {
   const randomString = Math.random().toString(36).substring(2, 12);
-  const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
+  const BASE_URL = process.env.BASE_URL || "http://Verbo.io";
   return `${BASE_URL}/Call?sessionId=${randomString}`;
 }
 
@@ -130,22 +130,25 @@ export default function CreateSession() {
   const createNewSession = async (userData) => {
     setIsCreating(true);
     try {
-      const { data: newSession, error } = await supabase
-        .from("Meetings")
-        .insert([
-          {
-            host_user_id: userData.id,
-            meeting_id: generateMeetingId(),
-            meeting_password: generateMeetingPassword(),
-            url_meeting: generateMeetingUrl(),
-            qr_data: generateMeetingUrl(),
-            created_at: new Date().toISOString(),
-            expiry: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-            is_active: true,
-          },
-        ])
-        .select()
-        .single();
+      // קרא פעם אחת ליצירת ה-URL והשתמש בו בשני השדות
+const meetingUrl = generateMeetingUrl();
+
+const { data: newSession, error } = await supabase
+  .from("Meetings")
+  .insert([
+    {
+      host_user_id: userData.id,
+      meeting_id: generateMeetingId(),
+      meeting_password: generateMeetingPassword(),
+      url_meeting: meetingUrl,
+      qr_data: meetingUrl,
+      created_at: new Date().toISOString(),
+      expiry: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+      is_active: true,
+    },
+  ])
+  .select()
+  .single();
 
       if (error) {
         console.error("Error creating meeting:", error);
