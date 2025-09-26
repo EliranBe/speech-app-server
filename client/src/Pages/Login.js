@@ -107,7 +107,7 @@ export default function Login() {
           style={{
             width: "140px",
             height: "140px",
-            marginBottom: "1rem",
+            marginBottom: "0 auto 1.5rem auto",
           }}
         />
 
