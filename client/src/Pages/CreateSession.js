@@ -187,9 +187,41 @@ const { data: newSession, error } = await supabase
     }
   };
 
-  const startCall = () => {
-    if (session) {
-      navigate(`/Call?sessionId=${session.meeting_id}&role=creator`);
+    const startCall = async () => {
+    if (!session || !user) {
+      alert("Session or user not ready");
+      return;
+    }
+
+    try {
+      const resp = await fetch("/api/meetings/start", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          user_id: user.id,
+          meeting_id: session.meeting_id
+        })
+      });
+
+      const data = await resp.json();
+
+      if (!resp.ok) {
+        console.error("Start call error:", data);
+        alert(data.error || "Unable to start call");
+        return;
+      }
+
+      if (data.url) {
+        // רידיירקט אוטומטי ל־URL שהשרת החזיר
+        window.location.href = data.url;
+      } else {
+        alert("No URL returned from server");
+      }
+    } catch (err) {
+      console.error("Failed to call /api/meetings/start:", err);
+      alert("Failed to start call");
     }
   };
 
