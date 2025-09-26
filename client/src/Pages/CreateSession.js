@@ -195,15 +195,16 @@ const { data: newSession, error } = await supabase
 
     try {
       const resp = await fetch("/api/meetings/start", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          user_id: user.id,
-          meeting_id: session.meeting_id
-        })
-      });
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${await supabase.auth.getSession().then(s => s.session?.access_token || "")}`
+  },
+  body: JSON.stringify({
+    user_id: user.id,
+    meeting_id: session.meeting_id
+  })
+});
 
       const data = await resp.json();
 
