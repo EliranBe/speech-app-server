@@ -126,7 +126,7 @@ video {
   <script src="https://cdn.agora.io/sdk/release/AgoraRTC_N-4.20.0.js"></script>
   <script>
     let AGORA_APP_ID = "";
-    const CHANNEL_NAME = "test-room";
+    let CHANNEL_NAME = "test-room";
     let client;
     let agoraMicTrack, cameraTrack; // Agora
     let recorder;                   // MediaRecorder
@@ -144,6 +144,38 @@ video {
     let tts;
     let ttsPlayer = null;
 
+        function getQueryParam(param) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(param);
+    }
+
+    let userToken = getQueryParam("userToken");
+    let userPayload = null;
+
+    if (!userToken) {
+            console.warn("⚠️ No userToken in URL — static fallback CHANNEL_NAME will be used");
+    } else {
+      try {
+        const base64Url = userToken.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+
+            userPayload = JSON.parse(jsonPayload);
+    console.log("✅ JWT Payload:", userPayload);
+
+    if (userPayload?.meeting_id) {
+      CHANNEL_NAME = userPayload.meeting_id;
+      console.log("✅ Using meeting_id from JWT:", CHANNEL_NAME);
+    } else {
+      console.warn("⚠️ No meeting_id in JWT, using fallback:", CHANNEL_NAME);
+    }
+  } catch (e) {
+    console.error("❌ Failed to parse JWT:", e);
+  }
+}
+  
     async function leaveCall() {
     // 🔒 השבתת כל הכפתורים
     document.querySelectorAll("button").forEach(btn => {
@@ -194,6 +226,12 @@ video {
 };
 
     async function startCall() {
+      if (!userPayload) {
+  console.error("❌ Cannot start call without user payload");
+  return;
+}
+console.log("Starting call for user:", userPayload.display_name);
+
       client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
 
       // כשמשתתף מפרסם וידאו/אודיו
@@ -329,8 +367,10 @@ async function startMicAndTranscription() {
     return; // או אפשר לעצור את הפונקציה כדי למנוע כפילויות
   }
 
-    const clientId = crypto.randomUUID(); // מזהה ייחודי ללקוח
-socket = new WebSocket(`wss://${window.location.host}?clientId=${clientId}`);
+    const userIdForSocket = userPayload?.user_id || 'unknown';
+const meetingIdForSocket = userPayload?.meeting_id || CHANNEL_NAME;
+const params = `user_id=${encodeURIComponent(userIdForSocket)}&meeting_id=${encodeURIComponent(meetingIdForSocket)}`;
+socket = new WebSocket(`wss://${window.location.host}?${params}`);
 
   socket.addEventListener("open", async () => {
     console.log("✅ connected to server");
