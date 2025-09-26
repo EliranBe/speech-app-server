@@ -174,15 +174,15 @@ if (userErr || !user) {
       : crypto.randomBytes(16).toString("hex");
 
     // חתימה
-    const token = jwt.sign(
+    const meetingToken = jwt.sign(
       { ...payload, jti },
       process.env.JWT_SECRET,
-      { algorithm: "HS256", expiresIn: "8h" } // ניתן לשנות את התוקף לפי צורך
+      { algorithm: "HS256", expiresIn: "1h" } // ניתן לשנות את התוקף לפי צורך
     );
 
     // כתובת למסך השיחה (CALL): ברירת מחדל - הכתובת שבה ה־call.html מתארח
     const CALL_BASE_URL = process.env.CALL_BASE_URL || "https://speech-app-server.onrender.com/call.html";
-    const redirectUrl = `${CALL_BASE_URL}?userToken=${encodeURIComponent(token)}`;
+    const redirectUrl = `${CALL_BASE_URL}?userToken=${encodeURIComponent(meetingToken)}`;
 
     return res.status(200).json({ url: redirectUrl });
   } catch (err) {
