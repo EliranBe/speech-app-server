@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { supabase } = require("../client/src/utils/supabaseClient");
 const crypto = require("crypto");
+const jwt = require("jsonwebtoken");
 
 // פונקציה ליצירת מזהה פגישה בן 20 ספרות
 function generateMeetingId() {
@@ -22,7 +23,7 @@ function generateMeetingPassword() {
   return pwd;
 }
 
-// פונקציה ליצירת URL אקראי לפגישה
+// פונקציה ליצירת URL אקראי לפגישה (שימוש בקיים)
 function generateMeetingUrl() {
   const randomString = crypto.randomBytes(8).toString("hex"); // 16 תווים אקראיים
   const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
@@ -30,7 +31,7 @@ function generateMeetingUrl() {
 }
 
 // =======================================
-// יצירת פגישה חדשה
+// יצירת פגישה חדשה (לא שינינו כאן את הלוגיקה הקיימת)
 // =======================================
 router.post("/create", async (req, res) => {
   try {
@@ -74,7 +75,119 @@ router.post("/create", async (req, res) => {
 });
 
 // =======================================
-// הצטרפות לפגישה קיימת
+// START ROUTE - בקרות לפני התחלת שיחה + יצירת JWT + החזרת URL דינמי
+// =======================================
+router.post("/start", async (req, res) => {
+  try {
+    const { user_id, meeting_id } = req.body;
+
+    if (!user_id || !meeting_id) {
+      return res.status(400).json({ error: "user_id and meeting_id are required" });
+    }
+
+    // 1) בדיקה שה־user קיים בטבלת Users
+    const { data: userRow, error: userErr } = await supabase
+      .from("Users")
+      .select("id")
+      .eq("id", user_id)
+      .maybeSingle();
+
+    if (userErr) {
+      console.error("Supabase error (Users):", userErr);
+      return res.status(500).json({ error: "Database error checking user" });
+    }
+    if (!userRow) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // 2) בדיקה על user_preferences שיש ערכים חוקיים
+    const { data: prefs, error: prefsErr } = await supabase
+      .from("user_preferences")
+      .select("native_language,gender,display_name")
+      .eq("user_id", user_id)
+      .maybeSingle();
+
+    if (prefsErr) {
+      console.error("Supabase error (user_preferences):", prefsErr);
+      return res.status(500).json({ error: "Database error checking user preferences" });
+    }
+    if (!prefs) {
+      return res.status(400).json({ error: "User preferences not found" });
+    }
+
+    const requiredFields = ["native_language", "gender", "display_name"];
+    for (const f of requiredFields) {
+      if (!prefs[f] || String(prefs[f]).trim() === "") {
+        return res.status(400).json({ error: `User preference '${f}' is missing or empty` });
+      }
+    }
+
+    // 3) בדיקה שיש רשומת פגישה עבור meeting_id
+    const { data: meetingRow, error: meetingErr } = await supabase
+      .from("Meetings")
+      .select("*")
+      .eq("meeting_id", meeting_id)
+      .maybeSingle();
+
+    if (meetingErr) {
+      console.error("Supabase error (Meetings):", meetingErr);
+      return res.status(500).json({ error: "Database error checking meeting" });
+    }
+    if (!meetingRow) {
+      return res.status(404).json({ error: "Meeting not found" });
+    }
+
+    // 3.1) בדיקה שה־host_user_id תואם ל־user_id של המקליק
+    if (meetingRow.host_user_id !== user_id) {
+      return res.status(403).json({ error: "User is not the host of this meeting" });
+    }
+
+    // 4) בדיקה ש־is_active = true
+    if (!meetingRow.is_active) {
+      return res.status(400).json({ error: "Meeting is not active" });
+    }
+
+    // === כל הבדיקות עברו - יוצרים JWT ===
+    if (!process.env.JWT_SECRET) {
+      console.error("JWT_SECRET not configured in environment");
+      return res.status(500).json({ error: "Server JWT configuration error" });
+    }
+
+    // payload (הנתונים שציינת)
+    const payload = {
+      user_id,
+      display_name: prefs.display_name,
+      native_language: prefs.native_language,
+      gender: prefs.gender,
+      meeting_id: meetingRow.meeting_id,
+      meeting_password: meetingRow.meeting_password
+    };
+
+    // ייחודיות ל־JWT
+    const jti = (typeof crypto.randomUUID === "function")
+      ? crypto.randomUUID()
+      : crypto.randomBytes(16).toString("hex");
+
+    // חתימה
+    const token = jwt.sign(
+      { ...payload, jti },
+      process.env.JWT_SECRET,
+      { algorithm: "HS256", expiresIn: "8h" } // ניתן לשנות את התוקף לפי צורך
+    );
+
+    // כתובת למסך השיחה (CALL): ברירת מחדל - הכתובת שבה ה־call.html מתארח
+    const CALL_BASE_URL = process.env.CALL_BASE_URL || "https://speech-app-server.onrender.com/call.html";
+    const redirectUrl = `${CALL_BASE_URL}?userToken=${encodeURIComponent(token)}`;
+
+    return res.status(200).json({ url: redirectUrl });
+  } catch (err) {
+    console.error("Server error in /start:", err);
+    return res.status(500).json({ error: "Server error" });
+  }
+});
+
+// =======================================
+// הצטרפות לפגישה קיימת (לא שינינו כאן)
 // =======================================
 router.post("/join", async (req, res) => {
   try {
