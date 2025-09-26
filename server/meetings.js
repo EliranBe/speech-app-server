@@ -87,7 +87,7 @@ router.post("/start", async (req, res) => {
 
     // 1) בדיקה שה־user קיים בטבלת Users
     const { data: userRow, error: userErr } = await supabase
-      .from("Users")
+      .from("auth.users")
       .select("id")
       .eq("id", user_id)
       .maybeSingle();
