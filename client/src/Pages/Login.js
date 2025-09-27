@@ -21,54 +21,58 @@ export default function Login() {
   }, []);
 
   const handleLogin = async () => {
-    setEmailError(false);
-    setPasswordError(false);
-    setError(null);
+  setEmailError(false);
+  setPasswordError(false);
+  setError(null);
 
-    if (!email) {
-      setEmailError(true);
-      return;
-    }
+  if (!email) {
+    setEmailError(true);
+    return;
+  }
 
-    if (!email.includes("@")) {
-      setError("Please enter a valid email address.");
-      setEmailError(true);
-      return;
-    }
+  if (!email.includes("@")) {
+    setError("Please enter a valid email address.");
+    setEmailError(true);
+    return;
+  }
 
-    if (!password) {
-      setPasswordError(true);
-      return;
-    }
+  if (!password) {
+    setPasswordError(true);
+    return;
+  }
 
-    // כניסה עם סיסמה
-    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+  // כניסה עם סיסמה
+  const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
 
-    if (signInError) {
-      setError("Invalid Email or password. Please try again.");
-      setEmailError(true);
-      setPasswordError(true);
-      return;
-    }
+  if (signInError) {
+    setError("Invalid Email or password. Please try again.");
+    setEmailError(true);
+    setPasswordError(true);
+    return;
+  }
 
-if (signInData?.session) {
-  console.log("User logged in, session stored by Supabase");
-}
+  if (signInData?.session) {
+    console.log("User logged in, session stored by Supabase");
 
-    // בדיקה אם קיימת רשומה ב-user_preferences
-    const userId = signInData.user.id;
-    const { data: prefsData, error: prefsError } = await supabase
-      .from("user_preferences")
-      .select("*")
-      .eq("user_id", userId)
-      .single();
+    // ✅ שמירת ה־JWT וה־userId לשימוש עתידי
+    localStorage.setItem("userToken", signInData.session.access_token);
+    localStorage.setItem("userId", signInData.user.id);
+  }
 
-    if (prefsError || !prefsData) {
-      navigate("/Preferences"); // אין נתונים – לכיוון Preferences
-    } else {
-      navigate("/"); // יש נתונים – לכיוון Home
-    }
-  };
+  // בדיקה אם קיימת רשומה ב-user_preferences
+  const userId = signInData.user.id;
+  const { data: prefsData, error: prefsError } = await supabase
+    .from("user_preferences")
+    .select("*")
+    .eq("user_id", userId)
+    .single();
+
+  if (prefsError || !prefsData) {
+    navigate("/Preferences"); // אין נתונים – לכיוון Preferences
+  } else {
+    navigate("/"); // יש נתונים – לכיוון Home
+  }
+};
 
   return (
     <div
