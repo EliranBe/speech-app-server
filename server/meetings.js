@@ -86,16 +86,7 @@ router.post("/start", async (req, res) => {
     }
 
     // 1) בדיקה שה־user קיים בטבלת Users
-    const { data, error } = await supabase.auth.admin.getUserById(user_id);
 
-if (error) {
-  console.error("Supabase error (Users):", error);
-  return res.status(500).json({ error: "Database error checking user" });
-}
-
-if (!data?.user) {
-  return res.status(404).json({ error: "User not found" });
-}
 
     // 2) בדיקה על user_preferences שיש ערכים חוקיים
     const { data: prefs, error: prefsErr } = await supabase
