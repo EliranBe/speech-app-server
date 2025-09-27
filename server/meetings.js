@@ -85,6 +85,25 @@ if (!user_id || !meeting_id) {
   return res.status(400).json({ error: "user_id and meeting_id are required" });
 }
 
+        // 🔹 בדיקת Authorization header
+    const authHeader = req.headers["authorization"];
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Missing or invalid Authorization header" });
+    }
+
+    const token = authHeader.split(" ")[1];
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ error: "Invalid or expired token" });
+    }
+
+    // 🔹 בדיקה שה־user_id מה־token תואם ל־user_id מה־body
+    if (decoded.user_id !== user_id) {
+      return res.status(403).json({ error: "Token does not match user_id" });
+    }
+
     // 1) בדיקה שה־user קיים בטבלת Users
 
 
