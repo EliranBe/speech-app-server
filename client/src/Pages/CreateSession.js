@@ -196,9 +196,23 @@ const startCall = async () => {
   }
 
   try {
+    // ❗️ קבלת access_token
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !sessionData?.session) {
+      console.error("Error getting session:", sessionError);
+      alert("User session not available");
+      return;
+    }
+
+    const accessToken = sessionData.session.access_token;
+
+    // שליחת הבקשה עם access_token ב-header
     const resp = await fetch("/api/meetings/start", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${accessToken}` // 🔹 כאן
+      },
       body: JSON.stringify({
         meeting_id: session.meeting_id,
         user_id: user.id
