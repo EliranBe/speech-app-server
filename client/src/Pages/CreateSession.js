@@ -7,7 +7,6 @@ import {
   Link,
   ShieldUser,
   KeyRound,
-  CircleHelp,
 } from "lucide-react";
 import { UserPreferencesAPI } from "../Entities/UserPreferencesAPI";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -43,18 +42,7 @@ const BrandedLoader = ({ text }) => (
   </div>
 );
 
-async function loadUser() {
-  const { data, error } = await supabase.auth.getUser();
-  if (error) {
-    console.error("Error fetching user:", error);
-    return null;
-  }
-  return data.user;
-}
-
-// =======================================
-// פונקציות עזר ליצירת מזהה, סיסמה ו-URL
-// =======================================
+// פונקציות עזר
 function generateMeetingId() {
   let id = "";
   while (id.length < 20) {
@@ -79,15 +67,12 @@ function generateMeetingUrl() {
   return `${BASE_URL}/Call?sessionId=${randomString}`;
 }
 
-// =======================================
-// Component
-// =======================================
 export default function CreateSession() {
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState(null);
   const [preferences, setPreferences] = useState(null);
-  const [session, setSession] = useState(null);
+  const [session, setSession] = useState(null); // זה session של הפגישה
   const [isCreating, setIsCreating] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
@@ -102,14 +87,26 @@ export default function CreateSession() {
 
   const loadUserAndCreateSession = async () => {
     try {
-      const userData = await loadUser();
-      if (!userData) {
+      // בודק session של Supabase
+      const {
+        data: { session: authSession },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
+      if (sessionError || !authSession) {
+        console.error("Session expired or not available", sessionError);
         navigate("/login");
         return;
       }
-      setUser(userData);
 
-       console.log("User ID:", userData.id);
+      const userData = authSession.user;
+      if (!userData) {
+        console.error("No user data in session");
+        navigate("/login");
+        return;
+      }
+
+      setUser(userData);
 
       const userPrefs = await UserPreferencesAPI.get(userData.id);
       if (userPrefs) {
@@ -126,30 +123,27 @@ export default function CreateSession() {
     }
   };
 
-  // =======================================
-  // יצירת פגישה – באמצעות Supabase client ישירות
-  // =======================================
+  // יצירת פגישה
   const createNewSession = async (userData) => {
     setIsCreating(true);
     try {
-      // קרא פעם אחת ליצירת ה-URL והשתמש בו בשני השדות
-const meetingUrl = generateMeetingUrl();
+      const meetingUrl = generateMeetingUrl();
 
-const { data: newSession, error } = await supabase
-  .from("Meetings")
-  .insert([
-    {
-      host_user_id: userData.id,
-      meeting_id: generateMeetingId(),
-      meeting_password: generateMeetingPassword(),
-      url_meeting: meetingUrl,
-      qr_data: meetingUrl,
-      created_at: new Date().toISOString(),
-      is_active: true,
-    },
-  ])
-  .select()
-  .single();
+      const { data: newSession, error } = await supabase
+        .from("Meetings")
+        .insert([
+          {
+            host_user_id: userData.id,
+            meeting_id: generateMeetingId(),
+            meeting_password: generateMeetingPassword(),
+            url_meeting: meetingUrl,
+            qr_data: meetingUrl,
+            created_at: new Date().toISOString(),
+            is_active: true,
+          },
+        ])
+        .select()
+        .single();
 
       if (error) {
         console.error("Error creating meeting:", error);
@@ -171,6 +165,7 @@ const { data: newSession, error } = await supabase
     setIsCreating(false);
   };
 
+  // העתקה ללוח
   const copyToClipboard = async (text, type) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -189,56 +184,65 @@ const { data: newSession, error } = await supabase
     }
   };
 
-const startCall = async () => {
-  try {
-    const { data: { session: supabaseSession }, error } = await supabase.auth.getSession();
+  // התחלת השיחה
+  const startCall = async () => {
+    try {
+      // בודק שוב session של Supabase
+      const {
+        data: { session: authSession },
+        error: sessionError,
+      } = await supabase.auth.getSession();
 
-    if (error || !supabaseSession) {
-      console.error("Session expired or not available", error);
-      navigate("/login");
-      return;
+      if (sessionError || !authSession) {
+        console.error("Session expired or not available", sessionError);
+        navigate("/login");
+        return;
+      }
+
+      const accessToken = authSession.access_token;
+      if (!accessToken) {
+        console.error("Access token missing");
+        navigate("/login");
+        return;
+      }
+
+      console.log("Using access token:", accessToken);
+      console.log(
+        "Token expires at:",
+        new Date(authSession.expires_at * 1000)
+      );
+
+      // משתמשים ב־session של הפגישה (state) בשביל meeting_id
+      const resp = await fetch("/api/meetings/start", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          meeting_id: session.meeting_id,
+          user_id: user.id,
+        }),
+      });
+
+      const data = await resp.json();
+
+      if (!resp.ok) {
+        console.error("Start call error:", data);
+        alert(data.error || "Unable to start call");
+        return;
+      }
+
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert("No URL returned from server");
+      }
+    } catch (err) {
+      console.error("Failed to call /api/meetings/start:", err);
+      alert("Failed to start call");
     }
-
-    const accessToken = supabaseSession.access_token;
-    if (!accessToken) {
-      console.error("Access token missing");
-      navigate("/login");
-      return;
-    }
-
-    console.log("Using access token:", accessToken);
-    console.log("Token expires at:", new Date(supabaseSession.expires_at * 1000));
-
-    const resp = await fetch("/api/meetings/start", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${accessToken}`
-      },
-      body: JSON.stringify({
-        meeting_id: session.meeting_id, // כאן נשאר הפגישה המקורית
-        user_id: user.id
-      })
-    });
-
-    const data = await resp.json();
-
-    if (!resp.ok) {
-      console.error("Start call error:", data);
-      alert(data.error || "Unable to start call");
-      return;
-    }
-
-    if (data.url) {
-      window.location.href = data.url;
-    } else {
-      alert("No URL returned from server");
-    }
-  } catch (err) {
-    console.error("Failed to call /api/meetings/start:", err);
-    alert("Failed to start call");
-  }
-};
+  };
 
   if (isCreating || !session) {
     return <BrandedLoader text="Creating your Verbo session..." />;
@@ -307,7 +311,7 @@ const startCall = async () => {
             style={{
               width: "140px",
               height: "140px",
-              marginBottom: "0 auto 1.5rem auto",
+              marginBottom: "1.5rem",
               cursor: "pointer",
             }}
             onClick={() => navigate("/")}
@@ -405,7 +409,6 @@ const startCall = async () => {
               marginBottom: "1rem",
             }}
           >
-            {/* כותרת - כמו Scan to Join */}
             <p
               style={{
                 fontSize: "1.2rem",
@@ -416,13 +419,11 @@ const startCall = async () => {
                 alignItems: "center",
                 justifyContent: "center",
                 gap: "0.5rem",
-                fontFamily: "'Segoe UI', sans-serif",
               }}
             >
               {icon}
               {label}
             </p>
-            {/* ערך */}
             <div
               style={{
                 display: "flex",
@@ -516,7 +517,7 @@ const startCall = async () => {
                 display: "flex",
                 gap: "0.5rem",
                 marginBottom: "0.5rem",
-                alignItems: "center", // מרכז אנכי
+                alignItems: "center",
               }}
             >
               <div
