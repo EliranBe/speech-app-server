@@ -86,24 +86,16 @@ router.post("/start", async (req, res) => {
     }
 
     // 1) בדיקה שה־user קיים בטבלת Users
-    // בדיקת JWT שהלקוח שלח
-const token = req.headers.authorization?.split(" ")[1];
-if (!token) {
-  return res.status(401).json({ error: "Missing authorization token" });
+    const { data, error } = await supabase.auth.admin.getUserById(user_id);
+
+if (error) {
+  console.error("Supabase error (Users):", error);
+  return res.status(500).json({ error: "Database error checking user" });
 }
 
-const { data: { user }, error: userErr } = await supabase.auth.getUser(token);
-if (userErr || !user) {
-  return res.status(401).json({ error: "Invalid or expired token" });
+if (!data?.user) {
+  return res.status(404).json({ error: "User not found" });
 }
-
-    if (userErr) {
-      console.error("Supabase error (Users):", userErr);
-      return res.status(500).json({ error: "Database error checking user" });
-    }
-    if (!userRow) {
-      return res.status(404).json({ error: "User not found" });
-    }
 
     // 2) בדיקה על user_preferences שיש ערכים חוקיים
     const { data: prefs, error: prefsErr } = await supabase
