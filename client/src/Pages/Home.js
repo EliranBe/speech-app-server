@@ -42,28 +42,47 @@ export default function Home() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const loadUserData = async () => {
-    try {
-      const userData = await loadUser();
-      if (!userData) {
-        navigate("/login");
-        return;
-      }
-      setUser(userData);
+const loadUserData = async () => {
+  try {
+    // קודם בודקים אם יש session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-      const userPrefs = await UserPreferencesAPI.get(userData.id);
-      if (userPrefs) {
-        setPreferences(userPrefs);
-      } else {
-        navigate("/Preferences");
-        return;
-      }
-    } catch (error) {
-      console.error("Error loading user data:", error);
+    if (sessionError) {
+      console.error("Error fetching session:", sessionError.message);
       navigate("/login");
+      return;
     }
-    setIsLoading(false);
-  };
+
+    if (!session) {
+      console.warn("No session found → redirecting to Login");
+      navigate("/login");
+      return;
+    }
+
+    // אם יש session, מביאים את המשתמש
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError) {
+      console.error("Error fetching user:", userError.message);
+      navigate("/login");
+      return;
+    }
+
+    setUser(userData.user);
+
+    // מביא את ההעדפות של המשתמש
+    const userPrefs = await UserPreferencesAPI.get(userData.user.id);
+    if (userPrefs) {
+      setPreferences(userPrefs);
+    } else {
+      navigate("/Preferences");
+      return;
+    }
+  } catch (error) {
+    console.error("Error loading user data:", error);
+    navigate("/login");
+  }
+  setIsLoading(false);
+};
 
   const handleCreateSession = () => navigate("/CreateSession");
   const handleJoinSession = () => navigate("/JoinSession");
