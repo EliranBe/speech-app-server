@@ -194,23 +194,10 @@ const startCall = async () => {
   }
 
   try {
-    const { data: { session: supabaseSession } } = await supabase.auth.getSession();
-    const token = supabaseSession?.access_token;
-
-    if (!token) {
-      alert("User not authenticated");
-      return;
-    }
-
     const resp = await fetch("/api/meetings/start", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        meeting_id: session.meeting_id
-      })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ meeting_id: session.meeting_id })
     });
 
     const data = await resp.json();
