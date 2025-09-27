@@ -5,7 +5,7 @@ const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
 
 export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
-    persistSession: true, // ✅ שומר session בין רענונים
-    storage: localStorage, // ✅ מאחסן ב־localStorage
+    persistSession: true,
+    storage: typeof window !== "undefined" ? window.localStorage : undefined,
   },
 });
