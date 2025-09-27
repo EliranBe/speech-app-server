@@ -198,11 +198,13 @@ const startCall = async () => {
   try {
     // ❗️ קבלת access_token
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError || !sessionData?.session) {
-      console.error("Error getting session:", sessionError);
-      alert("User session not available");
-      return;
-    }
+
+// בדיקה אם session קיים
+if (sessionError || !sessionData || !sessionData.session) {
+  console.error("Session expired or not available", sessionError);
+  navigate("/login"); // מחזיר את המשתמש למסך ההתחברות
+  return;
+}
 
     const accessToken = sessionData.session.access_token;
 
