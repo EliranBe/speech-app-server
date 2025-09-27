@@ -85,6 +85,9 @@ export default function Login() {
     }
 
     if (signInData?.session) {
+      console.log("Login response session:", signInData.session);
+      console.log("Access token:", signInData.session?.access_token);
+      console.log("Token expires at:", new Date(signInData.session?.expires_at * 1000));
       console.log("User logged in, session stored by Supabase");
     }
 
