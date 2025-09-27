@@ -74,12 +74,34 @@ router.post("/create", async (req, res) => {
   }
 });
 
+function authenticateJWT(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ error: "Authorization header missing" });
+  }
+
+  const token = authHeader.split(" ")[1]; // מצפה ל‑"Bearer <token>"
+  if (!token) {
+    return res.status(401).json({ error: "Token missing" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = { id: decoded.user_id }; // הוספת user_id ל‑req.user
+    next();
+  } catch (err) {
+    console.error("JWT error:", err);
+    return res.status(403).json({ error: "Invalid token" });
+  }
+}
+
 // =======================================
 // START ROUTE - בקרות לפני התחלת שיחה + יצירת JWT + החזרת URL דינמי
 // =======================================
-router.post("/start", async (req, res) => {
+router.post("/start", authenticateJWT, async (req, res) => {
   try {
-    const { user_id, meeting_id } = req.body;
+    const { meeting_id } = req.body;
+    const user_id = req.user.id; // מגיע מהמזהה שב‑JWT
 
     if (!user_id || !meeting_id) {
       return res.status(400).json({ error: "user_id and meeting_id are required" });
