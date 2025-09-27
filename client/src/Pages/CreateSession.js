@@ -188,8 +188,8 @@ const { data: newSession, error } = await supabase
   };
 
 const startCall = async () => {
-  if (!session) {
-    alert("Session not ready");
+  if (!session || !user) {
+    alert("Session not ready or user not loaded");
     return;
   }
 
@@ -197,7 +197,10 @@ const startCall = async () => {
     const resp = await fetch("/api/meetings/start", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ meeting_id: session.meeting_id })
+      body: JSON.stringify({
+        meeting_id: session.meeting_id,
+        user_id: user.id
+      })
     });
 
     const data = await resp.json();
