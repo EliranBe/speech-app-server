@@ -196,24 +196,30 @@ const startCall = async () => {
   }
 
   try {
-    // ❗️ קבלת access_token
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    // ❗️ קבלת access_token בצורה בטוחה
+    const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
 
-// בדיקה אם session קיים
-if (sessionError || !sessionData || !sessionData.session) {
-  console.error("Session expired or not available", sessionError);
-  navigate("/login"); // מחזיר את המשתמש למסך ההתחברות
-  return;
-}
+    if (sessionError || !currentSession) {
+      console.error("Session expired or not available", sessionError);
+      navigate("/login"); // מחזיר למסך התחברות
+      return;
+    }
 
-    const accessToken = sessionData.session.access_token;
+    const accessToken = currentSession.access_token;
 
-    // שליחת הבקשה עם access_token ב-header
+    // בדיקה נוספת — אם אין accessToken, להחזיר למסך התחברות
+    if (!accessToken) {
+      console.error("Access token missing");
+      navigate("/login");
+      return;
+    }
+
+    // שליחת הבקשה עם access_token תקין
     const resp = await fetch("/api/meetings/start", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${accessToken}` // 🔹 כאן
+        "Authorization": `Bearer ${accessToken}`
       },
       body: JSON.stringify({
         meeting_id: session.meeting_id,
