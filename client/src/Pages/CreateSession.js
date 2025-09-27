@@ -187,44 +187,50 @@ const { data: newSession, error } = await supabase
     }
   };
 
-    const startCall = async () => {
-    if (!session || !user) {
-      alert("Session or user not ready");
+const startCall = async () => {
+  if (!session) {
+    alert("Session not ready");
+    return;
+  }
+
+  try {
+    const { data: { session: supabaseSession } } = await supabase.auth.getSession();
+    const token = supabaseSession?.access_token;
+
+    if (!token) {
+      alert("User not authenticated");
       return;
     }
 
-    try {
-      const resp = await fetch("/api/meetings/start", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    "Authorization": `Bearer ${await supabase.auth.getSession().then(s => s.session?.access_token || "")}`
-  },
-  body: JSON.stringify({
-    user_id: user.id,
-    meeting_id: session.meeting_id
-  })
-});
+    const resp = await fetch("/api/meetings/start", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        meeting_id: session.meeting_id
+      })
+    });
 
-      const data = await resp.json();
+    const data = await resp.json();
 
-      if (!resp.ok) {
-        console.error("Start call error:", data);
-        alert(data.error || "Unable to start call");
-        return;
-      }
-
-      if (data.url) {
-        // רידיירקט אוטומטי ל־URL שהשרת החזיר
-        window.location.href = data.url;
-      } else {
-        alert("No URL returned from server");
-      }
-    } catch (err) {
-      console.error("Failed to call /api/meetings/start:", err);
-      alert("Failed to start call");
+    if (!resp.ok) {
+      console.error("Start call error:", data);
+      alert(data.error || "Unable to start call");
+      return;
     }
-  };
+
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      alert("No URL returned from server");
+    }
+  } catch (err) {
+    console.error("Failed to call /api/meetings/start:", err);
+    alert("Failed to start call");
+  }
+};
 
   if (isCreating || !session) {
     return <BrandedLoader text="Creating your Verbo session..." />;
