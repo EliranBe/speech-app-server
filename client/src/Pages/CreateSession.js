@@ -190,31 +190,25 @@ const { data: newSession, error } = await supabase
   };
 
 const startCall = async () => {
-  if (!session || !user) {
-    alert("Session not ready or user not loaded");
-    return;
-  }
-
   try {
-    // ❗️ קבלת access_token בצורה בטוחה
-    const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
-
-    if (sessionError || !currentSession) {
-      console.error("Session expired or not available", sessionError);
-      navigate("/login"); // מחזיר למסך התחברות
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error || !session) {
+      console.error("Session expired or not available", error);
+      navigate("/login");
       return;
     }
 
-    const accessToken = currentSession.access_token;
-
-    // בדיקה נוספת — אם אין accessToken, להחזיר למסך התחברות
+    const accessToken = session.access_token;
     if (!accessToken) {
       console.error("Access token missing");
       navigate("/login");
       return;
     }
 
-    // שליחת הבקשה עם access_token תקין
+    // 📌 הוספת הלוגים כאן
+    console.log("Using access token:", accessToken);
+    console.log("Token expires at:", new Date(session.expires_at * 1000));
+
     const resp = await fetch("/api/meetings/start", {
       method: "POST",
       headers: {
