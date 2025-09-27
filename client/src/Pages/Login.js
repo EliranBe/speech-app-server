@@ -2,10 +2,13 @@ import React, { useState, useEffect } from "react";
 import { supabase } from "../utils/supabaseClient";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import logo from "../images/logo-verbo.png";
+import BrandedLoader from "../Components/BrandedLoader";
 
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [loading, setLoading] = useState(true);
+
   const fromRegister = location.state?.fromRegister || false;
 
   const [email, setEmail] = useState("");
@@ -15,60 +18,90 @@ export default function Login() {
   const [emailError, setEmailError] = useState(false);
   const [passwordError, setPasswordError] = useState(false);
 
+  // בדיקה אם יש session פעיל
+  useEffect(() => {
+    async function checkSession() {
+      const { data: { session }, error } = await supabase.auth.getSession();
+
+      if (error) {
+        console.error("Error checking session:", error.message);
+      }
+
+      if (session) {
+        console.log("User already logged in — redirecting to Home");
+        navigate("/");
+        return; // מונע המשך רינדור ה־Login
+      } else {
+        setLoading(false); // אין session → עצור מצב טעינה
+      }
+    }
+
+    checkSession();
+  }, [navigate]);
+
+  // אפקט ל־fade-in
   useEffect(() => {
     const timeout = setTimeout(() => setFadeIn(true), 50);
     return () => clearTimeout(timeout);
   }, []);
 
+  // אם אנחנו עדיין בטעינה → להציג את ה־loader
+  if (loading) {
+    return <BrandedLoader text="Checking session..." />;
+  }
+
   const handleLogin = async () => {
-  setEmailError(false);
-  setPasswordError(false);
-  setError(null);
+    setEmailError(false);
+    setPasswordError(false);
+    setError(null);
 
-  if (!email) {
-    setEmailError(true);
-    return;
-  }
+    if (!email) {
+      setEmailError(true);
+      return;
+    }
 
-  if (!email.includes("@")) {
-    setError("Please enter a valid email address.");
-    setEmailError(true);
-    return;
-  }
+    if (!email.includes("@")) {
+      setError("Please enter a valid email address.");
+      setEmailError(true);
+      return;
+    }
 
-  if (!password) {
-    setPasswordError(true);
-    return;
-  }
+    if (!password) {
+      setPasswordError(true);
+      return;
+    }
 
-  // כניסה עם סיסמה
-  const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    // כניסה עם סיסמה
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
 
-  if (signInError) {
-    setError("Invalid Email or password. Please try again.");
-    setEmailError(true);
-    setPasswordError(true);
-    return;
-  }
+    if (signInError) {
+      setError("Invalid Email or password. Please try again.");
+      setEmailError(true);
+      setPasswordError(true);
+      return;
+    }
 
-  if (signInData?.session) {
-    console.log("User logged in, session stored by Supabase");
-  }
+    if (signInData?.session) {
+      console.log("User logged in, session stored by Supabase");
+    }
 
-  // בדיקה אם קיימת רשומה ב-user_preferences
-  const userId = signInData.user.id;
-  const { data: prefsData, error: prefsError } = await supabase
-    .from("user_preferences")
-    .select("*")
-    .eq("user_id", userId)
-    .single();
+    // בדיקה אם קיימת רשומה ב־user_preferences
+    const userId = signInData.user.id;
+    const { data: prefsData, error: prefsError } = await supabase
+      .from("user_preferences")
+      .select("*")
+      .eq("user_id", userId)
+      .single();
 
-  if (prefsError || !prefsData) {
-    navigate("/Preferences"); // אין נתונים – לכיוון Preferences
-  } else {
-    navigate("/"); // יש נתונים – לכיוון Home
-  }
-};
+    if (prefsError || !prefsData) {
+      navigate("/Preferences"); // אין נתונים → לכיוון Preferences
+    } else {
+      navigate("/"); // יש נתונים → לכיוון Home
+    }
+  };
 
   return (
     <div
@@ -104,7 +137,7 @@ export default function Login() {
           opacity: fadeIn ? 1 : 0,
         }}
       >
-        {/* לוגו מעל הכותרת */}
+        {/* לוגו */}
         <img
           src={logo}
           alt="Verbo.io"
