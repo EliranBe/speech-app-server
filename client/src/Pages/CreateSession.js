@@ -191,23 +191,23 @@ const { data: newSession, error } = await supabase
 
 const startCall = async () => {
   try {
-    const { data: { session }, error } = await supabase.auth.getSession();
-    if (error || !session) {
+    const { data: { session: supabaseSession }, error } = await supabase.auth.getSession();
+
+    if (error || !supabaseSession) {
       console.error("Session expired or not available", error);
       navigate("/login");
       return;
     }
 
-    const accessToken = session.access_token;
+    const accessToken = supabaseSession.access_token;
     if (!accessToken) {
       console.error("Access token missing");
       navigate("/login");
       return;
     }
 
-    // 📌 הוספת הלוגים כאן
     console.log("Using access token:", accessToken);
-    console.log("Token expires at:", new Date(session.expires_at * 1000));
+    console.log("Token expires at:", new Date(supabaseSession.expires_at * 1000));
 
     const resp = await fetch("/api/meetings/start", {
       method: "POST",
@@ -216,7 +216,7 @@ const startCall = async () => {
         "Authorization": `Bearer ${accessToken}`
       },
       body: JSON.stringify({
-        meeting_id: session.meeting_id,
+        meeting_id: session.meeting_id, // כאן נשאר הפגישה המקורית
         user_id: user.id
       })
     });
