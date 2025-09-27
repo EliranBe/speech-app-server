@@ -53,10 +53,6 @@ export default function Login() {
 
   if (signInData?.session) {
     console.log("User logged in, session stored by Supabase");
-
-    // ✅ שמירת ה־JWT וה־userId לשימוש עתידי
-    localStorage.setItem("userToken", signInData.session.access_token);
-    localStorage.setItem("userId", signInData.user.id);
   }
 
   // בדיקה אם קיימת רשומה ב-user_preferences
