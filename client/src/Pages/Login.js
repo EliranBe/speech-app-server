@@ -51,6 +51,11 @@ export default function Login() {
       return;
     }
 
+    // ✅ שמירת ה-JWT ב-localStorage
+if (signInData?.session?.access_token) {
+  localStorage.setItem("supabaseToken", signInData.session.access_token);
+}
+
     // בדיקה אם קיימת רשומה ב-user_preferences
     const userId = signInData.user.id;
     const { data: prefsData, error: prefsError } = await supabase
