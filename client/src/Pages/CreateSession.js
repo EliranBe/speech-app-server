@@ -109,6 +109,8 @@ export default function CreateSession() {
       }
       setUser(userData);
 
+       console.log("User ID:", userData.id);
+
       const userPrefs = await UserPreferencesAPI.get(userData.id);
       if (userPrefs) {
         setPreferences(userPrefs);
