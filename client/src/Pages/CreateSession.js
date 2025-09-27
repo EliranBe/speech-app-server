@@ -87,7 +87,6 @@ export default function CreateSession() {
 
   const loadUserAndCreateSession = async () => {
     try {
-      // בודק session של Supabase
       const {
         data: { session: authSession },
         error: sessionError,
@@ -123,7 +122,6 @@ export default function CreateSession() {
     }
   };
 
-  // יצירת פגישה
   const createNewSession = async (userData) => {
     setIsCreating(true);
     try {
@@ -165,7 +163,6 @@ export default function CreateSession() {
     setIsCreating(false);
   };
 
-  // העתקה ללוח
   const copyToClipboard = async (text, type) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -184,10 +181,8 @@ export default function CreateSession() {
     }
   };
 
-  // התחלת השיחה
   const startCall = async () => {
     try {
-      // בודק שוב session של Supabase
       const {
         data: { session: authSession },
         error: sessionError,
@@ -206,13 +201,6 @@ export default function CreateSession() {
         return;
       }
 
-      console.log("Using access token:", accessToken);
-      console.log(
-        "Token expires at:",
-        new Date(authSession.expires_at * 1000)
-      );
-
-      // משתמשים ב־session של הפגישה (state) בשביל meeting_id
       const resp = await fetch("/api/meetings/start", {
         method: "POST",
         headers: {
