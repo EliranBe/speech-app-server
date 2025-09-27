@@ -15,7 +15,8 @@ function generateMeetingId() {
 
 // פונקציה ליצירת סיסמה אקראית באורך 8
 function generateMeetingPassword() {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let pwd = "";
   for (let i = 0; i < 8; i++) {
     pwd += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -36,7 +37,6 @@ function generateMeetingUrl() {
 router.post("/create", async (req, res) => {
   try {
     const { host_user_id } = req.body;
-
     if (!host_user_id) {
       return res.status(400).json({ error: "host_user_id is required" });
     }
@@ -46,21 +46,24 @@ router.post("/create", async (req, res) => {
     const url_meeting = generateMeetingUrl();
     const qr_data = url_meeting;
     const created_at = new Date().toISOString();
-    const expiry = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    const expiry = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // שעה קדימה
     const is_active = true;
 
-    const { data, error } = await supabase.from("Meetings").insert([
-      {
-        host_user_id,
-        meeting_password,
-        created_at,
-        is_active,
-        meeting_id,
-        url_meeting,
-        qr_data,
-        expiry
-      }
-    ]).select();
+    const { data, error } = await supabase
+      .from("Meetings")
+      .insert([
+        {
+          host_user_id,
+          meeting_password,
+          created_at,
+          is_active,
+          meeting_id,
+          url_meeting,
+          qr_data,
+          expiry,
+        },
+      ])
+      .select();
 
     if (error) {
       console.error("Error creating meeting:", error);
@@ -75,35 +78,43 @@ router.post("/create", async (req, res) => {
 });
 
 // =======================================
-// START ROUTE - בקרות לפני התחלת שיחה + יצירת JWT + החזרת URL דינמי
+// START ROUTE
+// בקרות לפני התחלת שיחה + יצירת JWT + החזרת URL דינמי
 // =======================================
 router.post("/start", async (req, res) => {
   try {
     const { meeting_id, user_id } = req.body;
 
-    if (!user_id || !meeting_id) {
-      return res.status(400).json({ error: "user_id and meeting_id are required" });
+    if (!meeting_id || !user_id) {
+      return res
+        .status(400)
+        .json({ error: "meeting_id and user_id are required" });
     }
 
-    // 🔹 בדיקת session תקף ב־Supabase
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-    console.log("Session check:", session, sessionError);
+    // בדיקת session תקף ב־Supabase
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
 
     if (sessionError || !session) {
       console.error("Session expired or not available", sessionError);
-      return res.status(401).json({ error: "Session expired or not available" });
+      return res
+        .status(401)
+        .json({ error: "Session expired or not available" });
     }
 
-    // בדיקה אם user_id מה־session תואם ל־user_id שב־body
     if (session.user.id !== user_id) {
-      return res.status(403).json({ error: "Session user_id does not match request user_id" });
+      return res
+        .status(403)
+        .json({ error: "Session user_id does not match request user_id" });
     }
 
-    // 🔹 בדיקה שה־Authorization header קיים ותקף
     const authHeader = req.headers["authorization"];
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ error: "Missing or invalid Authorization header" });
+      return res
+        .status(401)
+        .json({ error: "Missing or invalid Authorization header" });
     }
 
     const token = authHeader.split(" ")[1];
@@ -118,7 +129,6 @@ router.post("/start", async (req, res) => {
       return res.status(403).json({ error: "Token does not match user_id" });
     }
 
-    // 🔹 בדיקה על user_preferences
     const { data: prefs, error: prefsErr } = await supabase
       .from("user_preferences")
       .select("native_language,gender,display_name")
@@ -127,7 +137,9 @@ router.post("/start", async (req, res) => {
 
     if (prefsErr) {
       console.error("Supabase error (user_preferences):", prefsErr);
-      return res.status(500).json({ error: "Database error checking user preferences" });
+      return res
+        .status(500)
+        .json({ error: "Database error checking user preferences" });
     }
     if (!prefs) {
       return res.status(400).json({ error: "User preferences not found" });
@@ -136,11 +148,12 @@ router.post("/start", async (req, res) => {
     const requiredFields = ["native_language", "gender", "display_name"];
     for (const f of requiredFields) {
       if (!prefs[f] || String(prefs[f]).trim() === "") {
-        return res.status(400).json({ error: `User preference '${f}' is missing or empty` });
+        return res
+          .status(400)
+          .json({ error: `User preference '${f}' is missing or empty` });
       }
     }
 
-    // 🔹 בדיקה שיש רשומת פגישה עבור meeting_id
     const { data: meetingRow, error: meetingErr } = await supabase
       .from("Meetings")
       .select("*")
@@ -149,26 +162,29 @@ router.post("/start", async (req, res) => {
 
     if (meetingErr) {
       console.error("Supabase error (Meetings):", meetingErr);
-      return res.status(500).json({ error: "Database error checking meeting" });
+      return res
+        .status(500)
+        .json({ error: "Database error checking meeting" });
     }
     if (!meetingRow) {
       return res.status(404).json({ error: "Meeting not found" });
     }
 
-    // 🔹 בדיקה שה־host_user_id תואם ל־user_id
     if (meetingRow.host_user_id !== user_id) {
-      return res.status(403).json({ error: "User is not the host of this meeting" });
+      return res
+        .status(403)
+        .json({ error: "User is not the host of this meeting" });
     }
 
-    // 🔹 בדיקה ש־is_active = true
     if (!meetingRow.is_active) {
       return res.status(400).json({ error: "Meeting is not active" });
     }
 
-    // === יצירת JWT ייחודי ===
     if (!process.env.JWT_SECRET) {
-      console.error("JWT_SECRET not configured in environment");
-      return res.status(500).json({ error: "Server JWT configuration error" });
+      console.error("JWT_SECRET not configured");
+      return res
+        .status(500)
+        .json({ error: "Server JWT configuration error" });
     }
 
     const payload = {
@@ -177,21 +193,25 @@ router.post("/start", async (req, res) => {
       native_language: prefs.native_language,
       gender: prefs.gender,
       meeting_id: meetingRow.meeting_id,
-      meeting_password: meetingRow.meeting_password
+      meeting_password: meetingRow.meeting_password,
     };
 
-    const jti = (typeof crypto.randomUUID === "function")
-      ? crypto.randomUUID()
-      : crypto.randomBytes(16).toString("hex");
+    const jti =
+      typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : crypto.randomBytes(16).toString("hex");
 
-    const meetingToken = jwt.sign(
-      { ...payload, jti },
-      process.env.JWT_SECRET,
-      { algorithm: "HS256", expiresIn: "1h" }
-    );
+    const meetingToken = jwt.sign(payload, process.env.JWT_SECRET, {
+      algorithm: "HS256",
+      expiresIn: "1h",
+    });
 
-    const CALL_BASE_URL = process.env.CALL_BASE_URL || "https://speech-app-server.onrender.com/call.html";
-    const redirectUrl = `${CALL_BASE_URL}?userToken=${encodeURIComponent(meetingToken)}`;
+    const CALL_BASE_URL =
+      process.env.CALL_BASE_URL ||
+      "https://speech-app-server.onrender.com/call.html";
+    const redirectUrl = `${CALL_BASE_URL}?userToken=${encodeURIComponent(
+      meetingToken
+    )}`;
 
     return res.status(200).json({ url: redirectUrl });
   } catch (err) {
@@ -208,27 +228,41 @@ router.post("/join", async (req, res) => {
     const { meeting_id, user_id } = req.body;
 
     if (!meeting_id || !user_id) {
-      return res.status(400).json({ error: "meeting_id and user_id are required" });
+      return res
+        .status(400)
+        .json({ error: "meeting_id and user_id are required" });
     }
 
-    const { data: existing } = await supabase
+    const { data: existing, error: existingErr } = await supabase
       .from("Participants")
       .select()
       .eq("meeting_id", meeting_id)
       .eq("user_id", user_id)
       .single();
 
-    if (existing) {
-      return res.status(200).json({ participant: existing, message: "Already joined" });
+    if (existingErr) {
+      console.error("Supabase error checking participant:", existingErr);
+      return res
+        .status(500)
+        .json({ error: "Database error checking participant" });
     }
 
-    const { data, error } = await supabase.from("Participants").insert([
-      {
-        meeting_id,
-        user_id,
-        joined_at: new Date().toISOString()
-      }
-    ]).select();
+    if (existing) {
+      return res
+        .status(200)
+        .json({ participant: existing, message: "Already joined" });
+    }
+
+    const { data, error } = await supabase
+      .from("Participants")
+      .insert([
+        {
+          meeting_id,
+          user_id,
+          joined_at: new Date().toISOString(),
+        },
+      ])
+      .select();
 
     if (error) {
       console.error("Error joining meeting:", error);
