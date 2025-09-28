@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   ArrowLeft,
   QrCode,
@@ -43,6 +43,7 @@ const BrandedLoader = ({ text }) => (
 );
 
 export default function CreateSession() {
+  const isMounted = useRef(true);
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState(null);
@@ -55,10 +56,8 @@ export default function CreateSession() {
   const [fadeIn, setFadeIn] = useState(false);
 
   useEffect(() => {
-    let isMounted = true;
-
     const initialize = async () => {
-        if (isMounted) {
+        if (isMounted.current) {
             await loadUserAndCreateSession();
         }
     };
@@ -66,11 +65,11 @@ export default function CreateSession() {
     initialize();
 
     const timeout = setTimeout(() => {
-        if (isMounted) setFadeIn(true);
+        if (isMounted.current) setFadeIn(true);
     }, 50);
 
     return () => {
-        isMounted = false;
+        isMounted.current = false;
         clearTimeout(timeout);
     };
 }, []);
@@ -96,7 +95,7 @@ alert("Session expired, please log in again");
         return;
       }
 
-      if (!isMounted) return;
+      if (!isMounted.current) return;
 
       setUser(userData);
 
