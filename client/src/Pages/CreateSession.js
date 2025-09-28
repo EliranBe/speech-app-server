@@ -117,6 +117,13 @@ alert("Session expired, please log in again");
   const createNewSession = async (userData, accessToken) => {
     setIsCreating(true);
     try {
+      const { data: { session: authSession }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !authSession?.user) {
+      console.error("Error fetching session:", sessionError);
+      setIsCreating(false);
+      return;
+    }
+      
       const resp = await fetch("/api/meetings/create", {
         method: "POST",
         headers: {
@@ -124,7 +131,7 @@ alert("Session expired, please log in again");
           Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
-          host_user_id: userData.id,
+          host_user_id: authSession.user.id,
         }),
       });
 
