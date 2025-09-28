@@ -42,31 +42,6 @@ const BrandedLoader = ({ text }) => (
   </div>
 );
 
-// פונקציות עזר
-function generateMeetingId() {
-  let id = "";
-  while (id.length < 20) {
-    id += Math.floor(Math.random() * 10);
-  }
-  return id;
-}
-
-function generateMeetingPassword() {
-  const chars =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  let pwd = "";
-  for (let i = 0; i < 8; i++) {
-    pwd += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return pwd;
-}
-
-function generateMeetingUrl() {
-  const randomString = Math.random().toString(36).substring(2, 12);
-  const BASE_URL = process.env.BASE_URL || "http://Verbo.io";
-  return `${BASE_URL}/Call?sessionId=${randomString}`;
-}
-
 export default function CreateSession() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -80,10 +55,25 @@ export default function CreateSession() {
   const [fadeIn, setFadeIn] = useState(false);
 
   useEffect(() => {
-    loadUserAndCreateSession();
-    const timeout = setTimeout(() => setFadeIn(true), 50);
-    return () => clearTimeout(timeout);
-  }, []);
+    let isMounted = true;
+
+    const initialize = async () => {
+        if (isMounted) {
+            await loadUserAndCreateSession();
+        }
+    };
+
+    initialize();
+
+    const timeout = setTimeout(() => {
+        if (isMounted) setFadeIn(true);
+    }, 50);
+
+    return () => {
+        isMounted = false;
+        clearTimeout(timeout);
+    };
+}, []);
 
   const loadUserAndCreateSession = async () => {
     try {
@@ -92,18 +82,21 @@ export default function CreateSession() {
         error: sessionError,
       } = await supabase.auth.getSession();
 
-      if (sessionError || !authSession) {
-        console.error("Session expired or not available", sessionError);
-        navigate("/login");
-        return;
-      }
+      if (sessionError || !authSession?.user) {
+alert("Session expired, please log in again");
+    navigate("/login");
+    return;
+}
 
       const userData = authSession.user;
       if (!userData) {
+        alert("User data not available. Please log in again.");
         console.error("No user data in session");
         navigate("/login");
         return;
       }
+
+      if (!isMounted) return;
 
       setUser(userData);
 
@@ -115,46 +108,42 @@ export default function CreateSession() {
         return;
       }
 
-      await createNewSession(userData);
+      await createNewSession(userData, authSession.access_token);
     } catch (error) {
       console.error("Error loading user:", error);
       navigate("/login");
     }
   };
 
-  const createNewSession = async (userData) => {
+  const createNewSession = async (userData, accessToken) => {
     setIsCreating(true);
     try {
-      const meetingUrl = generateMeetingUrl();
+      const resp = await fetch("/api/meetings/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          host_user_id: userData.id,
+        }),
+      });
 
-      const { data: newSession, error } = await supabase
-        .from("Meetings")
-        .insert([
-          {
-            host_user_id: userData.id,
-            meeting_id: generateMeetingId(),
-            meeting_password: generateMeetingPassword(),
-            url_meeting: meetingUrl,
-            qr_data: meetingUrl,
-            created_at: new Date().toISOString(),
-            is_active: true,
-          },
-        ])
-        .select()
-        .single();
+      const data = await resp.json();
 
-      if (error) {
-        console.error("Error creating meeting:", error);
+      if (!resp.ok) {
+        console.error("Error creating meeting:", data);
         setSession(null);
         setIsCreating(false);
         return;
       }
 
+      const meeting = data.meeting;
       setSession({
-        ...newSession,
-        session_url: newSession.url_meeting,
-        qr_data: newSession.qr_data,
-        session_code: newSession.meeting_password,
+        ...meeting,
+        session_url: meeting.url_meeting,
+        qr_data: meeting.qr_data,
+        session_code: meeting.meeting_password,
       });
     } catch (error) {
       console.error("Error creating session:", error);
@@ -188,18 +177,26 @@ export default function CreateSession() {
         error: sessionError,
       } = await supabase.auth.getSession();
 
-      if (sessionError || !authSession) {
+      if (sessionError || !authSession?.user) {
+alert("Session expired, please log in again");
         console.error("Session expired or not available", sessionError);
-        navigate("/login");
-        return;
-      }
+    navigate("/login");
+    return;
+}
 
       const accessToken = authSession.access_token;
       if (!accessToken) {
+        alert("Access token missing. Please log in again.");
         console.error("Access token missing");
         navigate("/login");
         return;
       }
+
+      if (!session?.meeting_id) {
+    alert("Session not available");
+        console.error("Session not available");
+    return;
+}
 
       const resp = await fetch("/api/meetings/start", {
         method: "POST",
