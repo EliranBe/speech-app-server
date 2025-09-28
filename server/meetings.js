@@ -27,7 +27,7 @@ function generateMeetingPassword() {
 // פונקציה ליצירת URL אקראי לפגישה
 function generateMeetingUrl() {
   const randomString = crypto.randomBytes(8).toString("hex");
-  const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
+  const BASE_URL = process.env.BASE_URL ||  "http://Verbo.io";
   return `${BASE_URL}/Call?sessionId=${randomString}`;
 }
 
@@ -91,44 +91,32 @@ router.post("/start", async (req, res) => {
         .json({ error: "meeting_id and user_id are required" });
     }
 
-    // בדיקת session תקף ב־Supabase
-    const {
-      data: { session },
-      error: sessionError,
-    } = await supabase.auth.getSession();
+// בדיקת Access Token מהלקוח
+const authHeader = req.headers["authorization"];
+if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  return res
+    .status(401)
+    .json({ error: "Missing or invalid Authorization header" });
+}
 
-    if (sessionError || !session) {
-      console.error("Session expired or not available", sessionError);
-      return res
-        .status(401)
-        .json({ error: "Session expired or not available" });
-    }
+const accessToken = authHeader.split(" ")[1];
 
-    if (session.user.id !== user_id) {
-      return res
-        .status(403)
-        .json({ error: "Session user_id does not match request user_id" });
-    }
+// אימות מול Supabase
+let decoded;
+try {
+  decoded = jwt.verify(accessToken, process.env.SUPABASE_JWT_SECRET); 
+} catch (err) {
+  console.error("JWT verification failed:", err);
+  return res.status(401).json({ error: "Invalid or expired access token" });
+}
 
-    const authHeader = req.headers["authorization"];
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res
-        .status(401)
-        .json({ error: "Missing or invalid Authorization header" });
-    }
-
-    const token = authHeader.split(" ")[1];
-    let decoded;
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET);
-    } catch (err) {
-      return res.status(401).json({ error: "Invalid or expired token" });
-    }
-
-    if (decoded.user_id !== user_id) {
-      return res.status(403).json({ error: "Token does not match user_id" });
-    }
-
+if (decoded.sub !== user_id) {
+  return res
+    .status(403)
+    .json({ error: "Token does not match user_id" });
+console.log(decoded);
+}
+   
     const { data: prefs, error: prefsErr } = await supabase
       .from("user_preferences")
       .select("native_language,gender,display_name")
@@ -180,8 +168,8 @@ router.post("/start", async (req, res) => {
       return res.status(400).json({ error: "Meeting is not active" });
     }
 
-    if (!process.env.JWT_SECRET) {
-      console.error("JWT_SECRET not configured");
+    if (!process.env.SUPABASE_JWT_SECRET) {
+      console.error("SUPABASE_JWT_SECRET not configured");
       return res
         .status(500)
         .json({ error: "Server JWT configuration error" });
