@@ -2,7 +2,38 @@ const express = require("express");
 const router = express.Router();
 const { supabase } = require("../client/src/utils/supabaseClient");
 const crypto = require("crypto");
-const jwt = require("jsonwebtoken");
+
+const { jwtVerify } = require("jose");
+const { createRemoteJWKSet } = require("jose/jwks/remote");
+
+// JWKS URL של Supabase
+const supabaseProjectUrl = process.env.REACT_APP_SUPABASE_URL;
+const jwksUrl = `${supabaseProjectUrl}/auth/v1/.well-known/jwks.json`;
+
+const JWKS = createRemoteJWKSet(new URL(jwksUrl));
+
+const { SignJWT } = require("jose");
+
+async function createMeetingToken(payload) {
+  const secret = new TextEncoder().encode(process.env.JWT_SECRET); // מפתח סימטרי
+  return await new SignJWT(payload)
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime("1h")
+    .sign(secret);
+}
+
+async function verifyAccessToken(accessToken) {
+  try {
+    const { payload } = await jwtVerify(accessToken, JWKS, {
+      issuer: `${supabaseProjectUrl}/auth/v1`,
+    });
+    return payload; // פה נמצא ה־JWT payload
+  } catch (err) {
+    console.error("JWT verification failed:", err);
+    throw new Error("Invalid or expired access token");
+  }
+}
 
 // פונקציה ליצירת מזהה פגישה בן 20 ספרות
 function generateMeetingId() {
@@ -91,31 +122,25 @@ router.post("/start", async (req, res) => {
         .json({ error: "meeting_id and user_id are required" });
     }
 
-// בדיקת Access Token מהלקוח
-const authHeader = req.headers["authorization"];
-if (!authHeader || !authHeader.startsWith("Bearer ")) {
-  return res
-    .status(401)
-    .json({ error: "Missing or invalid Authorization header" });
-}
+    const authHeader = req.headers["authorization"];
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Missing or invalid Authorization header" });
+    }
+    const accessToken = authHeader.split(" ")[1];
 
-const accessToken = authHeader.split(" ")[1];
+    // אימות חדש עם jose + JWKS
+    let decoded;
+    try {
+      decoded = await verifyAccessToken(accessToken);
+    } catch (err) {
+      return res.status(401).json({ error: err.message });
+    }
 
-// אימות מול Supabase
-let decoded;
-try {
-  decoded = jwt.verify(accessToken, process.env.SUPABASE_JWT_SECRET); 
-} catch (err) {
-  console.error("JWT verification failed:", err);
-  return res.status(401).json({ error: "Invalid or expired access token" });
-}
+    if (decoded.sub !== user_id) {
+      return res.status(403).json({ error: "Token does not match user_id" });
+    }
 
-if (decoded.sub !== user_id) {
-  return res
-    .status(403)
-    .json({ error: "Token does not match user_id" });
-console.log(decoded);
-}
+    console.log("JWT verified:", decoded);
    
     const { data: prefs, error: prefsErr } = await supabase
       .from("user_preferences")
@@ -168,13 +193,6 @@ console.log(decoded);
       return res.status(400).json({ error: "Meeting is not active" });
     }
 
-    if (!process.env.SUPABASE_JWT_SECRET) {
-      console.error("SUPABASE_JWT_SECRET not configured");
-      return res
-        .status(500)
-        .json({ error: "Server JWT configuration error" });
-    }
-
     const payload = {
       user_id,
       display_name: prefs.display_name,
@@ -189,10 +207,7 @@ console.log(decoded);
         ? crypto.randomUUID()
         : crypto.randomBytes(16).toString("hex");
 
-    const meetingToken = jwt.sign(payload, process.env.JWT_SECRET, {
-      algorithm: "HS256",
-      expiresIn: "1h",
-    });
+    const meetingToken = await createMeetingToken(payload);
 
     const CALL_BASE_URL =
       process.env.CALL_BASE_URL ||
