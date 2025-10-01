@@ -100,12 +100,12 @@ router.post("/create", async (req, res) => {
 // =======================================
 router.post("/start", async (req, res) => {
   try {
-    const { meeting_id, user_id } = req.body;
+    const { meeting_id } = req.body;
 
-    if (!meeting_id || !user_id) {
+    if (!meeting_id ) {
       return res
         .status(400)
-        .json({ error: "meeting_id and user_id are required" });
+        .json({ error: "meeting_id is required" });
     }
 
     const authHeader = req.headers["authorization"];
@@ -121,9 +121,7 @@ router.post("/start", async (req, res) => {
       return res.status(401).json({ error: err.message });
     }
 
-    if (decoded.id !== user_id) {
-      return res.status(403).json({ error: "Token does not match user_id" });
-    }
+    const user_id = decoded.id;
 
     console.log("JWT verified:", decoded);
    
