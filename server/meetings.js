@@ -124,11 +124,12 @@ router.post("/start", async (req, res) => {
     const user_id = decoded.id;
 
     console.log("JWT verified:", decoded);
-   
+    
+   await supabase.auth.setAuth(accessToken);
+
     const { data: prefs, error: prefsErr } = await supabase
       .from("user_preferences")
       .select("native_language,gender,display_name")
-      .eq("user_id", user_id)
       .maybeSingle();
 
     if (prefsErr) {
