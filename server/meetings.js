@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { supabase } = require("../client/src/utils/supabaseClient");
 const crypto = require("crypto");
+const { SignJWT } = require("jose");
 
 async function createMeetingToken(payload) {
   const secret = new TextEncoder().encode(process.env.JWT_SECRET); // מפתח סימטרי
