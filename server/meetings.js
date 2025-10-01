@@ -3,17 +3,6 @@ const router = express.Router();
 const { supabase } = require("../client/src/utils/supabaseClient");
 const crypto = require("crypto");
 
-const { jwtVerify } = require("jose");
-const { createRemoteJWKSet } = require("jose/jwks/remote");
-
-// JWKS URL של Supabase
-const supabaseProjectUrl = process.env.REACT_APP_SUPABASE_URL;
-const jwksUrl = `${supabaseProjectUrl}/auth/v1/.well-known/jwks.json`;
-
-const JWKS = createRemoteJWKSet(new URL(jwksUrl));
-
-const { SignJWT } = require("jose");
-
 async function createMeetingToken(payload) {
   const secret = new TextEncoder().encode(process.env.JWT_SECRET); // מפתח סימטרי
   return await new SignJWT(payload)
@@ -24,15 +13,12 @@ async function createMeetingToken(payload) {
 }
 
 async function verifyAccessToken(accessToken) {
-  try {
-    const { payload } = await jwtVerify(accessToken, JWKS, {
-      issuer: `${supabaseProjectUrl}/auth/v1`,
-    });
-    return payload; // פה נמצא ה־JWT payload
-  } catch (err) {
-    console.error("JWT verification failed:", err);
+  const { data, error } = await supabase.auth.getUser(accessToken);
+  if (error) {
+    console.error("JWT verification failed:", error);
     throw new Error("Invalid or expired access token");
   }
+  return data.user;
 }
 
 // פונקציה ליצירת מזהה פגישה בן 20 ספרות
@@ -128,7 +114,6 @@ router.post("/start", async (req, res) => {
     }
     const accessToken = authHeader.split(" ")[1];
 
-    // אימות חדש עם jose + JWKS
     let decoded;
     try {
       decoded = await verifyAccessToken(accessToken);
@@ -136,7 +121,7 @@ router.post("/start", async (req, res) => {
       return res.status(401).json({ error: err.message });
     }
 
-    if (decoded.sub !== user_id) {
+    if (decoded.id !== user_id) {
       return res.status(403).json({ error: "Token does not match user_id" });
     }
 
