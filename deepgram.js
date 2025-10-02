@@ -1,10 +1,9 @@
 const WebSocket = require('ws');
 const { createClient, LiveTranscriptionEvents } = require('@deepgram/sdk');
 const express = require('express'); // אם צריך app
-
 const { translateText } = require('./azure-translator'); // שימוש בפונקציית התרגום
-
 const { synthesizeTextToBase64 } = require('./google-tts'); // שימוש בפונקציית הקולית
+const { jwtVerify } = require("jose");
 
 module.exports = function startWebSocketServer(server, app) {
   const wss = new WebSocket.Server({ server }); // server מגיע מ-index.js
@@ -52,8 +51,35 @@ if (ws && ws.readyState === WebSocket.OPEN) {
   ws.send(JSON.stringify(data));
 }
 
+function mapNativeLanguageToDeepgram(nativeLanguage) {
+  const map = {
+    "Australia (English)": "en-AU",
+    "Belgium (Dutch)": "nl",
+    "Brazil (Portuguese)": "pt-BR",
+    "Denmark (Danish)": "da-DK",
+    "France (French)": "fr-CA",
+    "Germany (German)": "de",
+    "India (English)": "en-IN",
+    "Indonesia (Indonesian)": "id",
+    "Italy (Italian)": "it",
+    "Japan (Japanese)": "multi",
+    "Netherlands (Dutch)": "nl",
+    "Norway (Norwegian)": "no",
+    "Portugal (Portuguese)": "pt-PT",
+    "Russia (Russian)": "multi",
+    "Spain (Spanish)": "es",
+    "Sweden (Swedish)": "sv-SE",
+    "Turkey (Turkish)": "tr",
+    "UK (English)": "en-GB",
+    "USA (English)": "en-US",
+    "USA (Spanish)": "es"
+  };
+  return map[nativeLanguage] || "multi"; // אם לא נמצא, ישמש "multi"
+}
+
   // כאן נגדיר פעם אחת את שפת המקור ושפת היעד
-const sourceLang = "en";  // השפה בה אתה מדבר
+const sourceLang = mapNativeLanguageToDeepgram(ws.native_language || "");
+
 const targetLang = "ru";  // השפה ל-TTS ותרגום
 
     // נתרגם את התמלול 
@@ -124,45 +150,79 @@ if (translated) {
     return { deepgram, keepAlive };
   };
     
-  wss.on('connection', (ws, req) => {
-    console.log("🔗 Client connected to WebSocket");
+wss.on('connection', async (ws, req) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
-ws.clientId = url.searchParams.get("clientId");
-console.log("🔗 Client connected:", ws.clientId);
-  let lastChunkTime = null;
-const getLastChunkTime = () => lastChunkTime;
-      let { deepgram, keepAlive } = setupDeepgram(ws, getLastChunkTime);
+    const token = url.searchParams.get("token");
+
+    if (!token) {
+        console.error("❌ Missing token, closing WS");
+        ws.close();
+        return;
+    }
+
+    try {
+        const { payload: decoded } = await jwtVerify(
+            token,
+            new TextEncoder().encode(process.env.JWT_SECRET)
+        );
+
+        ws.user_id = decoded.user_id;
+        ws.display_name = decoded.display_name;
+        ws.native_language = decoded.native_language;
+        ws.gender = decoded.gender;
+        ws.meeting_id = decoded.meeting_id;
+
+        console.log("👤 Connected user:", {
+            user_id: ws.user_id,
+            display_name: ws.display_name,
+            native_language: ws.native_language,
+            gender: ws.gender,
+            meeting_id: ws.meeting_id,
+        });
+
+    } catch (err) {
+        console.error("❌ JWT verification failed:", err);
+        ws.close();
+        return;
+    }
+
+      ws.clientId = url.searchParams.get("clientId");
+    console.log("🔗 Client connected:", ws.clientId);
+
+    let lastChunkTime = null;
+    const getLastChunkTime = () => lastChunkTime;
+    let { deepgram, keepAlive } = setupDeepgram(ws, getLastChunkTime);
 
     ws.on('message', (message) => {
-      console.log('Received audio chunk, size:', message.length);      
-      if (deepgram.getReadyState() === 1) { // OPEN
-        lastChunkTime = Date.now();
-        console.log("✅ WebSocket sent data to deepgram");
-        deepgram.send(message);
-      } else if (deepgram.getReadyState() >= 2) { // CLOSING / CLOSED
-        console.log("⚠️ WebSocket couldn't be sent data to deepgram");
-        console.log("⚠️ WebSocket retrying connection to deepgram");
-        deepgram.finish();
-        deepgram.removeAllListeners();
-  if (keepAlive) {
-    clearInterval(keepAlive);
-    keepAlive = null;
-  }
-  ({ deepgram, keepAlive } = setupDeepgram(ws, getLastChunkTime));  // ✅ עדכון גם של keepAlive
-} else {
-        console.log("⚠️ WebSocket couldn't be sent data to deepgram");
-      } 
+        console.log('Received audio chunk, size:', message.length);      
+        if (deepgram.getReadyState() === 1) { // OPEN
+            lastChunkTime = Date.now();
+            console.log("✅ WebSocket sent data to deepgram");
+            deepgram.send(message);
+        } else if (deepgram.getReadyState() >= 2) { // CLOSING / CLOSED
+            console.log("⚠️ WebSocket couldn't be sent data to deepgram");
+            console.log("⚠️ WebSocket retrying connection to deepgram");
+            deepgram.finish();
+            deepgram.removeAllListeners();
+            if (keepAlive) {
+                clearInterval(keepAlive);
+                keepAlive = null;
+            }
+            ({ deepgram, keepAlive } = setupDeepgram(ws, getLastChunkTime));
+        } else {
+            console.log("⚠️ WebSocket couldn't be sent data to deepgram");
+        } 
     });
 
     ws.on('close', () => {
-      console.log("❌ Client disconnected from WebSocket");
-    if (keepAlive) {
-    clearInterval(keepAlive);
-    keepAlive = null;
-  }
-      deepgram.finish();
-      deepgram.removeAllListeners();
-      deepgram = null;
-         });
-  });
+        console.log("❌ Client disconnected from WebSocket");
+        if (keepAlive) {
+            clearInterval(keepAlive);
+            keepAlive = null;
+        }
+        deepgram.finish();
+        deepgram.removeAllListeners();
+        deepgram = null;
+    });
+});
 };
