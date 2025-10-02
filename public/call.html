@@ -367,10 +367,12 @@ async function startMicAndTranscription() {
     return; // או אפשר לעצור את הפונקציה כדי למנוע כפילויות
   }
 
-    const userIdForSocket = userPayload?.user_id || 'unknown';
-const meetingIdForSocket = userPayload?.meeting_id || CHANNEL_NAME;
-const params = `user_id=${encodeURIComponent(userIdForSocket)}&meeting_id=${encodeURIComponent(meetingIdForSocket)}`;
-socket = new WebSocket(`wss://${window.location.host}?${params}`);
+    if (!userToken) {
+  console.error("❌ Missing userToken, cannot connect to WS");
+  return;
+}
+
+socket = new WebSocket(`wss://${window.location.host}?token=${userToken}`);
 
   socket.addEventListener("open", async () => {
     console.log("✅ connected to server");
