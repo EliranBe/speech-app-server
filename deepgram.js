@@ -52,7 +52,9 @@ module.exports = function startWebSocketServer(server, app) {
   }
 
   function getTargetLang(otherUsersLangs) {
-    return otherUsersLangs.length > 0 ? mapNativeLanguageToAzure(otherUsersLangs[0]);
+return otherUsersLangs.length > 0
+    ? mapNativeLanguageToAzure(otherUsersLangs[0])
+    : null;
   }
 
   const setupDeepgram = (ws, getLastChunkTime) => {
