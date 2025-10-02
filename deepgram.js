@@ -57,7 +57,7 @@ function mapNativeLanguageToDeepgram(nativeLanguage) {
     "Belgium (Dutch)": "nl",
     "Brazil (Portuguese)": "pt-BR",
     "Denmark (Danish)": "da-DK",
-    "France (French)": "fr-CA",
+    "France (French)": "fr",
     "Germany (German)": "de",
     "India (English)": "en-IN",
     "Indonesia (Indonesian)": "id",
