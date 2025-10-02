@@ -118,7 +118,10 @@ return otherUsersLangs.length > 0
             if (translated) {
               try {
                 const textForTTS = translated?.[targetLang] || "";
-                const audioBase64 = await synthesizeTextToBase64(textForTTS);
+const audioBase64 = await synthesizeTextToBase64(textForTTS, {
+  native_language: ws.native_language,
+  gender: ws.gender
+});
 
                 wss.clients.forEach(client => {
                   if (client.readyState === WebSocket.OPEN && client.clientId !== ws.clientId) {
