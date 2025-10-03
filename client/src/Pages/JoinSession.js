@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 import {
+  Camera,
   ArrowLeft,
   Loader2,
   ScanLine,
   AlertCircle
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import BrandedLoader from '../Components/BrandedLoader';
 import QRCode from "../Components/ui/QRCode";
 import { supabase } from "../utils/supabaseClient";
 import logo from "../images/logo-verbo.png";
@@ -23,20 +25,25 @@ export default function JoinSession() {
   const [fadeIn, setFadeIn] = useState(false);
 
   useEffect(() => {
-    if (!location?.search) return;
-
+    if (!location) return;
     const params = new URLSearchParams(location.search);
-    setSessionUrl(params.get("sessionUrl") || "");
-    setMeetingId(params.get("meetingId") || "");
-    setSessionCode(params.get("sessionCode") || "");
+    const sessionUrlParam = params.get("sessionUrl");
+    const meetingIdParam = params.get("meetingId");
+    const sessionCodeParam = params.get("sessionCode");
+
+    if (sessionUrlParam) setSessionUrl(sessionUrlParam);
+    if (meetingIdParam) setMeetingId(meetingIdParam);
+    if (sessionCodeParam) setSessionCode(sessionCodeParam);
 
     setTimeout(() => setFadeIn(true), 50);
-  }, [location.search]);
+  }, [location]);
 
   const handleScanSuccess = (scannedData) => {
     setIsScanning(false);
     if (scannedData === "detected_pattern") {
-      setError("QR code detected! Please enter the session details manually below.");
+      setError(
+        "QR code detected! Please paste the Meeting details manually below."
+      );
     } else if (scannedData) {
       try {
         const url = new URL(scannedData);
@@ -49,56 +56,23 @@ export default function JoinSession() {
 
   const joinWithCredentials = async () => {
     setError("");
-    if (!meetingId.trim() && !sessionUrl.trim()) {
-      setError("Please enter either a Meeting URL or both Meeting ID and Meeting Password.");
+    if (!sessionUrl.trim() && (!meetingId.trim() || !sessionCode.trim())) {
+      setError("Please enter a Meeting URL or both Meeting ID and Password.");
       return;
     }
 
     setIsJoining(true);
 
     try {
-      let valid = false;
-
-      // בדיקה אם יש Meeting URL
-      if (sessionUrl.trim()) {
-        const url = new URL(sessionUrl.trim());
-        const sessionId = url.searchParams.get("id");
-        if (sessionId) {
-          const { data } = await supabase
-            .from("Meetings")
-            .select("id")
-            .eq("id", sessionId)
-            .single();
-          valid = !!data;
-        }
-      }
-
-      // בדיקה אם יש Meeting ID ו־Meeting Password
-      if (meetingId.trim() && sessionCode.trim()) {
-        const { data } = await supabase
-          .from("Meetings")
-          .select("id")
-          .eq("id", meetingId.trim())
-          .eq("password", sessionCode.trim().toUpperCase())
-          .single();
-        valid = !!data;
-      }
-
-      if (!valid) {
-        setError("Meeting URL or Meeting ID/Password not valid.");
-        setIsJoining(false);
-        return;
-      }
-
       const response = await fetch(
         `${process.env.REACT_APP_API_BASE_URL || "http://localhost:3001"}/api/meetings/join`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            meeting_url: sessionUrl.trim(),
             meeting_id: meetingId.trim(),
             session_code: sessionCode.trim().toUpperCase(),
-            session_url: sessionUrl.trim()
           })
         }
       );
@@ -112,7 +86,6 @@ export default function JoinSession() {
       }
 
       window.location.href = session_url;
-
     } catch (error) {
       console.error("Error joining session:", error);
       setError("Failed to join session. Please try again.");
@@ -150,7 +123,9 @@ export default function JoinSession() {
       >
         {/* Back / Home */}
         <button
-          onClick={() => location.state?.fromLogin ? navigate("/") : navigate(-1)}
+          onClick={() =>
+            location.state?.fromLogin ? navigate("/") : navigate(-1)
+          }
           style={{
             display: "flex",
             alignItems: "center",
@@ -239,6 +214,7 @@ export default function JoinSession() {
             Scan QR Code
           </button>
 
+          {/* Manual Entry */}
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
             <input
               type="text"
@@ -277,7 +253,7 @@ export default function JoinSession() {
                 width: "100%",
                 padding: "1rem",
                 borderRadius: "20px",
-                background: "#2563eb", // צבע הכפתור של Join by URL
+                background: "#2563eb", // צבע של Join by URL
                 color: "white",
                 fontWeight: "600"
               }}
