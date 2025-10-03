@@ -220,7 +220,7 @@ export default function JoinSession() {
               type="url"
               value={sessionUrl}
               onChange={(e) => setSessionUrl(e.target.value)}
-              placeholder="Paste Meeting URL"
+              placeholder="Enter Meeting URL"
               style={{
                 padding: "1rem",
                 borderRadius: "12px",
