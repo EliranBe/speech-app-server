@@ -8,35 +8,15 @@ import {
   ShieldUser,
   KeyRound,
 } from "lucide-react";
-import { UserPreferencesAPI } from "../Entities/UserPreferencesAPI";
 import { useNavigate, useLocation } from "react-router-dom";
 import QRCode from "../Components/ui/QRCode";
 import { supabase } from "../utils/supabaseClient";
 import logo from "../images/logo-verbo.png";
 
-// Loader ממותג (כמו ב-Preferences)
 const BrandedLoader = ({ text }) => (
-  <div
-    style={{
-      height: "100vh",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      fontFamily: "'Segoe UI', sans-serif",
-    }}
-  >
+  <div style={{ height: "100vh", display: "flex", justifyContent: "center", alignItems: "center" }}>
     <div style={{ textAlign: "center" }}>
-      <div
-        style={{
-          width: "48px",
-          height: "48px",
-          border: "4px solid rgba(59,130,246,0.3)",
-          borderTop: "4px solid #3b82f6",
-          borderRadius: "50%",
-          animation: "spin 1s linear infinite",
-          margin: "0 auto 16px auto",
-        }}
-      />
+      <div style={{ width: "48px", height: "48px", border: "4px solid rgba(59,130,246,0.3)", borderTop: "4px solid #3b82f6", borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto 16px auto" }} />
       <p style={{ color: "#555" }}>{text}</p>
     </div>
   </div>
@@ -48,7 +28,7 @@ export default function CreateSession() {
   const location = useLocation();
   const [user, setUser] = useState(null);
   const [preferences, setPreferences] = useState(null);
-  const [session, setSession] = useState(null); // זה session של הפגישה
+  const [session, setSession] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
@@ -57,120 +37,72 @@ export default function CreateSession() {
 
   useEffect(() => {
     const initialize = async () => {
-        if (isMounted.current) {
-            await loadUserAndCreateSession();
-        }
+      if (isMounted.current) {
+        await loadUserAndCreateSession();
+      }
     };
-
     initialize();
-
-    const timeout = setTimeout(() => {
-        if (isMounted.current) setFadeIn(true);
-    }, 50);
-
+    const timeout = setTimeout(() => setFadeIn(true), 50);
     return () => {
-        isMounted.current = false;
-        clearTimeout(timeout);
+      isMounted.current = false;
+      clearTimeout(timeout);
     };
-}, []);
+  }, []);
 
   const loadUserAndCreateSession = async () => {
     try {
+      setIsCreating(true);
       const {
         data: { session: authSession },
         error: sessionError,
       } = await supabase.auth.getSession();
 
       if (sessionError || !authSession?.user) {
-alert("Session expired, please log in again");
-    navigate("/login");
-    return;
-}
-
-      const userData = authSession.user;
-      if (!userData) {
-        alert("User data not available. Please log in again.");
-        console.error("No user data in session");
+        alert("Session expired, please log in again");
         navigate("/login");
         return;
       }
 
-      if (!isMounted.current) return;
+      const accessToken = authSession.access_token;
 
-      setUser(userData);
+const resp = await fetch("/api/meetings/create", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${accessToken}`,
+  },
+  body: JSON.stringify({ host_user_id: authSession.user.id }),
+});
 
-      const userPrefs = await UserPreferencesAPI.get(userData.id);
-      if (userPrefs) {
-        setPreferences(userPrefs);
-      } else {
-        navigate("/preferences");
+      const data = await resp.json();
+
+      if (!resp.ok) {
+        console.error("Error creating session:", data);
+        setIsCreating(false);
         return;
       }
 
-      await createNewSession(userData, authSession.access_token);
+      setSession(data.session);
+      setUser(data.user);
+      setPreferences(data.preferences);
+      setIsCreating(false);
     } catch (error) {
       console.error("Error loading user:", error);
       navigate("/login");
     }
   };
 
-  const createNewSession = async (userData, accessToken) => {
-    setIsCreating(true);
-    try {
-      const { data: { session: authSession }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !authSession?.user) {
-      console.error("Error fetching session:", sessionError);
-      setIsCreating(false);
-      return;
-    }
-      
-      const resp = await fetch("/api/meetings/create", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          host_user_id: authSession.user.id,
-        }),
-      });
-
-      const data = await resp.json();
-
-      if (!resp.ok) {
-        console.error("Error creating meeting:", data);
-        setSession(null);
-        setIsCreating(false);
-        return;
-      }
-
-      const meeting = data.meeting;
-      setSession({
-        ...meeting,
-        session_url: meeting.url_meeting,
-        qr_data: meeting.qr_data,
-        session_code: meeting.meeting_password,
-      });
-    } catch (error) {
-      console.error("Error creating session:", error);
-      setSession(null);
-    }
-    setIsCreating(false);
-  };
-
   const copyToClipboard = async (text, type) => {
     try {
       await navigator.clipboard.writeText(text);
-      if (type === "id") {
-        setCopiedId(true);
-        setTimeout(() => setCopiedId(false), 2000);
-      } else if (type === "url") {
-        setCopiedUrl(true);
-        setTimeout(() => setCopiedUrl(false), 2000);
-      } else {
-        setCopiedCode(true);
-        setTimeout(() => setCopiedCode(false), 2000);
-      }
+      if (type === "id") setCopiedId(true);
+      else if (type === "url") setCopiedUrl(true);
+      else setCopiedCode(true);
+      setTimeout(() => {
+        setCopiedId(false);
+        setCopiedUrl(false);
+        setCopiedCode(false);
+      }, 2000);
     } catch (error) {
       console.error("Failed to copy:", error);
     }
@@ -184,25 +116,12 @@ alert("Session expired, please log in again");
       } = await supabase.auth.getSession();
 
       if (sessionError || !authSession?.user) {
-alert("Session expired, please log in again");
-        console.error("Session expired or not available", sessionError);
-    navigate("/login");
-    return;
-}
-
-      const accessToken = authSession.access_token;
-      if (!accessToken) {
-        alert("Access token missing. Please log in again.");
-        console.error("Access token missing");
+        alert("Session expired, please log in again");
         navigate("/login");
         return;
       }
 
-      if (!session?.meeting_id) {
-    alert("Session not available");
-        console.error("Session not available");
-    return;
-}
+      const accessToken = authSession.access_token;
 
       const resp = await fetch("/api/meetings/start", {
         method: "POST",
@@ -210,10 +129,7 @@ alert("Session expired, please log in again");
           "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({
-          meeting_id: session.meeting_id,
-          user_id: user.id,
-        }),
+        body: JSON.stringify({ meeting_id: session.meeting_id }),
       });
 
       const data = await resp.json();
@@ -240,33 +156,9 @@ alert("Session expired, please log in again");
   }
 
   return (
-    <div
-      style={{
-        fontFamily: "'Segoe UI', sans-serif",
-        background: "linear-gradient(135deg, #c9d6ff, #e2e2e2)",
-        minHeight: "100vh",
-        width: "100vw",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "flex-start",
-        paddingTop: "3rem",
-        overflowY: "auto",
-      }}
-    >
-      <div
-        className={`session-card ${fadeIn ? "fade-in" : ""}`}
-        style={{
-          width: "100%",
-          maxWidth: "600px",
-          padding: "2rem",
-          borderRadius: "20px",
-          background: "rgba(255,255,255,0.1)",
-          backdropFilter: "blur(12px)",
-          boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
-          transition: "opacity 0.7s",
-          opacity: fadeIn ? 1 : 0,
-        }}
-      >
+    <div style={{ fontFamily: "'Segoe UI', sans-serif", background: "linear-gradient(135deg, #c9d6ff, #e2e2e2)", minHeight: "100vh", width: "100vw", display: "flex", justifyContent: "center", alignItems: "flex-start", paddingTop: "3rem", overflowY: "auto" }}>
+      <div className={`session-card ${fadeIn ? "fade-in" : ""}`} style={{ width: "100%", maxWidth: "600px", padding: "2rem", borderRadius: "20px", background: "rgba(255,255,255,0.1)", backdropFilter: "blur(12px)", boxShadow: "0 8px 24px rgba(0,0,0,0.2)", transition: "opacity 0.7s", opacity: fadeIn ? 1 : 0 }}>
+      
         {/* Back / Home Button */}
         <button
           onClick={() =>
