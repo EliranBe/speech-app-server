@@ -5,7 +5,7 @@ const crypto = require("crypto");
 const { SignJWT } = require("jose");
 
 async function createMeetingToken(payload) {
-  const secret = new TextEncoder().encode(process.env.JWT_SECRET); // מפתח סימטרי
+  const secret = new TextEncoder().encode(process.env.JWT_SECRET);
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
@@ -22,7 +22,6 @@ async function verifyAccessToken(accessToken) {
   return data.user;
 }
 
-// פונקציה ליצירת מזהה פגישה בן 20 ספרות
 function generateMeetingId() {
   let id = "";
   while (id.length < 20) {
@@ -31,7 +30,6 @@ function generateMeetingId() {
   return id;
 }
 
-// פונקציה ליצירת סיסמה אקראית באורך 8
 function generateMeetingPassword() {
   const chars =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -42,10 +40,9 @@ function generateMeetingPassword() {
   return pwd;
 }
 
-// פונקציה ליצירת URL אקראי לפגישה
 function generateMeetingUrl() {
   const randomString = crypto.randomBytes(8).toString("hex");
-  const BASE_URL = process.env.BASE_URL ||  "http://Verbo.io";
+  const BASE_URL = process.env.BASE_URL || "http://Verbo.io";
   return `${BASE_URL}/Call?sessionId=${randomString}`;
 }
 
@@ -64,7 +61,7 @@ router.post("/create", async (req, res) => {
     const url_meeting = generateMeetingUrl();
     const qr_data = url_meeting;
     const created_at = new Date().toISOString();
-    const expiry = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // שעה קדימה
+    const expiry = new Date(Date.now() + 60 * 60 * 1000).toISOString();
     const is_active = true;
 
     const { data, error } = await supabase
@@ -97,21 +94,19 @@ router.post("/create", async (req, res) => {
 
 // =======================================
 // START ROUTE
-// בקרות לפני התחלת שיחה + יצירת JWT + החזרת URL דינמי
 // =======================================
 router.post("/start", async (req, res) => {
   try {
     const { meeting_id } = req.body;
-
-    if (!meeting_id ) {
-      return res
-        .status(400)
-        .json({ error: "meeting_id is required" });
+    if (!meeting_id) {
+      return res.status(400).json({ error: "meeting_id is required" });
     }
 
     const authHeader = req.headers["authorization"];
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ error: "Missing or invalid Authorization header" });
+      return res
+        .status(401)
+        .json({ error: "Missing or invalid Authorization header" });
     }
     const accessToken = authHeader.split(" ")[1];
 
@@ -123,9 +118,8 @@ router.post("/start", async (req, res) => {
     }
 
     const user_id = decoded.id;
-
     console.log("JWT verified:", decoded);
-    
+
     const { data: prefs, error: prefsErr } = await supabase
       .from("user_preferences")
       .select("native_language,gender,display_name")
@@ -186,11 +180,6 @@ router.post("/start", async (req, res) => {
       meeting_password: meetingRow.meeting_password,
     };
 
-    const jti =
-      typeof crypto.randomUUID === "function"
-        ? crypto.randomUUID()
-        : crypto.randomBytes(16).toString("hex");
-
     const meetingToken = await createMeetingToken(payload);
 
     const CALL_BASE_URL =
@@ -208,11 +197,11 @@ router.post("/start", async (req, res) => {
 });
 
 // =======================================
-// הצטרפות לפגישה קיימת
+// JOIN ROUTE — כולל כל 6 הבדיקות
 // =======================================
 router.post("/join", async (req, res) => {
   try {
-    const { meeting_id, user_id } = req.body;
+    const { meeting_id, user_id, meeting_password, url_meeting } = req.body;
 
     if (!meeting_id || !user_id) {
       return res
@@ -220,6 +209,96 @@ router.post("/join", async (req, res) => {
         .json({ error: "meeting_id and user_id are required" });
     }
 
+    // 1. אימות Session / משתמש
+    const authHeader = req.headers["authorization"];
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Missing or invalid Authorization header" });
+    }
+    const accessToken = authHeader.split(" ")[1];
+    let decoded;
+    try {
+      decoded = await verifyAccessToken(accessToken);
+    } catch (err) {
+      return res.status(401).json({ error: err.message });
+    }
+    if (decoded.id !== user_id) {
+      return res.status(403).json({ error: "User ID mismatch" });
+    }
+
+    // בדיקת קיום user_id בטבלת users
+    const { data: userRow, error: userErr } = await supabase
+      .from("users")
+      .select("id")
+      .eq("id", user_id)
+      .single();
+    if (userErr || !userRow) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // 2. בדיקת user_preferences ושדות חובה
+    const { data: prefs, error: prefsErr } = await supabase
+      .from("user_preferences")
+      .select("native_language,gender,display_name")
+      .eq("user_id", user_id)
+      .maybeSingle();
+    if (prefsErr || !prefs) {
+      return res.status(400).json({ error: "User preferences not found" });
+    }
+    const requiredFields = ["native_language", "gender", "display_name"];
+    for (const f of requiredFields) {
+      if (!prefs[f] || String(prefs[f]).trim() === "") {
+        return res.status(400).json({ error: `User preference '${f}' is missing or empty` });
+      }
+    }
+
+    // 3. בדיקת host_user_id בטבלת Meetings
+    const { data: meetingRow, error: meetingErr } = await supabase
+      .from("Meetings")
+      .select("*")
+      .eq("meeting_id", meeting_id)
+      .maybeSingle();
+    if (meetingErr || !meetingRow) {
+      return res.status(404).json({ error: "Meeting not found" });
+    }
+
+    if (meetingRow.host_user_id === user_id) {
+      // 5. בדיקת meeting_password + meeting_id או url_meeting
+      if (
+        (meetingRow.meeting_password !== meeting_password &&
+          meetingRow.url_meeting !== url_meeting) ||
+        (!meetingRow.meeting_password && !meetingRow.url_meeting)
+      ) {
+        return res.status(403).json({ error: "Invalid meeting credentials" });
+      }
+    } else {
+      // 4. בדיקת Participants
+      const { data: participantRow, error: participantErr } = await supabase
+        .from("Participants")
+        .select("*")
+        .eq("meeting_id", meeting_id)
+        .maybeSingle();
+      if (participantErr) {
+        return res.status(500).json({ error: "Database error checking participant" });
+      }
+      if (participantRow && participantRow.user_id && participantRow.user_id !== user_id) {
+        return res.status(403).json({ error: "User not authorized to join" });
+      }
+      // בדיקת meeting_password + meeting_id או url_meeting
+      if (
+        (meetingRow.meeting_password !== meeting_password &&
+          meetingRow.url_meeting !== url_meeting) ||
+        (!meetingRow.meeting_password && !meetingRow.url_meeting)
+      ) {
+        return res.status(403).json({ error: "Invalid meeting credentials" });
+      }
+    }
+
+    // 6. בדיקת is_active
+    if (!meetingRow.is_active) {
+      return res.status(400).json({ error: "Meeting is not active" });
+    }
+
+    // אם עבר את כל הבדיקות – יצירת הרשומה ב־Participants
     const { data: existing, error: existingErr } = await supabase
       .from("Participants")
       .select()
@@ -227,7 +306,7 @@ router.post("/join", async (req, res) => {
       .eq("user_id", user_id)
       .single();
 
-    if (existingErr) {
+    if (existingErr && existingErr.code !== "PGRST116") {
       console.error("Supabase error checking participant:", existingErr);
       return res
         .status(500)
@@ -258,7 +337,7 @@ router.post("/join", async (req, res) => {
 
     res.status(200).json({ participant: data[0] });
   } catch (err) {
-    console.error("Server error:", err);
+    console.error("Server error in /join:", err);
     return res.status(500).json({ error: "Server error" });
   }
 });
