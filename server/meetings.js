@@ -168,14 +168,20 @@ router.post("/start", async (req, res) => {
       return res.status(400).json({ error: "Meeting is not active" });
     }
 
-    const payload = {
-      user_id,
-      display_name: prefs.display_name,
-      native_language: prefs.native_language,
-      gender: prefs.gender,
-      meeting_id: meetingRow.meeting_id,
-      meeting_password: meetingRow.meeting_password,
-    };
+    const jti =
+  typeof crypto.randomUUID === "function"
+    ? crypto.randomUUID()
+    : crypto.randomBytes(16).toString("hex");
+
+const payload = {
+  user_id,
+  display_name: prefs.display_name,
+  native_language: prefs.native_language,
+  gender: prefs.gender,
+  meeting_id: meetingRow.meeting_id,
+  meeting_password: meetingRow.meeting_password,
+  jti
+};
 
     const meetingToken = await createMeetingToken(payload);
 
