@@ -61,36 +61,33 @@ export default function JoinSession() {
     const accessToken = authSession.access_token;
     const user_id = authSession.user.id;
 
-    const resp = await fetch(
-      `${process.env.REACT_APP_API_BASE_URL || "http://localhost:3001"}/api/meetings/join`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          meeting_id: meetingId.trim(),
-          user_id,
-          meeting_password: sessionCode.trim(),
-        }),
-      }
-    );
+const resp = await fetch("/api/meetings/join", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    meeting_url: sessionUrl.trim(),
+    meeting_id: meetingId.trim(),
+    session_code: sessionCode.trim().toUpperCase(),
+  }),
+});
 
-    const data = await resp.json();
+const { url, error: apiError } = await resp.json();
 
-    if (!resp.ok) {
-      setError(data?.error || "Failed to join session. Please try again.");
-      setIsJoining(false);
-      return;
-    }
+if (apiError) {
+  setError(apiError);
+  setIsJoining(false);
+  return;
+}
 
-    if (data.url) {
-      window.location.href = data.url;
-    } else {
-      setError("No URL returned from server");
-      setIsJoining(false);
-    }
+if (url) {
+  window.location.href = url;
+} else {
+  setError("No redirect URL returned from server.");
+  setIsJoining(false);
+}
+
   } catch (error) {
     console.error("Error joining session:", error);
     setError("Failed to join session. Please try again.");
@@ -137,7 +134,7 @@ export default function JoinSession() {
         }
       );
 
-      const { session_url, error: apiError } = await response.json();
+const { url, error: apiError } = await response.json();
 
       if (apiError) {
         setError(apiError);
@@ -145,7 +142,12 @@ export default function JoinSession() {
         return;
       }
 
-      window.location.href = session_url;
+if (url) {
+  window.location.href = url;
+} else {
+  setError("No redirect URL returned from server.");
+  setIsJoining(false);
+}
     } catch (error) {
       console.error("Error joining session:", error);
       setError("Failed to join session. Please try again.");
