@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from "react";
 import {
-  Camera,
   ArrowLeft,
   Loader2,
   ScanLine,
-  Link,
   AlertCircle
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
-import BrandedLoader from '../Components/BrandedLoader';
 import QRCode from "../Components/ui/QRCode";
 import { supabase } from "../utils/supabaseClient";
 import logo from "../images/logo-verbo.png";
@@ -26,98 +23,102 @@ export default function JoinSession() {
   const [fadeIn, setFadeIn] = useState(false);
 
   useEffect(() => {
-  if (!location) return;
-  const params = new URLSearchParams(location.search);
-  const sessionUrlParam = params.get("sessionUrl");
-  const meetingIdParam = params.get("meetingId");
-  const sessionCodeParam = params.get("sessionCode");
+    if (!location?.search) return;
 
-  if (sessionUrlParam) setSessionUrl(sessionUrlParam);
-  if (meetingIdParam) setMeetingId(meetingIdParam);
-  if (sessionCodeParam) setSessionCode(sessionCodeParam);
+    const params = new URLSearchParams(location.search);
+    setSessionUrl(params.get("sessionUrl") || "");
+    setMeetingId(params.get("meetingId") || "");
+    setSessionCode(params.get("sessionCode") || "");
 
-  setTimeout(() => setFadeIn(true), 50);
-}, [location]);
-  
+    setTimeout(() => setFadeIn(true), 50);
+  }, [location.search]);
+
   const handleScanSuccess = (scannedData) => {
     setIsScanning(false);
     if (scannedData === "detected_pattern") {
-      setError(
-        "QR code detected! Please enter the session details manually below."
-      );
+      setError("QR code detected! Please enter the session details manually below.");
     } else if (scannedData) {
       try {
         const url = new URL(scannedData);
         window.location.href = scannedData;
       } catch (e) {
-        setError(
-          "Invalid QR code format. Please use manual entry below."
-        );
+        setError("Invalid QR code format. Please use manual entry below.");
       }
-    }
-  };
-
-  const joinWithUrl = async () => {
-    if (!sessionUrl.trim()) {
-      setError("Please enter a valid session URL.");
-      return;
-    }
-    try {
-      const url = new URL(sessionUrl.trim());
-      const sessionId = url.searchParams.get("id");
-      if (!sessionId) {
-        setError("Invalid session URL format.");
-        return;
-      }
-      window.location.href = sessionUrl.trim();
-    } catch (error) {
-      setError("Please enter a valid HTTPS URL.");
     }
   };
 
   const joinWithCredentials = async () => {
-  if (!meetingId.trim() || !/^\d{20}$/.test(meetingId.trim())) {
-    setError("Please enter a valid 20-digit Meeting ID.");
-    return;
-  }
-  if (!sessionCode.trim() || sessionCode.trim().length !== 8) {
-    setError("Please enter a valid 8-character session code.");
-    return;
-  }
-
-  setIsJoining(true);
-  setError("");
-
-  try {
-    const response = await fetch(
-      `${process.env.REACT_APP_API_BASE_URL || "http://localhost:3001"}/api/meetings/join`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          meeting_id: meetingId.trim(),
-          session_code: sessionCode.trim().toUpperCase(),
-        })
-      }
-    );
-
-    const { session_url, error: apiError } = await response.json();
-
-    if (apiError) {
-      setError(apiError);
-      setIsJoining(false);
+    setError("");
+    if (!meetingId.trim() && !sessionUrl.trim()) {
+      setError("Please enter either a Meeting URL or both Meeting ID and Meeting Password.");
       return;
     }
 
-    // ✅ מעבר ל־Call עם JWT ב־URL
-    window.location.href = session_url;
+    setIsJoining(true);
 
-  } catch (error) {
-    console.error("Error joining session:", error);
-    setError("Failed to join session. Please try again.");
-    setIsJoining(false);
-  }
-};
+    try {
+      let valid = false;
+
+      // בדיקה אם יש Meeting URL
+      if (sessionUrl.trim()) {
+        const url = new URL(sessionUrl.trim());
+        const sessionId = url.searchParams.get("id");
+        if (sessionId) {
+          const { data } = await supabase
+            .from("Meetings")
+            .select("id")
+            .eq("id", sessionId)
+            .single();
+          valid = !!data;
+        }
+      }
+
+      // בדיקה אם יש Meeting ID ו־Meeting Password
+      if (meetingId.trim() && sessionCode.trim()) {
+        const { data } = await supabase
+          .from("Meetings")
+          .select("id")
+          .eq("id", meetingId.trim())
+          .eq("password", sessionCode.trim().toUpperCase())
+          .single();
+        valid = !!data;
+      }
+
+      if (!valid) {
+        setError("Meeting URL or Meeting ID/Password not valid.");
+        setIsJoining(false);
+        return;
+      }
+
+      const response = await fetch(
+        `${process.env.REACT_APP_API_BASE_URL || "http://localhost:3001"}/api/meetings/join`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            meeting_id: meetingId.trim(),
+            session_code: sessionCode.trim().toUpperCase(),
+            session_url: sessionUrl.trim()
+          })
+        }
+      );
+
+      const { session_url, error: apiError } = await response.json();
+
+      if (apiError) {
+        setError(apiError);
+        setIsJoining(false);
+        return;
+      }
+
+      window.location.href = session_url;
+
+    } catch (error) {
+      console.error("Error joining session:", error);
+      setError("Failed to join session. Please try again.");
+      setIsJoining(false);
+    }
+  };
 
   return (
     <div
@@ -148,50 +149,44 @@ export default function JoinSession() {
         }}
       >
         {/* Back / Home */}
-       <button
-  onClick={() =>
-    location.state?.fromLogin ? navigate("/") : navigate(-1)
-  }
-  style={{
-    display: "flex",
-    alignItems: "center",
-    marginBottom: "1rem",
-    background: "transparent",
-    border: "none",
-    cursor: "pointer",
-    color: "#3b82f6",
-    fontWeight: "600"
-  }}
->
-  <ArrowLeft size={20} style={{ marginRight: "8px" }} />
-  {location.state?.fromLogin ? "Home" : "Back"}
-</button>
+        <button
+          onClick={() => location.state?.fromLogin ? navigate("/") : navigate(-1)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            marginBottom: "1rem",
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+            color: "#3b82f6",
+            fontWeight: "600"
+          }}
+        >
+          <ArrowLeft size={20} style={{ marginRight: "8px" }} />
+          {location.state?.fromLogin ? "Home" : "Back"}
+        </button>
 
-{/* --- שילוב הלוגו --- */}
-<div style={{ display: "flex", justifyContent: "center", marginBottom: "1rem" }}>
-  <img
-    src={logo}
-    alt="Verbo Logo"
-    style={{
-      width: "140px",
-      height: "140px",
-      objectFit: "contain"
-    }}
-    onClick={() => navigate("/")}
-  />
-</div>
+        {/* Logo */}
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: "1rem" }}>
+          <img
+            src={logo}
+            alt="Verbo Logo"
+            style={{ width: "140px", height: "140px", objectFit: "contain" }}
+            onClick={() => navigate("/")}
+          />
+        </div>
 
-<h1
-  style={{
-    fontSize: "1.8rem",
-    fontWeight: "700",
-    color: "#3b82f6",
-    marginBottom: "1rem",
-    textAlign: "center"
-  }}
->
-  Join Verbo Call 
-</h1>
+        <h1
+          style={{
+            fontSize: "1.8rem",
+            fontWeight: "700",
+            color: "#3b82f6",
+            marginBottom: "1rem",
+            textAlign: "center"
+          }}
+        >
+          Join Verbo Call
+        </h1>
 
         {error && (
           <div
@@ -244,45 +239,12 @@ export default function JoinSession() {
             Scan QR Code
           </button>
 
-          {/* Manual Entry */}
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-            <input
-              type="url"
-              value={sessionUrl}
-              onChange={(e) => setSessionUrl(e.target.value)}
-              placeholder="Paste Meeting URL"
-              style={{
-                padding: "1rem",
-                borderRadius: "12px",
-                border: "1px solid #ccc",
-                width: "100%",
-                fontSize: "1rem"
-              }}
-            />
-            <button
-              onClick={joinWithUrl}
-              style={{
-                width: "100%",
-                padding: "1rem",
-                borderRadius: "20px",
-                background: "#2563eb",
-                color: "white",
-                fontWeight: "600"
-              }}
-            >
-              <Link size={18} style={{ marginRight: "8px" }} />
-              Join by URL
-            </button>
-
-            <div style={{ textAlign: "center", fontSize: "0.9rem", color: "#555" }}>
-              — OR —
-            </div>
-
             <input
               type="text"
               value={meetingId}
               onChange={(e) => setMeetingId(e.target.value.replace(/\s/g, ""))}
-              placeholder="Enter 20-digit Meeting ID"
+              placeholder="Paste Meeting ID"
               maxLength={20}
               style={{
                 padding: "1rem",
@@ -297,7 +259,7 @@ export default function JoinSession() {
               type="text"
               value={sessionCode}
               onChange={(e) => setSessionCode(e.target.value.toUpperCase())}
-              placeholder="Enter 8-character session code"
+              placeholder="Paste Meeting Password"
               maxLength={8}
               style={{
                 padding: "1rem",
@@ -315,7 +277,7 @@ export default function JoinSession() {
                 width: "100%",
                 padding: "1rem",
                 borderRadius: "20px",
-                background: "#16a34a",
+                background: "#2563eb", // צבע הכפתור של Join by URL
                 color: "white",
                 fontWeight: "600"
               }}
