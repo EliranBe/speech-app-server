@@ -172,7 +172,7 @@ const copyToClipboard = async (text, type) => {
       } = await supabase.auth.getSession();
 
       if (sessionError || !authSession?.user) {
-        alert("Session expired, please log in again");
+        alert("Meeting expired, please log in again");
         navigate("/login");
         return;
       }
@@ -263,7 +263,7 @@ if (!resp.ok) {
               marginBottom: "0.5rem",
             }}
           >
-            <b>Session Created</b>
+            <b>Meeting Created</b>
           </h1>
           <p style={{ color: "#555", textAlign: "center" }}>
             Share these details to start communicating
@@ -313,7 +313,7 @@ if (!resp.ok) {
           </div>
         </div>
 
-        {/* Session Details */}
+        {/* Meeting Details */}
         {[
           {
             label: "Meeting URL",
@@ -330,7 +330,7 @@ if (!resp.ok) {
             icon: <ShieldUser size={18} color="#3b82f6" />,
           },
           {
-            label: "Session Password",
+            label: "Meeting Password",
             value: session.session_code,
             type: "code",
             copied: copiedCode,
@@ -445,9 +445,9 @@ if (!resp.ok) {
             How to Join ?
           </h3>
           {[
-            "Share the Meeting URL, QR code, or Meeting ID + Session Password",
+            "Share the Meeting URL, QR code, or Meeting ID + Meeting Password",
             'Ask your guest to open Verbo.io and choose "Join Verbo"',
-            "Then Ask to scan QR code, paste Meeting URL, or enter Meeting ID + Session Password",
+            "Then Ask to scan QR code, paste Meeting URL, or enter Meeting ID + Meeting Password",
             "Start translated conversation!",
           ].map((step, i) => (
             <div
