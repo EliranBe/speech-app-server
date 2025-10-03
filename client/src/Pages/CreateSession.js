@@ -9,9 +9,33 @@ import {
   KeyRound,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { UserPreferencesAPI } from "../Entities/UserPreferencesAPI";
 import QRCode from "../Components/ui/QRCode";
 import { supabase } from "../utils/supabaseClient";
 import logo from "../images/logo-verbo.png";
+
+function generateMeetingId() {
+  let id = "";
+  while (id.length < 20) {
+    id += Math.floor(Math.random() * 10);
+  }
+  return id;
+}
+
+function generateMeetingPassword() {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let pwd = "";
+  for (let i = 0; i < 8; i++) {
+    pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return pwd;
+}
+
+function generateMeetingUrl() {
+  const randomString = Math.random().toString(36).substring(2, 12);
+  const BASE_URL = process.env.BASE_URL || "http://Verbo.io";
+  return `${BASE_URL}/Call?sessionId=${randomString}`;
+}
 
 const BrandedLoader = ({ text }) => (
   <div style={{ height: "100vh", display: "flex", justifyContent: "center", alignItems: "center" }}>
@@ -35,78 +59,110 @@ export default function CreateSession() {
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [fadeIn, setFadeIn] = useState(false);
 
-  useEffect(() => {
-    const initialize = async () => {
-      if (isMounted.current) {
-        await loadUserAndCreateSession();
-      }
-    };
-    initialize();
-    const timeout = setTimeout(() => setFadeIn(true), 50);
-    return () => {
-      isMounted.current = false;
-      clearTimeout(timeout);
-    };
-  }, []);
+// useEffect שמפעיל טעינה אוטומטית
+useEffect(() => {
+  loadUserAndCreateSession();
+  const timeout = setTimeout(() => setFadeIn(true), 50);
+  return () => {
+    isMounted.current = false;
+    clearTimeout(timeout);
+  };
+}, []);
 
-  const loadUserAndCreateSession = async () => {
-    try {
-      setIsCreating(true);
-      const {
-        data: { session: authSession },
-        error: sessionError,
-      } = await supabase.auth.getSession();
+// פונקציית טעינת המשתמש
+async function loadUser() {
+  const { data, error } = await supabase.auth.getUser();
+  if (error) {
+    console.error("Error fetching user:", error);
+    return null;
+  }
+  return data.user;
+}
 
-      if (sessionError || !authSession?.user) {
-        alert("Session expired, please log in again");
-        navigate("/login");
-        return;
-      }
-
-      const accessToken = authSession.access_token;
-
-const resp = await fetch("/api/meetings/create", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${accessToken}`,
-  },
-  body: JSON.stringify({ host_user_id: authSession.user.id }),
-});
-
-      const data = await resp.json();
-
-      if (!resp.ok) {
-        console.error("Error creating session:", data);
-        setIsCreating(false);
-        return;
-      }
-
-      setSession(data.session);
-      setUser(data.user);
-      setPreferences(data.preferences);
-      setIsCreating(false);
-    } catch (error) {
-      console.error("Error loading user:", error);
+// פונקציה לטעינת משתמש ויצירת פגישה
+const loadUserAndCreateSession = async () => {
+  try {
+    const userData = await loadUser();
+    if (!userData) {
       navigate("/login");
+      return;
     }
-  };
+    setUser(userData);
 
-  const copyToClipboard = async (text, type) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      if (type === "id") setCopiedId(true);
-      else if (type === "url") setCopiedUrl(true);
-      else setCopiedCode(true);
-      setTimeout(() => {
-        setCopiedId(false);
-        setCopiedUrl(false);
-        setCopiedCode(false);
-      }, 2000);
-    } catch (error) {
-      console.error("Failed to copy:", error);
+    const userPrefs = await UserPreferencesAPI.get(userData.id); // אם קיים API כזה
+    if (userPrefs) {
+      setPreferences(userPrefs);
+    } else {
+      navigate("/preferences");
+      return;
     }
-  };
+
+    await createNewSession(userData);
+  } catch (error) {
+    console.error("Error loading user:", error);
+    navigate("/login");
+  }
+};
+
+// יצירת פגישה חדשה
+const createNewSession = async (userData) => {
+  setIsCreating(true);
+  try {
+    const meetingUrl = generateMeetingUrl();
+    const { data: newSession, error } = await supabase
+      .from("Meetings")
+      .insert([
+        {
+          host_user_id: userData.id,
+          meeting_id: generateMeetingId(),
+          meeting_password: generateMeetingPassword(),
+          url_meeting: meetingUrl,
+          qr_data: meetingUrl,
+          created_at: new Date().toISOString(),
+          is_active: true,
+        },
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating meeting:", error);
+      setSession(null);
+      setIsCreating(false);
+      return;
+    }
+
+    setSession({
+      ...newSession,
+      session_url: newSession.url_meeting,
+      qr_data: newSession.qr_data,
+      session_code: newSession.meeting_password,
+    });
+  } catch (error) {
+    console.error("Error creating session:", error);
+    setSession(null);
+  }
+  setIsCreating(false);
+};
+
+// פונקציית העתקה ללוח
+const copyToClipboard = async (text, type) => {
+  try {
+    await navigator.clipboard.writeText(text);
+    if (type === "id") {
+      setCopiedId(true);
+      setTimeout(() => setCopiedId(false), 2000);
+    } else if (type === "url") {
+      setCopiedUrl(true);
+      setTimeout(() => setCopiedUrl(false), 2000);
+    } else {
+      setCopiedCode(true);
+      setTimeout(() => setCopiedCode(false), 2000);
+    }
+  } catch (error) {
+    console.error("Failed to copy:", error);
+  }
+};
 
   const startCall = async () => {
     try {
@@ -132,13 +188,13 @@ const resp = await fetch("/api/meetings/create", {
         body: JSON.stringify({ meeting_id: session.meeting_id }),
       });
 
-      const data = await resp.json();
+const data = await resp.json();
 
-      if (!resp.ok) {
-        console.error("Start call error:", data);
-        alert(data.error || "Unable to start call");
-        return;
-      }
+if (!resp.ok) {
+  console.error("Start call error:", data);
+  alert(data?.error || "Unable to start call");
+  return;
+}
 
       if (data.url) {
         window.location.href = data.url;
