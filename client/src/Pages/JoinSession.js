@@ -42,7 +42,7 @@ export default function JoinSession() {
     setIsScanning(false);
     if (scannedData === "detected_pattern") {
       setError(
-        "QR code detected! Please paste the Meeting details manually below."
+        "QR code detected! Please enter the Meeting details manually below."
       );
     } else if (scannedData) {
       try {
@@ -217,10 +217,28 @@ export default function JoinSession() {
           {/* Manual Entry */}
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
             <input
+              type="url"
+              value={sessionUrl}
+              onChange={(e) => setSessionUrl(e.target.value)}
+              placeholder="Paste Meeting URL"
+              style={{
+                padding: "1rem",
+                borderRadius: "12px",
+                border: "1px solid #ccc",
+                width: "100%",
+                fontSize: "1rem"
+              }}
+            />
+            
+            <div style={{ textAlign: "center", fontSize: "0.9rem", color: "#555" }}>
+              — OR —
+            </div>
+
+            <input
               type="text"
               value={meetingId}
               onChange={(e) => setMeetingId(e.target.value.replace(/\s/g, ""))}
-              placeholder="Paste Meeting ID"
+              placeholder="Enter Meeting ID"
               maxLength={20}
               style={{
                 padding: "1rem",
@@ -235,7 +253,7 @@ export default function JoinSession() {
               type="text"
               value={sessionCode}
               onChange={(e) => setSessionCode(e.target.value.toUpperCase())}
-              placeholder="Paste Meeting Password"
+              placeholder="Enter Meeting Password"
               maxLength={8}
               style={{
                 padding: "1rem",
