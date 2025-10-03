@@ -180,6 +180,11 @@ router.post("/start", async (req, res) => {
       meeting_password: meetingRow.meeting_password,
     };
 
+    const jti =
+      typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : crypto.randomBytes(16).toString("hex");
+
     const meetingToken = await createMeetingToken(payload);
 
     const CALL_BASE_URL =
@@ -335,7 +340,33 @@ router.post("/join", async (req, res) => {
       return res.status(500).json({ error: error.message });
     }
 
-    res.status(200).json({ participant: data[0] });
+    const jti =
+  typeof crypto.randomUUID === "function"
+    ? crypto.randomUUID()
+    : crypto.randomBytes(16).toString("hex");
+
+const payload = {
+  user_id,
+  display_name: prefs.display_name,
+  native_language: prefs.native_language,
+  gender: prefs.gender,
+  meeting_id: meetingRow.meeting_id,
+  meeting_password: meetingRow.meeting_password,
+  jti
+};
+
+const meetingToken = await createMeetingToken(payload);
+
+const CALL_BASE_URL =
+  process.env.CALL_BASE_URL ||
+  "https://speech-app-server.onrender.com/call.html";
+
+const redirectUrl = `${CALL_BASE_URL}?userToken=${encodeURIComponent(meetingToken)}`;
+
+    res.status(200).json({
+  participant: data[0],
+  url: redirectUrl
+});
   } catch (err) {
     console.error("Server error in /join:", err);
     return res.status(500).json({ error: "Server error" });
