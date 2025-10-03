@@ -22,6 +22,32 @@ async function verifyAccessToken(accessToken) {
   return data.user;
 }
 
+async function validateUserAndPreferences(accessToken) {
+  const user = await verifyAccessToken(accessToken);
+  if (!user) {
+    throw new Error("Unauthorized: user not found");
+  }
+
+  const { data: prefs, error: prefsErr } = await supabase
+    .from("user_preferences")
+    .select("native_language,gender,display_name")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (prefsErr || !prefs) {
+    throw new Error("Missing user preferences");
+  }
+
+  const requiredFields = ["native_language", "gender", "display_name"];
+  for (const f of requiredFields) {
+    if (!prefs[f] || String(prefs[f]).trim() === "") {
+      throw new Error(`User preference '${f}' is missing or empty`);
+    }
+  }
+
+  return { user, prefs };
+}
+
 function generateMeetingId() {
   let id = "";
   while (id.length < 20) {
@@ -110,40 +136,13 @@ router.post("/start", async (req, res) => {
     }
     const accessToken = authHeader.split(" ")[1];
 
-    let decoded;
+    let user, prefs;
     try {
-      decoded = await verifyAccessToken(accessToken);
+      ({ user, prefs } = await validateUserAndPreferences(accessToken));
     } catch (err) {
       return res.status(401).json({ error: err.message });
     }
-
-    const user_id = decoded.id;
-    console.log("JWT verified:", decoded);
-
-    const { data: prefs, error: prefsErr } = await supabase
-      .from("user_preferences")
-      .select("native_language,gender,display_name")
-      .eq("user_id", user_id)
-      .maybeSingle();
-
-    if (prefsErr) {
-      console.error("Supabase error (user_preferences):", prefsErr);
-      return res
-        .status(500)
-        .json({ error: "Database error checking user preferences" });
-    }
-    if (!prefs) {
-      return res.status(400).json({ error: "User preferences not found" });
-    }
-
-    const requiredFields = ["native_language", "gender", "display_name"];
-    for (const f of requiredFields) {
-      if (!prefs[f] || String(prefs[f]).trim() === "") {
-        return res
-          .status(400)
-          .json({ error: `User preference '${f}' is missing or empty` });
-      }
-    }
+    const user_id = user.id;
 
     const { data: meetingRow, error: meetingErr } = await supabase
       .from("Meetings")
@@ -153,9 +152,7 @@ router.post("/start", async (req, res) => {
 
     if (meetingErr) {
       console.error("Supabase error (Meetings):", meetingErr);
-      return res
-        .status(500)
-        .json({ error: "Database error checking meeting" });
+      return res.status(500).json({ error: "Database error checking meeting" });
     }
     if (!meetingRow) {
       return res.status(404).json({ error: "Meeting not found" });
@@ -180,16 +177,12 @@ router.post("/start", async (req, res) => {
       meeting_password: meetingRow.meeting_password,
     };
 
-    const jti =
-      typeof crypto.randomUUID === "function"
-        ? crypto.randomUUID()
-        : crypto.randomBytes(16).toString("hex");
-
     const meetingToken = await createMeetingToken(payload);
 
     const CALL_BASE_URL =
       process.env.CALL_BASE_URL ||
       "https://speech-app-server.onrender.com/call.html";
+
     const redirectUrl = `${CALL_BASE_URL}?userToken=${encodeURIComponent(
       meetingToken
     )}`;
@@ -214,21 +207,21 @@ router.post("/join", async (req, res) => {
         .json({ error: "meeting_id and user_id are required" });
     }
 
-    // 1. אימות Session / משתמש
-    const authHeader = req.headers["authorization"];
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ error: "Missing or invalid Authorization header" });
-    }
-    const accessToken = authHeader.split(" ")[1];
-    let decoded;
-    try {
-      decoded = await verifyAccessToken(accessToken);
-    } catch (err) {
-      return res.status(401).json({ error: err.message });
-    }
-    if (decoded.id !== user_id) {
-      return res.status(403).json({ error: "User ID mismatch" });
-    }
+    // 1. אימות Session / בדיקת user_preferences
+ const authHeader = req.headers["authorization"];
+ if (!authHeader || !authHeader.startsWith("Bearer ")) {
+   return res.status(401).json({ error: "Missing or invalid Authorization header" });
+ }
+ const accessToken = authHeader.split(" ")[1];
+ let user, prefs;
+ try {
+   ({ user, prefs } = await validateUserAndPreferences(accessToken));
+ } catch (err) {
+   return res.status(401).json({ error: err.message });
+ }
+ if (user.id !== user_id) {
+   return res.status(403).json({ error: "User ID mismatch" });
+ }
 
     // בדיקת קיום user_id בטבלת users
     const { data: userRow, error: userErr } = await supabase
@@ -238,22 +231,6 @@ router.post("/join", async (req, res) => {
       .single();
     if (userErr || !userRow) {
       return res.status(404).json({ error: "User not found" });
-    }
-
-    // 2. בדיקת user_preferences ושדות חובה
-    const { data: prefs, error: prefsErr } = await supabase
-      .from("user_preferences")
-      .select("native_language,gender,display_name")
-      .eq("user_id", user_id)
-      .maybeSingle();
-    if (prefsErr || !prefs) {
-      return res.status(400).json({ error: "User preferences not found" });
-    }
-    const requiredFields = ["native_language", "gender", "display_name"];
-    for (const f of requiredFields) {
-      if (!prefs[f] || String(prefs[f]).trim() === "") {
-        return res.status(400).json({ error: `User preference '${f}' is missing or empty` });
-      }
     }
 
     // 3. בדיקת host_user_id בטבלת Meetings
