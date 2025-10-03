@@ -1,70 +1,44 @@
-
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import { UserPreferencesAPI } from "../Entities/UserPreferencesAPI";
-import { Camera, ArrowLeft, Loader2, AlertCircle, ScanLine, X, RefreshCw, Zap, ZapOff, CheckCircle, Link } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import React, { useState } from "react";
+import {
+  Camera,
+  ArrowLeft,
+  Loader2,
+  ScanLine,
+  Link,
+  AlertCircle
+} from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
 import BrandedLoader from '../Components/BrandedLoader';
 import QRCode from "../Components/ui/QRCode";
 import { supabase } from "../utils/supabaseClient";
-
-async function loadUser() {
-  const { data, error } = await supabase.auth.getUser();
-  if (error) {
-    console.error("Error fetching user:", error);
-    return null;
-  }
-  return data.user; // זה המשתמש האמיתי המחובר
-}
+import logo from "../images/logo-verbo.png";
 
 export default function JoinSession() {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [preferences, setPreferences] = useState(null);
+  const location = useLocation();
+
   const [meetingId, setMeetingId] = useState("");
   const [sessionCode, setSessionCode] = useState("");
   const [sessionUrl, setSessionUrl] = useState("");
   const [isJoining, setIsJoining] = useState(false);
   const [error, setError] = useState("");
   const [isScanning, setIsScanning] = useState(false);
-
-  const loadUserData = useCallback(async () => {
-    try {
-      const userData = await loadUser(); // הפונקציה החדשה עם supabase
-if (!userData) {
-  console.error("No user found");
-        navigate("/login"); 
-      return;
-}
-setUser(userData);
-
-
-      const userPrefs = await UserPreferencesAPI.get(userData.id);
-if (userPrefs) {
-  setPreferences(userPrefs);
-} else {
-  navigate("/Preferences");
-  return;
-}
-    } catch (error) {
-      console.error("Error loading user data:", error);
-      navigate("/login");
-    }
-  }, [navigate]);
-
-  useEffect(() => {
-    loadUserData();
-  }, [loadUserData]);
+  const [fadeIn, setFadeIn] = useState(false);
 
   const handleScanSuccess = (scannedData) => {
     setIsScanning(false);
-    if (scannedData === 'detected_pattern') {
-      setError('QR code detected! Please enter the session details manually below, or ask the host to share the session URL directly with you.');
+    if (scannedData === "detected_pattern") {
+      setError(
+        "QR code detected! Please enter the session details manually below."
+      );
     } else if (scannedData) {
       try {
         const url = new URL(scannedData);
         window.location.href = scannedData;
       } catch (e) {
-        setError('Invalid QR code format. Please use manual entry below or ask the host to share the session URL.');
+        setError(
+          "Invalid QR code format. Please use manual entry below."
+        );
       }
     }
   };
@@ -74,211 +48,276 @@ if (userPrefs) {
       setError("Please enter a valid session URL.");
       return;
     }
-
     try {
       const url = new URL(sessionUrl.trim());
-      const sessionId = url.searchParams.get('id');
-
+      const sessionId = url.searchParams.get("id");
       if (!sessionId) {
         setError("Invalid session URL format.");
         return;
       }
-
       window.location.href = sessionUrl.trim();
-
     } catch (error) {
       setError("Please enter a valid HTTPS URL.");
     }
   };
 
   const joinWithCredentials = async () => {
-    if (!meetingId.trim() || !/^\d{20}$/.test(meetingId.trim())) {
-      setError("Please enter a valid 20-digit Meeting ID.");
-      return;
-    }
-    if (!sessionCode.trim() || sessionCode.trim().length !== 8) {
-      setError("Please enter a valid 8-character session code.");
-      return;
-    }
-
-    setIsJoining(true);
-    setError("");
-
-    try {
-      // קריאה ל-API שלך
-const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || "http://localhost:3001"}/api/meetings/join`, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    meeting_id: meetingId.trim(),
-    session_code: sessionCode.trim().toUpperCase(),
-    participant_id: user.id
-  })
-});
-
-const { session, error: apiError } = await response.json();
-
-if (apiError) {
-  setError(apiError);
-  setIsJoining(false);
-  return;
-}
-
-      navigate(`/Call?sessionId=${session.meeting_id}&role=participant`);
-
-    } catch (error) {
-      console.error("Error joining session:", error);
-      setError("Failed to join session. Please try again.");
-      setIsJoining(false);
-    }
-  };
-
-  if (!user || !preferences) {
-    return <BrandedLoader text="Loading Verbo.io..." />;
+  if (!meetingId.trim() || !/^\d{20}$/.test(meetingId.trim())) {
+    setError("Please enter a valid 20-digit Meeting ID.");
+    return;
+  }
+  if (!sessionCode.trim() || sessionCode.trim().length !== 8) {
+    setError("Please enter a valid 8-character session code.");
+    return;
   }
 
-  return (
-    <React.Fragment>
-      {isScanning &&
-        <QRCode
-          onScanSuccess={handleScanSuccess}
-          onClose={() => {
-            setIsScanning(false);
-            setError('');
-          }} />
+  setIsJoining(true);
+  setError("");
+
+  try {
+    const response = await fetch(
+      `${process.env.REACT_APP_API_BASE_URL || "http://localhost:3001"}/api/meetings/join`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          meeting_id: meetingId.trim(),
+          session_code: sessionCode.trim().toUpperCase(),
+        })
       }
-      <div className="min-h-screen p-4 pt-8">
-  <div className="max-w-2xl mx-auto">
-    <div className="flex items-center gap-4 mb-8">
-      <button
-        onClick={() => navigate("/")}
-        className="p-2 rounded-full bg-white/50 border border-white/30 hover:bg-white transition"
-      >
-        <ArrowLeft className="w-4 h-4 text-gray-700" />
-      </button>
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Join Verbo</h1>
-        <p className="text-gray-600">Choose how you'd like to join the session</p>
-      </div>
-    </div>
-  </div>
-</div>
+    );
 
-          {error &&
-            <div className="mb-6 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3">
-  <svg xmlns="http://www.w3.org/2000/svg" 
-       fill="none" 
-       viewBox="0 0 24 24" 
-       strokeWidth={2} 
-       stroke="currentColor" 
-       className="h-4 w-4 text-red-600">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-  </svg>
-  <span className="text-red-700 text-sm">{error}</span>
-</div>
-          }
+    const { session_url, error: apiError } = await response.json();
 
-{/* QR Scanner Card */}
-<div className="glass-morphism border-0 shadow-xl mb-6 rounded-3xl p-6">
-  {/* Header */}
-  <div className="mb-4">
-    <h3 className="flex items-center gap-2 text-lg font-semibold text-gray-900">
-      <Camera className="w-5 h-5 text-blue-600" />
-      QR Code Scanner
-    </h3>
-  </div>
+    if (apiError) {
+      setError(apiError);
+      setIsJoining(false);
+      return;
+    }
 
-  {/* Content */}
-  <div>
-    <button
-      onClick={() => {
-        setError('');
-        setIsScanning(true);
+    // ✅ מעבר ל־Call עם JWT ב־URL
+    window.location.href = session_url;
+
+  } catch (error) {
+    console.error("Error joining session:", error);
+    setError("Failed to join session. Please try again.");
+    setIsJoining(false);
+  }
+};
+
+  return (
+    <div
+      style={{
+        fontFamily: "'Segoe UI', sans-serif",
+        background: "linear-gradient(135deg, #c9d6ff, #e2e2e2)",
+        minHeight: "100vh",
+        width: "100vw",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "flex-start",
+        paddingTop: "3rem",
+        overflowY: "auto"
       }}
-      className="w-full liquid-button text-white font-semibold py-4 rounded-2xl flex items-center justify-center gap-2"
     >
-      <ScanLine className="w-5 h-5" />
-      Open Camera to Scan
-    </button>
-    <p className="text-sm text-gray-500 mt-2 text-center">
-      Camera will open within the app to scan QR codes
-    </p>
-  </div>
-</div>
-
-{/* Manual Entry Card */}
-<div className="glass-morphism border-0 shadow-xl mb-6 rounded-3xl p-6">
-  {/* Header */}
-  <div className="mb-4">
-    <h3 className="flex items-center gap-2 text-lg font-semibold text-gray-900">
-      <ScanLine className="w-5 h-5 text-purple-600" />
-      Manual Entry
-    </h3>
-  </div>
-
-  {/* Content */}
-  <div className="space-y-6">
-    {/* URL Entry */}
-    <div>
-      <label className="block text-sm font-medium mb-2">Paste Session URL</label>
-      <div className="flex gap-2">
-        <input
-          type="url"
-          value={sessionUrl}
-          onChange={(e) => setSessionUrl(e.target.value)}
-          placeholder="https://..."
-          className="flex-1 border rounded px-3 py-2 focus:outline-none focus:ring focus:ring-blue-500"
-        />
-        <button onClick={joinWithUrl} className="liquid-button text-white px-6">
-          <Link className="w-4 h-4 mr-2" />
-          Join
-        </button>
-      </div>
-    </div>
-
-    <div className="text-center text-gray-400 text-sm">— OR —</div>
-
-    {/* Meeting ID and Password */}
-    <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium mb-2">Meeting ID</label>
-        <input
-          type="text"
-          value={meetingId}
-          onChange={(e) => setMeetingId(e.target.value.replace(/\s/g, ''))}
-          placeholder="Enter 20-digit Meeting ID"
-          maxLength={20}
-          className="text-center text-lg font-mono tracking-widest border rounded px-3 py-2 focus:outline-none focus:ring focus:ring-blue-500"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-2">Session Password</label>
-        <input
-          type="text"
-          value={sessionCode}
-          onChange={(e) => setSessionCode(e.target.value.toUpperCase())}
-          placeholder="Enter 8-character password"
-          maxLength={8}
-          className="text-center text-lg font-mono tracking-widest border rounded px-3 py-2 focus:outline-none focus:ring focus:ring-blue-500"
-        />
-      </div>
-      <button
-        onClick={joinWithCredentials}
-        disabled={isJoining}
-        className="w-full liquid-button text-white font-semibold py-3 rounded-2xl"
+      <div
+        className={`session-card ${fadeIn ? "fade-in" : ""}`}
+        style={{
+          width: "100%",
+          maxWidth: "600px",
+          padding: "2rem",
+          borderRadius: "20px",
+          background: "rgba(255,255,255,0.1)",
+          backdropFilter: "blur(12px)",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
+          transition: "opacity 0.7s",
+          opacity: fadeIn ? 1 : 0
+        }}
       >
-        {isJoining ? (
-          <div className="flex items-center gap-2">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Joining...
-          </div>
-        ) : (
-          "Join Verbo"
-        )}
-      </button>
-    </div>
-  </div>
+        {/* Back / Home */}
+       <button
+  onClick={() =>
+    location.state?.fromLogin ? navigate("/") : navigate(-1)
+  }
+  style={{
+    display: "flex",
+    alignItems: "center",
+    marginBottom: "1rem",
+    background: "transparent",
+    border: "none",
+    cursor: "pointer",
+    color: "#3b82f6",
+    fontWeight: "600"
+  }}
+>
+  <ArrowLeft size={20} style={{ marginRight: "8px" }} />
+  {location.state?.fromLogin ? "Home" : "Back"}
+</button>
+
+{/* --- שילוב הלוגו --- */}
+<div style={{ display: "flex", justifyContent: "center", marginBottom: "1rem" }}>
+  <img
+    src={logo}
+    alt="Verbo Logo"
+    style={{
+      width: "140px",
+      height: "140px",
+      objectFit: "contain"
+    }}
+    onClick={() => navigate("/")}
+  />
 </div>
-        </React.Fragment>
-);
+
+<h1
+  style={{
+    fontSize: "1.8rem",
+    fontWeight: "700",
+    color: "#3b82f6",
+    marginBottom: "1rem",
+    textAlign: "center"
+  }}
+>
+  Join Verbo Call 
+</h1>
+
+        {error && (
+          <div
+            style={{
+              padding: "1rem",
+              borderRadius: "12px",
+              background: "rgba(255,0,0,0.1)",
+              color: "#b91c1c",
+              marginBottom: "1rem",
+              textAlign: "center"
+            }}
+          >
+            <AlertCircle size={18} style={{ marginRight: "8px" }} />
+            {error}
+          </div>
+        )}
+
+        {/* QR Scanner */}
+        {isScanning && (
+          <QRCode
+            onScanSuccess={handleScanSuccess}
+            onClose={() => {
+              setIsScanning(false);
+              setError("");
+            }}
+          />
+        )}
+
+        <div style={{ marginBottom: "1.5rem" }}>
+          <button
+            onClick={() => {
+              setError("");
+              setIsScanning(true);
+            }}
+            style={{
+              width: "100%",
+              padding: "1rem",
+              borderRadius: "20px",
+              background: "#3b82f6",
+              color: "white",
+              fontWeight: "600",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: "0.5rem",
+              marginBottom: "1rem"
+            }}
+          >
+            <ScanLine size={18} />
+            Scan QR Code
+          </button>
+
+          {/* Manual Entry */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+            <input
+              type="url"
+              value={sessionUrl}
+              onChange={(e) => setSessionUrl(e.target.value)}
+              placeholder="Paste Meeting URL"
+              style={{
+                padding: "1rem",
+                borderRadius: "12px",
+                border: "1px solid #ccc",
+                width: "100%",
+                fontSize: "1rem"
+              }}
+            />
+            <button
+              onClick={joinWithUrl}
+              style={{
+                width: "100%",
+                padding: "1rem",
+                borderRadius: "20px",
+                background: "#2563eb",
+                color: "white",
+                fontWeight: "600"
+              }}
+            >
+              <Link size={18} style={{ marginRight: "8px" }} />
+              Join by URL
+            </button>
+
+            <div style={{ textAlign: "center", fontSize: "0.9rem", color: "#555" }}>
+              — OR —
+            </div>
+
+            <input
+              type="text"
+              value={meetingId}
+              onChange={(e) => setMeetingId(e.target.value.replace(/\s/g, ""))}
+              placeholder="Enter 20-digit Meeting ID"
+              maxLength={20}
+              style={{
+                padding: "1rem",
+                borderRadius: "12px",
+                border: "1px solid #ccc",
+                fontFamily: "'Courier New', monospace",
+                fontSize: "1.2rem",
+                textAlign: "center"
+              }}
+            />
+            <input
+              type="text"
+              value={sessionCode}
+              onChange={(e) => setSessionCode(e.target.value.toUpperCase())}
+              placeholder="Enter 8-character session code"
+              maxLength={8}
+              style={{
+                padding: "1rem",
+                borderRadius: "12px",
+                border: "1px solid #ccc",
+                fontFamily: "'Courier New', monospace",
+                fontSize: "1.2rem",
+                textAlign: "center"
+              }}
+            />
+            <button
+              onClick={joinWithCredentials}
+              disabled={isJoining}
+              style={{
+                width: "100%",
+                padding: "1rem",
+                borderRadius: "20px",
+                background: "#16a34a",
+                color: "white",
+                fontWeight: "600"
+              }}
+            >
+              {isJoining ? (
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <Loader2 size={18} className="animate-spin" />
+                  Joining...
+                </div>
+              ) : (
+                "Join Verbo Call"
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
