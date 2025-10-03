@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Camera,
   ArrowLeft,
@@ -25,6 +25,20 @@ export default function JoinSession() {
   const [isScanning, setIsScanning] = useState(false);
   const [fadeIn, setFadeIn] = useState(false);
 
+  useEffect(() => {
+  if (!location) return;
+  const params = new URLSearchParams(location.search);
+  const sessionUrlParam = params.get("sessionUrl");
+  const meetingIdParam = params.get("meetingId");
+  const sessionCodeParam = params.get("sessionCode");
+
+  if (sessionUrlParam) setSessionUrl(sessionUrlParam);
+  if (meetingIdParam) setMeetingId(meetingIdParam);
+  if (sessionCodeParam) setSessionCode(sessionCodeParam);
+
+  setTimeout(() => setFadeIn(true), 50);
+}, [location]);
+  
   const handleScanSuccess = (scannedData) => {
     setIsScanning(false);
     if (scannedData === "detected_pattern") {
