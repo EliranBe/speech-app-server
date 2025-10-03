@@ -65,6 +65,7 @@ const resp = await fetch("/api/meetings/join", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
+    Authorization: `Bearer ${accessToken}`
   },
   body: JSON.stringify({
     meeting_url: sessionUrl.trim(),
@@ -111,49 +112,69 @@ if (url) {
     }
   };
 
-  const joinWithCredentials = async () => {
-    setError("");
-    if (!sessionUrl.trim() && (!meetingId.trim() || !sessionCode.trim())) {
-      setError("Please enter a Meeting URL or both Meeting ID and Password.");
+const joinWithCredentials = async () => {
+  setError("");
+
+  if (!sessionUrl.trim() && (!meetingId.trim() || !sessionCode.trim())) {
+    setError("Please enter a Meeting URL or both Meeting ID and Password.");
+    return;
+  }
+
+  setIsJoining(true);
+
+  try {
+    const {
+      data: { session: authSession },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (sessionError || !authSession?.user) {
+      alert("Session expired, please log in again");
+      navigate("/login");
       return;
     }
 
-    setIsJoining(true);
+    const user_id = authSession.user.id;
 
-    try {
-      const response = await fetch(
-        `${process.env.REACT_APP_API_BASE_URL || "http://localhost:3001"}/api/meetings/join`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            meeting_url: sessionUrl.trim(),
-            meeting_id: meetingId.trim(),
-            session_code: sessionCode.trim().toUpperCase(),
-          })
-        }
-      );
+    const accessToken = authSession.access_token;
 
-const { url, error: apiError } = await response.json();
+    const response = await fetch(
+      `${process.env.REACT_APP_API_BASE_URL || "http://localhost:3001"}/api/meetings/join`,
+      {
+        method: "POST",
+        headers: {
+  "Content-Type": "application/json",
+  Authorization: `Bearer ${accessToken}`, // ✅
+},
 
-      if (apiError) {
-        setError(apiError);
-        setIsJoining(false);
-        return;
+        body: JSON.stringify({
+          meeting_url: sessionUrl.trim(),
+          meeting_id: meetingId.trim(),
+          session_code: sessionCode.trim().toUpperCase(),
+                  }),
       }
+    );
 
-if (url) {
-  window.location.href = url;
-} else {
-  setError("No redirect URL returned from server.");
-  setIsJoining(false);
-}
-    } catch (error) {
-      console.error("Error joining session:", error);
-      setError("Failed to join session. Please try again.");
+    const { url, error: apiError } = await response.json();
+
+    if (apiError) {
+      setError(apiError);
+      setIsJoining(false);
+      return;
+    }
+
+    if (url) {
+      window.location.href = url;
+    } else {
+      setError("No redirect URL returned from server.");
       setIsJoining(false);
     }
-  };
+  } catch (error) {
+    console.error("Error joining session:", error);
+    setError("Failed to join session. Please try again.");
+    setIsJoining(false);
+  }
+};
 
   return (
     <div
