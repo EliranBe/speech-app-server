@@ -38,6 +38,66 @@ export default function JoinSession() {
     setTimeout(() => setFadeIn(true), 50);
   }, [location]);
 
+  const joinSession = async () => {
+  if (!meetingId.trim() || !sessionCode.trim()) {
+    setError("Please enter a Meeting ID and Password.");
+    return;
+  }
+
+  setIsJoining(true);
+
+  try {
+    const {
+      data: { session: authSession },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (sessionError || !authSession?.user) {
+      alert("Session expired, please log in again");
+      navigate("/login");
+      return;
+    }
+
+    const accessToken = authSession.access_token;
+    const user_id = authSession.user.id;
+
+    const resp = await fetch(
+      `${process.env.REACT_APP_API_BASE_URL || "http://localhost:3001"}/api/meetings/join`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          meeting_id: meetingId.trim(),
+          user_id,
+          meeting_password: sessionCode.trim(),
+        }),
+      }
+    );
+
+    const data = await resp.json();
+
+    if (!resp.ok) {
+      setError(data?.error || "Failed to join session. Please try again.");
+      setIsJoining(false);
+      return;
+    }
+
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      setError("No URL returned from server");
+      setIsJoining(false);
+    }
+  } catch (error) {
+    console.error("Error joining session:", error);
+    setError("Failed to join session. Please try again.");
+    setIsJoining(false);
+  }
+};
+
   const handleScanSuccess = (scannedData) => {
     setIsScanning(false);
     if (scannedData === "detected_pattern") {
@@ -264,18 +324,19 @@ export default function JoinSession() {
                 textAlign: "center"
               }}
             />
-            <button
-              onClick={joinWithCredentials}
-              disabled={isJoining}
-              style={{
-                width: "100%",
-                padding: "1rem",
-                borderRadius: "20px",
-                background: "#2563eb", // צבע של Join by URL
-                color: "white",
-                fontWeight: "600"
-              }}
-            >
+<button
+  onClick={joinSession}
+  disabled={isJoining}
+  style={{
+    width: "100%",
+    padding: "1rem",
+    borderRadius: "20px",
+    background: "#2563eb",
+    color: "white",
+    fontWeight: "600"
+  }}
+>
+
               {isJoining ? (
                 <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                   <Loader2 size={18} className="animate-spin" />
