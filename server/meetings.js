@@ -110,7 +110,23 @@
         console.error("Error creating meeting:", error);
         return res.status(500).json({ error: error.message });
       }
-  
+
+          // ✅ יצירת רשומת משתתף ריקה ראשונית עבור הפגישה
+    const { error: participantError } = await supabase
+      .from("Participants")
+      .insert([
+        {
+          meeting_id: data[0].meeting_id,
+          user_id: null, // נשאר ריק
+          joined_at: null, // נשאר ריק
+        },
+      ]);
+
+    if (participantError) {
+      console.error("Error creating initial participant:", participantError);
+      return res.status(500).json({ error: participantError.message });
+    }
+      
       res.status(200).json({ meeting: data[0] });
     } catch (err) {
       console.error("Server error:", err);
@@ -264,8 +280,9 @@ router.post("/join", async (req, res) => {
     } else {
       
 // 5. בדיקת משתתף נוסף (Participants)
-const checkMeetingId = meetingRow.meeting_id; // מבטיחים תמיד להשתמש ב־meeting_id מהבדיקה 3
+const checkMeetingId = meetingRow.meeting_id; // תמיד משתמשים ב־meeting_id מהבדיקה 3
 
+// נבדוק אם יש רשומת משתתף קיימת עבור הפגישה
 const { data: participantData, error: participantErr } = await supabase
   .from("Participants")
   .select("*")
@@ -280,27 +297,34 @@ if (participantErr) {
 participantRow = participantData;
 
 if (participantRow) {
-  if (participantRow.user_id !== user_id) {
+  if (participantRow.user_id === null) {
+    // 🟢 הרשומה קיימת אבל עדיין לא שויך אליה משתמש → נעדכן אותה
+    const { data: updatedParticipant, error: updateErr } = await supabase
+      .from("Participants")
+      .update({
+        user_id,
+        joined_at: new Date().toISOString(),
+      })
+      .eq("meeting_id", checkMeetingId)
+      .select()
+      .single();
+
+    if (updateErr) {
+      console.error("Error updating participant:", updateErr);
+      return res.status(500).json({ error: updateErr.message });
+    }
+
+    participantRow = updatedParticipant;
+  } else if (participantRow.user_id !== user_id) {
+    // 🟥 יש כבר משתמש אחר באותה פגישה
     return res.status(403).json({ error: "User not authorized to join this meeting" });
   }
 } else {
-  const { data: insertedData, error: insertErr } = await supabase
-    .from("Participants")
-    .insert([
-      {
-        meeting_id: checkMeetingId,
-        user_id,
-        joined_at: new Date().toISOString(),
-      },
-    ])
-    .select()
-    .single();
-
-  if (insertErr) {
-    console.error("Error adding participant:", insertErr);
-    return res.status(500).json({ error: insertErr.message });
-  }
-  newParticipant = insertedData;
+  // 🟥 אם אין בכלל רשומת משתתף — מדובר בטעות לוגית
+  console.error("Participant record missing for meeting:", checkMeetingId);
+  return res
+    .status(500)
+    .json({ error: "Participant record not found for this meeting" });
 }
     }
 
