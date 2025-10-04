@@ -262,7 +262,7 @@ if (meetingErr || !meetingRow) {
     const urlMatch = url_meeting && meetingRow.url_meeting === url_meeting;
     const passwordMatch =
       meeting_id && meeting_password &&
-      meetingRow.meeting_id === meeting_id &&
+      meetingRow.meeting_id === meeting_id_to_use &&
       meetingRow.meeting_password === meeting_password;
 
     if (!(urlMatch || passwordMatch)) {
