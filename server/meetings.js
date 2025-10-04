@@ -204,153 +204,138 @@ if (!meeting_id && !url_meeting) {
   // =======================================
   // JOIN ROUTE — כולל כל 6 הבדיקות
   // =======================================
-  router.post("/join", async (req, res) => {
-    try {
-      const { meeting_id, meeting_password, url_meeting } = req.body;
-  
-if (!meeting_id && !url_meeting) {
-  return res
-    .status(400)
-    .json({ error: "Please enter a Meeting ID and Password or a Meeting URL" });
-}
-  
-      // 1. אימות Session / בדיקת user_preferences
-   const authHeader = req.headers["authorization"];
-   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-     return res.status(401).json({ error: "Missing or invalid Authorization header" });
-   }
-   const accessToken = authHeader.split(" ")[1];
-   let user, prefs;
-   try {
-     ({ user, prefs } = await validateUserAndPreferences(accessToken));
-   } catch (err) {
-     return res.status(401).json({ error: err.message });
-   }
-      const user_id = user.id;
-  
-      // 3. בדיקת host_user_id בטבלת Meetings
-      const { data: meetingRow, error: meetingErr } = await supabase
-        .from("Meetings")
-        .select("*")
-        .eq("meeting_id", meeting_id)
-        .maybeSingle();
-      if (meetingErr || !meetingRow) {
-        return res.status(404).json({ error: "Meeting not found" });
-      }
-  
-      if (meetingRow.host_user_id === user_id) {
-        // 5. בדיקת meeting_password + meeting_id או url_meeting
-  // בדיקת credentials נכונה — מאפשרת URL לבד או ID+Password
-  const urlMatch = url_meeting && meetingRow.url_meeting === url_meeting;
-  const passwordMatch =
-    meeting_id && meeting_password &&
-    meetingRow.meeting_id === meeting_id &&
-    meetingRow.meeting_password === meeting_password;
-  if (!(urlMatch || passwordMatch)) {
-    return res.status(403).json({ error: "Invalid meeting credentials" });
-  }
-  
-      } else {
-        // 4. בדיקת Participants
-        const { data: participantRow, error: participantErr } = await supabase
-          .from("Participants")
-          .select("*")
-          .eq("meeting_id", meeting_id)
-          .maybeSingle();
-  if (participantErr) {
-    console.error("Supabase error (Participants):", participantErr);
-    return res.status(500).json({ error: "Database error checking participant" });
-  }
-  if (participantRow && participantRow.user_id && participantRow.user_id !== user_id) {
-    return res.status(403).json({ error: "User not authorized to join" });
-  }
-        
-        // בדיקת meeting_password + meeting_id או url_meeting
-        // ✅ תנאי חדש — מאשר כניסה אם יש או URL תואם או שילוב של ID+Password תואמים
-  // בדיקת credentials נכונה — מאפשרת URL לבד או ID+Password
-  const urlMatch = url_meeting && meetingRow.url_meeting === url_meeting;
-  const passwordMatch =
-    meeting_id && meeting_password &&
-    meetingRow.meeting_id === meeting_id &&
-    meetingRow.meeting_password === meeting_password;
-  if (!(urlMatch || passwordMatch)) {
-    return res.status(403).json({ error: "Invalid meeting credentials" });
-  }
-      }
-  
-      // 6. בדיקת is_active
-      if (!meetingRow.is_active) {
-        return res.status(400).json({ error: "Meeting is not active" });
-      }
-  
-      // אם עבר את כל הבדיקות – יצירת הרשומה ב־Participants
-      const { data: existing, error: existingErr } = await supabase
-        .from("Participants")
-        .select()
-        .eq("meeting_id", meeting_id)
-        .eq("user_id", user_id)
-        .single();
-  
-      if (existingErr && existingErr.code !== "PGRST116") {
-        console.error("Supabase error checking participant:", existingErr);
-        return res
-          .status(500)
-          .json({ error: "Database error checking participant" });
-      }
-  
-      if (existing) {
-        return res
-          .status(200)
-          .json({ participant: existing, message: "Already joined" });
-      }
-  
-      const { data, error } = await supabase
-        .from("Participants")
-        .insert([
-          {
-            meeting_id,
-            user_id,
-            joined_at: new Date().toISOString(),
-          },
-        ])
-        .select();
-  
-      if (error) {
-        console.error("Error joining meeting:", error);
-        return res.status(500).json({ error: error.message });
-      }
-  
-      const jti =
-    typeof crypto.randomUUID === "function"
-      ? crypto.randomUUID()
-      : crypto.randomBytes(16).toString("hex");
-  
-  const payload = {
-    user_id,
-    display_name: prefs.display_name,
-    native_language: prefs.native_language,
-    gender: prefs.gender,
-    meeting_id: meetingRow.meeting_id,
-    meeting_password: meetingRow.meeting_password,
-    jti
-  };
-  
-  const meetingToken = await createMeetingToken(payload);
-  
-  const CALL_BASE_URL =
-    process.env.CALL_BASE_URL ||
-    "https://speech-app-server.onrender.com/call.html";
-  
-  const redirectUrl = `${CALL_BASE_URL}?userToken=${encodeURIComponent(meetingToken)}`;
-  
-      res.status(200).json({
-    participant: data[0],
-    url: redirectUrl
-  });
-    } catch (err) {
-      console.error("Server error in /join:", err);
-      return res.status(500).json({ error: "Server error" });
+router.post("/join", async (req, res) => {
+  try {
+    const { meeting_id, meeting_password, url_meeting } = req.body;
+
+    // 1. בדיקת קלט — כמו שקיים כיום
+    if (!meeting_id && !url_meeting) {
+      return res
+        .status(400)
+        .json({ error: "Please enter a Meeting ID and Password or a Meeting URL" });
     }
-  });
+
+    // 2. אימות Session / בדיקת User Preferences — לא לשנות
+    const authHeader = req.headers["authorization"];
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Missing or invalid Authorization header" });
+    }
+    const accessToken = authHeader.split(" ")[1];
+    let user, prefs;
+    try {
+      ({ user, prefs } = await validateUserAndPreferences(accessToken));
+    } catch (err) {
+      return res.status(401).json({ error: err.message });
+    }
+    const user_id = user.id;
+
+    // 3. בדיקת הפגישה בטבלת Meetings
+    const { data: meetingRow, error: meetingErr } = await supabase
+      .from("Meetings")
+      .select("*")
+      .eq("meeting_id", meeting_id)
+      .maybeSingle();
+
+    if (meetingErr || !meetingRow) {
+      return res.status(404).json({ error: "Meeting not found" });
+    }
+
+    // בדיקת credentials: URL או meeting_id+meeting_password
+    const urlMatch = url_meeting && meetingRow.url_meeting === url_meeting;
+    const passwordMatch =
+      meeting_id && meeting_password &&
+      meetingRow.meeting_id === meeting_id &&
+      meetingRow.meeting_password === meeting_password;
+
+    if (!(urlMatch || passwordMatch)) {
+      return res.status(403).json({ error: "Invalid meeting credentials" });
+    }
+
+    let participantRow = null;
+    let newParticipant = null;
+
+    // 4. בדיקת HOST
+    if (meetingRow.host_user_id === user_id) {
+      // HOST — דילוג על בדיקת Participants → הולך ישר לבדיקה 6
+    } else {
+      // 5. בדיקת משתתף נוסף (Participants)
+      const checkMeetingId = meeting_id || meetingRow.meeting_id; // במקרה של url_meeting
+      const { data: participantData, error: participantErr } = await supabase
+        .from("Participants")
+        .select("*")
+        .eq("meeting_id", checkMeetingId)
+        .maybeSingle();
+
+      if (participantErr) {
+        console.error("Supabase error checking participant:", participantErr);
+        return res.status(500).json({ error: "Database error checking participant" });
+      }
+
+      participantRow = participantData;
+
+      if (participantRow) {
+        if (participantRow.user_id !== user_id) {
+          return res.status(403).json({ error: "User not authorized to join this meeting" });
+        }
+      } else {
+        const { data: insertedData, error: insertErr } = await supabase
+          .from("Participants")
+          .insert([
+            {
+              meeting_id: checkMeetingId,
+              user_id,
+              joined_at: new Date().toISOString(),
+            },
+          ])
+          .select()
+          .single();
+
+        if (insertErr) {
+          console.error("Error adding participant:", insertErr);
+          return res.status(500).json({ error: insertErr.message });
+        }
+        newParticipant = insertedData;
+      }
+    }
+
+    // 6. בדיקת is_active — מבוצעת תמיד אחרי HOST/Participants
+    if (!meetingRow.is_active) {
+      return res.status(400).json({ error: "Meeting is not active" });
+    }
+
+    // 8. יצירת JWT Token לפגישה — לא לשנות
+    const jti =
+      typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : crypto.randomBytes(16).toString("hex");
+
+    const payload = {
+      user_id,
+      display_name: prefs.display_name,
+      native_language: prefs.native_language,
+      gender: prefs.gender,
+      meeting_id: meetingRow.meeting_id,
+      meeting_password: meetingRow.meeting_password,
+      jti,
+    };
+
+    const meetingToken = await createMeetingToken(payload);
+
+    // 9. בניית URL להמשך — כמו ב-/start
+    const CALL_BASE_URL =
+      process.env.CALL_BASE_URL ||
+      "https://speech-app-server.onrender.com/call.html";
+
+    const redirectUrl = `${CALL_BASE_URL}?userToken=${encodeURIComponent(meetingToken)}`;
+
+    return res.status(200).json({
+      participant: participantRow || newParticipant || null,
+      url: redirectUrl,
+    });
+  } catch (err) {
+    console.error("Server error in /join:", err);
+    return res.status(500).json({ error: "Server error" });
+  }
+});
   
   module.exports = router;
