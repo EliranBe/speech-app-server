@@ -205,12 +205,12 @@ const payload = {
 // =======================================
 router.post("/join", async (req, res) => {
   try {
-    const { meeting_id, user_id, meeting_password, url_meeting } = req.body;
+    const { meeting_id, meeting_password, url_meeting } = req.body;
 
-    if (!meeting_id || !user_id) {
+    if (!meeting_id ) {
       return res
         .status(400)
-        .json({ error: "meeting_id and user_id are required" });
+        .json({ error: "meeting_id is required" });
     }
 
     // 1. אימות Session / בדיקת user_preferences
@@ -225,9 +225,7 @@ router.post("/join", async (req, res) => {
  } catch (err) {
    return res.status(401).json({ error: err.message });
  }
- if (user.id !== user_id) {
-   return res.status(403).json({ error: "User ID mismatch" });
- }
+    const user_id = user.id;
 
     // בדיקת קיום user_id בטבלת users
     const { data: userRow, error: userErr } = await supabase
