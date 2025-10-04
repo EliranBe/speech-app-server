@@ -110,22 +110,6 @@
         console.error("Error creating meeting:", error);
         return res.status(500).json({ error: error.message });
       }
-
-          // ✅ יצירת רשומת משתתף ריקה ראשונית עבור הפגישה
-    const { error: participantError } = await supabase
-      .from("Participants")
-      .insert([
-        {
-          meeting_id: data[0].meeting_id,
-          user_id: null, // נשאר ריק
-          joined_at: null, // נשאר ריק
-        },
-      ]);
-
-    if (participantError) {
-      console.error("Error creating initial participant:", participantError);
-      return res.status(500).json({ error: participantError.message });
-    }
       
       res.status(200).json({ meeting: data[0] });
     } catch (err) {
