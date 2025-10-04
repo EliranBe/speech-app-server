@@ -230,21 +230,48 @@ router.post("/join", async (req, res) => {
     const user_id = user.id;
 
     // 3. בדיקת הפגישה בטבלת Meetings
-        const { data: meetingRow, error: meetingErr } = await supabase
-      .from("Meetings")
-      .select("*")
-      .eq("meeting_id", meeting_id)
-      .maybeSingle();
-        
-    if (meetingErr || !meetingRow) {
-      return res.status(404).json({ error: "Meeting not found" });
-    }
+
+let meeting_id_to_use = meeting_id; // ברירת מחדל
+
+// אם יש meeting_id, נבדוק אותו תחילה
+let { data: meetingRow, error: meetingErr } = await supabase
+  .from("Meetings")
+  .select("*")
+  .eq("meeting_id", meeting_id)
+  .maybeSingle();
+
+
+// אם לא מצאנו meetingRow ויש url_meeting, נחפש לפי URL
+if ((!meetingRow || !meetingRow.meeting_id) && url_meeting) {
+  const { data: meetingByUrl, error: urlErr } = await supabase
+    .from("Meetings")
+    .select("meeting_id")
+    .eq("url_meeting", url_meeting)
+    .maybeSingle();
+
+  if (urlErr || !meetingByUrl) {
+    return res.status(404).json({ error: "Meeting not found by URL" });
+  }
+
+  meeting_id_to_use = meetingByUrl.meeting_id;
+
+  // נחזור לבדוק שוב לפי meeting_id החדש
+  ({ data: meetingRow, error: meetingErr } = await supabase
+    .from("Meetings")
+    .select("*")
+    .eq("meeting_id", meeting_id_to_use)
+    .maybeSingle());
+
+  if (meetingErr || !meetingRow) {
+    return res.status(404).json({ error: "Meeting not found" });
+  }
+}
     
     // בדיקת credentials: URL או meeting_id+meeting_password
     const urlMatch = url_meeting && meetingRow.url_meeting === url_meeting;
     const passwordMatch =
       meeting_id && meeting_password &&
-      meetingRow.meeting_id === meeting_id &&
+      meetingRow.meeting_id === meeting_id_to_use &&
       meetingRow.meeting_password === meeting_password;
 
     if (!(urlMatch || passwordMatch)) {
@@ -260,8 +287,8 @@ router.post("/join", async (req, res) => {
     } else {
 
 // 5. בדיקת משתתף נוסף (Participants)
-const checkMeetingId = meetingRow.meeting_id; // תמיד משתמשים ב־meeting_id מהבדיקה 3
-    
+const checkMeetingId = meeting_id_to_use; // עכשיו משתמשים ב־meeting_id שנמצא
+   
 // נבדוק אם יש רשומת משתתף קיימת עבור הפגישה
 const { data: participantData, error: participantErr } = await supabase
   .from("Participants")
@@ -274,7 +301,7 @@ if (participantErr) {
   return res.status(500).json({ error: "Database error checking participant" });
 }
 
-participantRow = participantData;
+let participantRow = participantData;
       
 if (participantRow) {
   if (participantRow.user_id === null) {
