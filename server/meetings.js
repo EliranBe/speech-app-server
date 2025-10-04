@@ -230,11 +230,15 @@ router.post("/join", async (req, res) => {
     const user_id = user.id;
 
     // 3. בדיקת הפגישה בטבלת Meetings
-    const { data: meetingRow, error: meetingErr } = await supabase
-      .from("Meetings")
-      .select("*")
-      .eq("meeting_id", meeting_id)
-      .maybeSingle();
+        let meetingQuery = supabase.from("Meetings").select("*");
+        
+        if (meeting_id) {
+          meetingQuery = meetingQuery.eq("meeting_id", meeting_id);
+        } else if (url_meeting) {
+          meetingQuery = meetingQuery.eq("url_meeting", url_meeting);
+        }
+        
+        const { data: meetingRow, error: meetingErr } = await meetingQuery.maybeSingle();
 
     if (meetingErr || !meetingRow) {
       return res.status(404).json({ error: "Meeting not found" });
@@ -258,8 +262,9 @@ router.post("/join", async (req, res) => {
     if (meetingRow.host_user_id === user_id) {
       // HOST — דילוג על בדיקת Participants → הולך ישר לבדיקה 6
     } else {
+      
       // 5. בדיקת משתתף נוסף (Participants)
-      const checkMeetingId = meeting_id || meetingRow.meeting_id; // במקרה של url_meeting
+      const checkMeetingId = meetingRow?.meeting_id || meeting_id; // במקרה של url_meeting
       const { data: participantData, error: participantErr } = await supabase
         .from("Participants")
         .select("*")
