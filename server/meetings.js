@@ -263,44 +263,45 @@ router.post("/join", async (req, res) => {
       // HOST — דילוג על בדיקת Participants → הולך ישר לבדיקה 6
     } else {
       
-      // 5. בדיקת משתתף נוסף (Participants)
-      const checkMeetingId = meetingRow?.meeting_id || meeting_id; // במקרה של url_meeting
-      const { data: participantData, error: participantErr } = await supabase
-        .from("Participants")
-        .select("*")
-        .eq("meeting_id", checkMeetingId)
-        .maybeSingle();
+// 5. בדיקת משתתף נוסף (Participants)
+const checkMeetingId = meetingRow.meeting_id; // מבטיחים תמיד להשתמש ב־meeting_id מהבדיקה 3
 
-      if (participantErr) {
-        console.error("Supabase error checking participant:", participantErr);
-        return res.status(500).json({ error: "Database error checking participant" });
-      }
+const { data: participantData, error: participantErr } = await supabase
+  .from("Participants")
+  .select("*")
+  .eq("meeting_id", checkMeetingId)
+  .maybeSingle();
 
-      participantRow = participantData;
+if (participantErr) {
+  console.error("Supabase error checking participant:", participantErr);
+  return res.status(500).json({ error: "Database error checking participant" });
+}
 
-      if (participantRow) {
-        if (participantRow.user_id !== user_id) {
-          return res.status(403).json({ error: "User not authorized to join this meeting" });
-        }
-      } else {
-        const { data: insertedData, error: insertErr } = await supabase
-          .from("Participants")
-          .insert([
-            {
-              meeting_id: checkMeetingId,
-              user_id,
-              joined_at: new Date().toISOString(),
-            },
-          ])
-          .select()
-          .single();
+participantRow = participantData;
 
-        if (insertErr) {
-          console.error("Error adding participant:", insertErr);
-          return res.status(500).json({ error: insertErr.message });
-        }
-        newParticipant = insertedData;
-      }
+if (participantRow) {
+  if (participantRow.user_id !== user_id) {
+    return res.status(403).json({ error: "User not authorized to join this meeting" });
+  }
+} else {
+  const { data: insertedData, error: insertErr } = await supabase
+    .from("Participants")
+    .insert([
+      {
+        meeting_id: checkMeetingId,
+        user_id,
+        joined_at: new Date().toISOString(),
+      },
+    ])
+    .select()
+    .single();
+
+  if (insertErr) {
+    console.error("Error adding participant:", insertErr);
+    return res.status(500).json({ error: insertErr.message });
+  }
+  newParticipant = insertedData;
+}
     }
 
     // 6. בדיקת is_active — מבוצעת תמיד אחרי HOST/Participants
