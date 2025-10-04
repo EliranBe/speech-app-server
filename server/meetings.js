@@ -227,16 +227,6 @@ router.post("/join", async (req, res) => {
  }
     const user_id = user.id;
 
-    // בדיקת קיום user_id בטבלת users
-    const { data: userRow, error: userErr } = await supabase
-      .from("users")
-      .select("id")
-      .eq("id", user_id)
-      .single();
-    if (userErr || !userRow) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
     // 3. בדיקת host_user_id בטבלת Meetings
     const { data: meetingRow, error: meetingErr } = await supabase
       .from("Meetings")
