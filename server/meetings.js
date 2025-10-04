@@ -230,16 +230,12 @@ router.post("/join", async (req, res) => {
     const user_id = user.id;
 
     // 3. בדיקת הפגישה בטבלת Meetings
-        let meetingQuery = supabase.from("Meetings").select("*");
+        const { data: meetingRow, error: meetingErr } = await supabase
+      .from("Meetings")
+      .select("*")
+      .eq("meeting_id", meeting_id)
+      .maybeSingle();
         
-        if (meeting_id) {
-          meetingQuery = meetingQuery.eq("meeting_id", meeting_id);
-        } else if (url_meeting) {
-          meetingQuery = meetingQuery.eq("url_meeting", url_meeting);
-        }
-        
-        const { data: meetingRow, error: meetingErr } = await meetingQuery.maybeSingle();
-
     if (meetingErr || !meetingRow) {
       return res.status(404).json({ error: "Meeting not found" });
     }
