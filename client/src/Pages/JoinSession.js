@@ -68,9 +68,9 @@ const resp = await fetch("/api/meetings/join", {
     Authorization: `Bearer ${accessToken}`
   },
   body: JSON.stringify({
-    meeting_url: sessionUrl.trim(),
+    url_meeting: sessionUrl.trim(),
     meeting_id: meetingId.trim(),
-    session_code: sessionCode.trim().toUpperCase(),
+    meeting_password: sessionCode.trim().toUpperCase(),
   }),
 });
 
@@ -148,9 +148,9 @@ const joinWithCredentials = async () => {
 },
 
         body: JSON.stringify({
-          meeting_url: sessionUrl.trim(),
+          url_meeting: sessionUrl.trim(),
           meeting_id: meetingId.trim(),
-          session_code: sessionCode.trim().toUpperCase(),
+          meeting_password: sessionCode.trim().toUpperCase(),
                   }),
       }
     );
