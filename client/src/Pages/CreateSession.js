@@ -109,28 +109,46 @@ const createNewSession = async (userData) => {
   setIsCreating(true);
   try {
     const meetingUrl = generateMeetingUrl();
-    const { data: newSession, error } = await supabase
-      .from("Meetings")
-      .insert([
-        {
-          host_user_id: userData.id,
-          meeting_id: generateMeetingId(),
-          meeting_password: generateMeetingPassword(),
-          url_meeting: meetingUrl,
-          qr_data: meetingUrl,
-          created_at: new Date().toISOString(),
-          is_active: true,
-        },
-      ])
-      .select()
-      .single();
+const { data: newSession, error } = await supabase
+  .from("Meetings")
+  .insert([
+    {
+      host_user_id: userData.id,
+      meeting_id: generateMeetingId(),
+      meeting_password: generateMeetingPassword(),
+      url_meeting: meetingUrl,
+      qr_data: meetingUrl,
+      created_at: new Date().toISOString(),
+      is_active: true,
+    },
+  ])
+  .select()
+  .single();
 
-    if (error) {
-      console.error("Error creating meeting:", error);
-      setSession(null);
-      setIsCreating(false);
-      return;
-    }
+if (error) {
+  console.error("Error creating meeting:", error);
+  setSession(null);
+  setIsCreating(false);
+  return;
+}
+
+// יצירת רשומה בטבלת Participants
+const { error: participantError } = await supabase
+  .from("Participants")
+  .insert([
+    {
+      meeting_id: newSession.meeting_id,
+      user_id: null,
+      joined_at: null,
+    },
+  ]);
+
+if (participantError) {
+  console.error("Error creating participant record:", participantError);
+  setSession(null);
+  setIsCreating(false);
+  return;
+}
 
     setSession({
       ...newSession,
