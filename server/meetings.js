@@ -239,13 +239,16 @@ router.post("/join", async (req, res) => {
 
     if (meetingRow.host_user_id === user_id) {
       // 5. בדיקת meeting_password + meeting_id או url_meeting
-      if (
-        (meetingRow.meeting_password !== meeting_password &&
-          meetingRow.url_meeting !== url_meeting) ||
-        (!meetingRow.meeting_password && !meetingRow.url_meeting)
-      ) {
-        return res.status(403).json({ error: "Invalid meeting credentials" });
-      }
+// בדיקת credentials נכונה — מאפשרת URL לבד או ID+Password
+const urlMatch = url_meeting && meetingRow.url_meeting === url_meeting;
+const passwordMatch =
+  meeting_id &&
+  meeting_password &&
+  meetingRow.meeting_id === meeting_id &&
+  meetingRow.meeting_password === meeting_password;
+if (!urlMatch && !passwordMatch) {
+  return res.status(403).json({ error: "Invalid meeting credentials" });
+}
     } else {
       // 4. בדיקת Participants
       const { data: participantRow, error: participantErr } = await supabase
@@ -260,13 +263,17 @@ router.post("/join", async (req, res) => {
         return res.status(403).json({ error: "User not authorized to join" });
       }
       // בדיקת meeting_password + meeting_id או url_meeting
-      if (
-        (meetingRow.meeting_password !== meeting_password &&
-          meetingRow.url_meeting !== url_meeting) ||
-        (!meetingRow.meeting_password && !meetingRow.url_meeting)
-      ) {
-        return res.status(403).json({ error: "Invalid meeting credentials" });
-      }
+      // ✅ תנאי חדש — מאשר כניסה אם יש או URL תואם או שילוב של ID+Password תואמים
+// בדיקת credentials נכונה — מאפשרת URL לבד או ID+Password
+const urlMatch = url_meeting && meetingRow.url_meeting === url_meeting;
+const passwordMatch =
+  meeting_id &&
+  meeting_password &&
+  meetingRow.meeting_id === meeting_id &&
+  meetingRow.meeting_password === meeting_password;
+if (!urlMatch && !passwordMatch) {
+  return res.status(403).json({ error: "Invalid meeting credentials" });
+}
     }
 
     // 6. בדיקת is_active
