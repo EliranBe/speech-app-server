@@ -39,10 +39,10 @@ export default function JoinSession() {
   }, [location]);
 
   const joinSession = async () => {
-  if (!meetingId.trim() || !sessionCode.trim()) {
-    setError("Please enter a Meeting ID and Password.");
-    return;
-  }
+  if (!sessionUrl.trim() && (!meetingId.trim() || !sessionCode.trim())) {
+  setError("Please enter a Meeting URL or both Meeting ID and Password.");
+  return;
+}
 
   setIsJoining(true);
 
