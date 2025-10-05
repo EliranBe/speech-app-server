@@ -266,7 +266,17 @@ if ((!meetingRow || !meetingRow.meeting_id) && url_meeting) {
     return res.status(404).json({ error: "Meeting not found" });
   }
 }
-    
+
+    console.log("🔍 Incoming meeting credentials:");
+console.log("url_meeting:", url_meeting);
+console.log("meeting_id:", meeting_id);
+console.log("meeting_password:", meeting_password);
+
+console.log("📌 Meeting row from DB:");
+console.log("meetingRow.meeting_id:", meetingRow.meeting_id);
+console.log("meetingRow.meeting_password:", meetingRow.meeting_password);
+console.log("meetingRow.url_meeting:", meetingRow.url_meeting);
+
     // בדיקת credentials: URL או meeting_id+meeting_password
     const urlMatch = url_meeting && meetingRow.url_meeting === url_meeting;
     const passwordMatch =
