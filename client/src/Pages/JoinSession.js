@@ -68,9 +68,7 @@ const bodyData = sessionUrl.trim()
       meeting_password: sessionCode.trim(),
     };
 
-const resp = await fetch(
-  `${process.env.REACT_APP_API_BASE_URL || "http://localhost:3001"}/api/meetings/join`,
-  {
+const resp = await fetch("/api/meetings/join", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
