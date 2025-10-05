@@ -204,7 +204,7 @@ const audioBase64 = await synthesizeTextToBase64(textForTTS, {
       return;
     }
 
-    ws.clientId = url.searchParams.get("clientId");
+    ws.clientId = url.searchParams.get("user_id") || decoded.user_id;
     console.log("🔗 Client connected:", ws.clientId);
 
     let lastChunkTime = null;
