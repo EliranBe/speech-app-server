@@ -372,7 +372,7 @@ async function startMicAndTranscription() {
   return;
 }
 
-socket = new WebSocket(`wss://${window.location.host}?token=${userToken}`);
+  socket = new WebSocket(`wss://${window.location.host}?token=${userToken}&user_id=${userPayload?.user_id}`);
 
   socket.addEventListener("open", async () => {
     console.log("✅ connected to server");
