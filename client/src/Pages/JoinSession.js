@@ -339,7 +339,7 @@ const joinWithCredentials = async () => {
             <input
               type="text"
               value={sessionCode}
-              onChange={(e) => setSessionCode(e.target.value.toUpperCase())}
+              onChange={(e) => setSessionCode(e.target.value)}
               placeholder="Enter Meeting Password"
               maxLength={8}
               style={{
