@@ -61,18 +61,24 @@ export default function JoinSession() {
     const accessToken = authSession.access_token;
     const user_id = authSession.user.id;
 
-const resp = await fetch("/api/meetings/join", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${accessToken}`
-  },
-  body: JSON.stringify({
-    url_meeting: sessionUrl.trim(),
-    meeting_id: meetingId.trim(),
-    meeting_password: sessionCode.trim().toUpperCase(),
-  }),
-});
+const bodyData = sessionUrl.trim()
+  ? { url_meeting: sessionUrl.trim() }
+  : {
+      meeting_id: meetingId.trim(),
+      meeting_password: sessionCode.trim(),
+    };
+
+const resp = await fetch(
+  `${process.env.REACT_APP_API_BASE_URL || "http://localhost:3001"}/api/meetings/join`,
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(bodyData),
+  }
+);
 
 const { url, error: apiError } = await resp.json();
 
@@ -150,7 +156,7 @@ const joinWithCredentials = async () => {
         body: JSON.stringify({
           url_meeting: sessionUrl.trim(),
           meeting_id: meetingId.trim(),
-          meeting_password: sessionCode.trim().toUpperCase(),
+          meeting_password: sessionCode.trim(),
                   }),
       }
     );
