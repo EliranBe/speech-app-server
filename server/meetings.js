@@ -16,7 +16,6 @@
   async function verifyAccessToken(accessToken) {
     const { data, error } = await supabase.auth.getUser(accessToken);
     if (error) {
-      console.error("JWT verification failed:", error);
       throw new Error("Invalid or expired access token");
     }
     return data.user;
@@ -107,13 +106,11 @@
         .select();
 
       if (error) {
-        console.error("Error creating meeting:", error);
         return res.status(500).json({ error: error.message });
       }
 
       res.status(200).json({ meeting: data[0] });
     } catch (err) {
-      console.error("Server error:", err);
       res.status(500).json({ error: "Server error" });
     }
   });
@@ -152,7 +149,6 @@ if (!meeting_id && !url_meeting) {
         .maybeSingle();
 
       if (meetingErr) {
-        console.error("Supabase error (Meetings):", meetingErr);
         return res.status(500).json({ error: "Database error checking meeting" });
       }
       if (!meetingRow) {
@@ -196,7 +192,6 @@ if (!meeting_id && !url_meeting) {
 
       return res.status(200).json({ url: redirectUrl });
     } catch (err) {
-      console.error("Server error in /start:", err);
       return res.status(500).json({ error: "Server error" });
     }
   });
@@ -267,16 +262,6 @@ if ((!meetingRow || !meetingRow.meeting_id) && url_meeting) {
   }
 }
 
-    console.log("🔍 Incoming meeting credentials:");
-console.log("url_meeting:", url_meeting);
-console.log("meeting_id:", meeting_id);
-console.log("meeting_password:", meeting_password);
-
-console.log("📌 Meeting row from DB:");
-console.log("meetingRow.meeting_id:", meetingRow.meeting_id);
-console.log("meetingRow.meeting_password:", meetingRow.meeting_password);
-console.log("meetingRow.url_meeting:", meetingRow.url_meeting);
-
     // בדיקת credentials: URL או meeting_id+meeting_password
     const urlMatch = url_meeting && meetingRow.url_meeting === url_meeting;
     const passwordMatch =
@@ -307,7 +292,6 @@ const { data: participantData, error: participantErr } = await supabase
   .maybeSingle();
 
 if (participantErr) {
-  console.error("Supabase error checking participant:", participantErr);
   return res.status(500).json({ error: "Database error checking participant" });
 }
 
@@ -327,7 +311,6 @@ if (participantRow) {
       .single();
 
     if (updateErr) {
-      console.error("Error updating participant:", updateErr);
       return res.status(500).json({ error: updateErr.message });
     }
 
@@ -338,7 +321,6 @@ if (participantRow) {
   }
 } else {
   // 🟥 אם אין בכלל רשומת משתתף — מדובר בטעות לוגית
-  console.error("Participant record missing for meeting:", checkMeetingId);
   return res
     .status(500)
     .json({ error: "Participant record not found for this meeting" });
@@ -380,7 +362,6 @@ if (participantRow) {
       url: redirectUrl,
     });
   } catch (err) {
-    console.error("Server error in /join:", err);
     return res.status(500).json({ error: "Server error" });
   }
 });
