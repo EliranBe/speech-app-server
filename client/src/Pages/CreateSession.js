@@ -32,8 +32,12 @@ function generateMeetingPassword() {
 }
 
 function generateMeetingUrl() {
-  const randomString = Math.random().toString(36).substring(2, 12);
   const BASE_URL = process.env.BASE_URL || "http://Verbo.io";
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+[]{}|;:,.<>?";
+  let randomString = "";
+  for (let i = 0; i < 40; i++) {
+    randomString += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
   return `${BASE_URL}/Call?sessionId=${randomString}`;
 }
 
