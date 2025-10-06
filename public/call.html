@@ -199,17 +199,25 @@ video {
     }
 
     // 🔌 סגירת WebSocket
-    if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.close();
-        socket = null;
-    }
+    const closeSocket = () => {
+        return new Promise((resolve) => {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.addEventListener("close", () => resolve());
+                socket.close();
+            } else {
+                resolve();
+            }
+        });
+    };
+
+    await closeSocket();
 
     // 📴 עזיבת ערוץ Agora
     if (client) {
         try { await client.leave(); } catch(e) { console.warn("⚠️ client.leave failed:", e); }
         client = null;
     }
- window.location.href = "/";
+    window.location.href = "/";
 }
 
     window.onload = async () => {
