@@ -65,12 +65,6 @@
     return pwd;
   }
 
-  function generateMeetingUrl() {
-    const randomString = crypto.randomBytes(8).toString("hex");
-    const BASE_URL = process.env.BASE_URL || "http://Verbo.io";
-    return `${BASE_URL}/Call?sessionId=${randomString}`;
-  }
-
   // =======================================
   // יצירת פגישה חדשה
   // =======================================
