@@ -199,22 +199,17 @@ video {
     }
 
     // 🔌 סגירת WebSocket
-if (socket && socket.readyState === WebSocket.OPEN) {
-  socket.addEventListener("close", () => {
-    window.location.href = "/"; // מעבר למסך הבית לאחר סגירה
-  });
-  socket.close();
-  socket = null;
-} else {
-  window.location.href = "/"; // אם כבר סגור – מעבר מידי
-}
+    if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.close();
+        socket = null;
+    }
 
     // 📴 עזיבת ערוץ Agora
     if (client) {
         try { await client.leave(); } catch(e) { console.warn("⚠️ client.leave failed:", e); }
         client = null;
     }
-
+ window.location.href = "/";
 }
 
     window.onload = async () => {
@@ -500,14 +495,9 @@ async function stopMicAndTranscription() {
   }
 
     // 📴 סגירת WebSocket
-if (socket && socket.readyState === WebSocket.OPEN) {
-  socket.addEventListener("close", () => {
-    window.location.href = "/"; // מעבר לאחר סגירה
-  });
-  socket.close();
-} else {
-  window.location.href = "/"; // אם כבר סגור
-}
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    socket.close();
+  }
 
   isRunning = false;
   btn_mic.innerText = "🎤 Start Transcription";
@@ -531,20 +521,14 @@ async function openMicrophone(recorder, socket) {
       resolve();
     };
 
-recorder.onstop = () => {
-  console.log("🛑 Microphone closed");
-  document.body.classList.remove("recording");
-
-  if (socket && socket.readyState === WebSocket.OPEN) {
-    socket.addEventListener("close", () => {
-      console.log("🔌 WebSocket closed");
-      window.location.href = "/"; // מעבר לאחר סגירה
-    });
-    socket.close();
-  } else {
-    window.location.href = "/"; // אם כבר סגור
-  }
-};
+         recorder.onstop = () => {
+      console.log("🛑 Microphone closed");
+                 document.body.classList.remove("recording");
+              if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.close();
+           console.log("🔌 WebSocket closed");
+                }     
+         };
 
         recorder.ondataavailable = (event) => {
       console.log("🎙️ microphone data received");
