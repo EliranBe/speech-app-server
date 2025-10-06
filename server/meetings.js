@@ -178,7 +178,7 @@ if (!meeting_id && !url_meeting) {
 
       const CALL_BASE_URL =
         process.env.CALL_BASE_URL ||
-        "https://speech-app-server.onrender.com/call.html";
+        "";
 
       const redirectUrl = `${CALL_BASE_URL}?userToken=${encodeURIComponent(
         meetingToken
@@ -347,7 +347,7 @@ if (participantRow) {
     // 9. בניית URL להמשך — כמו ב-/start
     const CALL_BASE_URL =
       process.env.CALL_BASE_URL ||
-      "https://speech-app-server.onrender.com/call.html";
+      "";
 
     const redirectUrl = `${CALL_BASE_URL}?userToken=${encodeURIComponent(meetingToken)}`;
 
