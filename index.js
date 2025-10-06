@@ -58,14 +58,6 @@ app.use("/api", userPreferencesRoutes);
 
 app.use("/api/meetings", meetingsRouter);
 
-app.get("/Call", (req, res) => {
-  if (req.query.sessionId) {
-    return res.redirect("/login");
-  }
-  res.status(404).send("Not Found");
-});
-
-
 // החזרת APP_ID בצורה בטוחה
 app.get('/appId', (req, res) => {
   res.json({ appId: process.env.AGORA_APP_ID });
