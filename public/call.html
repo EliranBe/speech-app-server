@@ -204,6 +204,7 @@ video {
             if (socket && socket.readyState === WebSocket.OPEN) {
                 socket.addEventListener("close", () => resolve());
                 socket.close();
+                socket = null;
             } else {
                 resolve();
             }
