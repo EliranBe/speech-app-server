@@ -32,7 +32,7 @@ function generateMeetingPassword() {
 }
 
 function generateMeetingUrl() {
-  const BASE_URL = process.env.BASE_URL || "";
+  const BASE_URL = process.env.REACT_APP_BASE_URL || "";
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+[]{}|;:,.<>?";
   let randomString = "";
   for (let i = 0; i < 40; i++) {
