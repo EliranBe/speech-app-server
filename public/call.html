@@ -199,10 +199,15 @@ video {
     }
 
     // 🔌 סגירת WebSocket
-    if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.close();
-        socket = null;
-    }
+if (socket && socket.readyState === WebSocket.OPEN) {
+  socket.addEventListener("close", () => {
+    window.location.href = "/"; // מעבר למסך הבית לאחר סגירה
+  });
+  socket.close();
+  socket = null;
+} else {
+  window.location.href = "/"; // אם כבר סגור – מעבר מידי
+}
 
     // 📴 עזיבת ערוץ Agora
     if (client) {
@@ -495,9 +500,14 @@ async function stopMicAndTranscription() {
   }
 
     // 📴 סגירת WebSocket
-  if (socket && socket.readyState === WebSocket.OPEN) {
-    socket.close();
-  }
+if (socket && socket.readyState === WebSocket.OPEN) {
+  socket.addEventListener("close", () => {
+    window.location.href = "/"; // מעבר לאחר סגירה
+  });
+  socket.close();
+} else {
+  window.location.href = "/"; // אם כבר סגור
+}
 
   isRunning = false;
   btn_mic.innerText = "🎤 Start Transcription";
@@ -521,14 +531,21 @@ async function openMicrophone(recorder, socket) {
       resolve();
     };
 
-         recorder.onstop = () => {
-      console.log("🛑 Microphone closed");
-                 document.body.classList.remove("recording");
-              if (socket && socket.readyState === WebSocket.OPEN) {
-                socket.close();
-           console.log("🔌 WebSocket closed");
-                }     
-         };
+recorder.onstop = () => {
+  console.log("🛑 Microphone closed");
+  document.body.classList.remove("recording");
+
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    socket.addEventListener("close", () => {
+      console.log("🔌 WebSocket closed");
+      window.location.href = "/"; // מעבר לאחר סגירה
+    });
+    socket.close();
+  } else {
+    window.location.href = "/"; // אם כבר סגור
+  }
+};
+
         recorder.ondataavailable = (event) => {
       console.log("🎙️ microphone data received");
       if (event.data.size > 0 && socket.readyState === WebSocket.OPEN) {
