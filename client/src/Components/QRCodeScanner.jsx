@@ -43,48 +43,77 @@ export default function QRCodeScanner({ onScanSuccess, onClose }) {
   };
 
   return (
+  <div
+    onClick={handleOverlayClick}
+    style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      width: "100vw",
+      height: "100vh",
+      backgroundColor: "rgba(0, 0, 0, 0.7)",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 9999,
+    }}
+  >
     <div
-      onClick={handleOverlayClick}
       style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100vw",
-        height: "100vh",
-        backgroundColor: "rgba(0, 0, 0, 0.7)",
+        background: "rgba(255,255,255,0.9)",
+        borderRadius: "16px",
+        padding: "1rem",
+        boxShadow: "0 0 20px rgba(0,0,0,0.3)",
         display: "flex",
-        justifyContent: "center",
+        flexDirection: "column",
         alignItems: "center",
-        zIndex: 9999,
+        position: "relative", // חשוב ל־overlay
       }}
     >
       <div
+        id="qr-reader"
+        ref={qrRegionRef}
         style={{
-          background: "rgba(255,255,255,0.9)",
-          borderRadius: "16px",
-          padding: "1rem",
-          boxShadow: "0 0 20px rgba(0,0,0,0.3)",
+          width: "280px",
+          height: "280px",
+          border: "2px solid #3b82f6",
+          borderRadius: "12px",
+          position: "relative",
+          overflow: "hidden",
+        }}
+      ></div>
+
+      {/* Overlay עם גבולות הדרכה */}
+      <div
+        style={{
+          position: "absolute",
+          top: "0", // מתואם עם padding של ההורה
+          left: "0",
+          width: "100%",
+          height: "100%",
+          backgroundColor: "rgba(0, 0, 0, 0.4)",
           display: "flex",
-          flexDirection: "column",
+          justifyContent: "center",
           alignItems: "center",
+          pointerEvents: "none",
+          borderRadius: "12px",
         }}
       >
         <div
-          id="qr-reader"
-          ref={qrRegionRef}
           style={{
-            width: "280px",
-            height: "280px",
-            border: "2px solid #3b82f6",
+            width: "250px",
+            height: "250px",
+            border: "4px solid white",
             borderRadius: "12px",
-            position: "relative",
-            overflow: "hidden",
+            boxSizing: "border-box",
           }}
         ></div>
-        <p style={{ color: "#333", marginTop: "1rem", fontWeight: "600" }}>
-          Align QR Code within the frame
-        </p>
       </div>
+
+      <p style={{ color: "#333", marginTop: "1rem", fontWeight: "600" }}>
+        Align QR Code within the frame
+      </p>
     </div>
-  );
+  </div>
+);
 }
