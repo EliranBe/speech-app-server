@@ -271,7 +271,7 @@ const joinWithCredentials = async () => {
 
         {/* QR Scanner */}
         {isScanning && (
-          <QRCode
+          <QRCodeScanner
             onScanSuccess={handleScanSuccess}
             onClose={() => {
               setIsScanning(false);
