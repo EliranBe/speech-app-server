@@ -9,13 +9,13 @@
     "jsqr": "^1.4.0",
     "lucide-react": "^0.544.0",
     "react-router-dom": "^6.14.1",
-    "@supabase/supabase-js": "^2.57.4"
+    "@supabase/supabase-js": "^2.57.4",
+    "html5-qrcode": "^2.3.8"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "html5-qrcode": "^2.3.8"
+    "eject": "react-scripts eject"
   }
 }
