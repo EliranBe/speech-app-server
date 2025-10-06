@@ -366,4 +366,12 @@ if (participantRow) {
   }
 });
 
+// Redirect ל־Login אם ה־URL מכיל sessionId
+router.get("/Call", (req, res) => {
+  if (req.query.sessionId) {
+    return res.redirect("/login");
+  }
+  res.status(404).send("Not Found");
+});
+
   module.exports = router;
