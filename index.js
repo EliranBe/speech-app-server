@@ -93,6 +93,13 @@ app.get('/rte-token', (req, res) => {
   }
 });
 
+app.get("/call-session/Call", (req, res) => {
+  if (req.query.sessionId) {
+    return res.redirect("/login");
+  }
+  res.status(404).send("Not Found");
+});
+
 // כל route שלא מוגדר ב-API יוגש על ידי React
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
