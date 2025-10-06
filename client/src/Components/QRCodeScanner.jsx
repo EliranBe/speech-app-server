@@ -5,42 +5,42 @@ export default function QRCodeScanner({ onScanSuccess, onClose }) {
   const qrRegionRef = useRef(null);
   const scannerRef = useRef(null);
 
-  useEffect(() => {
-    scannerRef.current = new Html5Qrcode("qr-reader");
+useEffect(() => {
+  scannerRef.current = new Html5Qrcode("qr-reader");
 
-    scannerRef.current
-      .start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
-        (decodedText) => {
-          scannerRef.current.stop().then(() => {
-            onScanSuccess(decodedText);
-          });
-        },
-        (error) => {
-          console.log("QR scanning...", error);
-        }
-      )
-      .catch((err) => {
-        console.error("Error starting QR scanner:", err);
-      });
-
-    return () => {
-      if (scannerRef.current) {
-        scannerRef.current.stop().catch(() => {});
+  scannerRef.current
+    .start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: { width: 250, height: 250 } },
+      (decodedText) => {
+        onScanSuccess(decodedText); // קודם ממלאים שדה
+        stopScanner(); // סוגרים את הסורק
+      },
+      (error) => {
+        console.log("QR scanning...", error);
       }
-    };
-  }, [onScanSuccess]);
+    )
+    .catch((err) => {
+      console.error("Error starting QR scanner:", err);
+    });
 
-  const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) {
-      if (scannerRef.current) {
-        scannerRef.current.stop().then(onClose);
-      } else {
-        onClose();
-      }
-    }
+  return () => {
+    stopScanner();
   };
+}, [onScanSuccess]);
+
+const stopScanner = () => {
+  if (scannerRef.current && scannerRef.current.getState() === "SCANNING") {
+    scannerRef.current.stop().catch(() => {});
+  }
+};
+
+const handleOverlayClick = (e) => {
+  if (e.target === e.currentTarget) {
+    stopScanner();
+    onClose();
+  }
+};
 
   return (
   <div
