@@ -9,6 +9,7 @@ import {
 import { useNavigate, useLocation } from "react-router-dom";
 import BrandedLoader from '../Components/BrandedLoader';
 import QRCode from "../Components/ui/QRCode";
+import QRCodeScanner from "../Components/QRCodeScanner";
 import { supabase } from "../utils/supabaseClient";
 import logo from "../images/logo-verbo.png";
 
@@ -100,21 +101,23 @@ if (url) {
   }
 };
 
-  const handleScanSuccess = (scannedData) => {
-    setIsScanning(false);
-    if (scannedData === "detected_pattern") {
-      setError(
-        "QR code detected! Please enter the Meeting details manually below."
-      );
-    } else if (scannedData) {
-      try {
-        const url = new URL(scannedData);
-        window.location.href = scannedData;
-      } catch (e) {
-        setError("Invalid QR code format. Please use manual entry below.");
-      }
-    }
-  };
+const handleScanSuccess = (scannedData) => {
+  setIsScanning(false);
+
+  if (!scannedData) {
+    setError("No QR code detected. Please try again.");
+    return;
+  }
+
+  try {
+    // אם נסרק QR — נמלא את השדה ולא נעשה redirect
+    const url = new URL(scannedData);
+    setSessionUrl(url.href); // ✅ ממלא את השדה Enter Meeting URL
+    setError(""); // מנקה שגיאות ישנות
+  } catch (e) {
+    setError("Invalid QR code format. Please scan a valid meeting QR code.");
+  }
+};
 
 const joinWithCredentials = async () => {
   setError("");
