@@ -154,6 +154,13 @@ export default function Login() {
         <h1 style={{ fontSize: "2rem", fontWeight: "600", marginBottom: "1.5rem", color: "#333" }}>
           Welcome to Verbo.io
         </h1>
+        
+        {/* תיאור האפליקציה */}
+        <p style={{ fontSize: "1rem", color: "#555", marginBottom: "1.5rem", lineHeight: "1.4" }}>
+          Connect beyond words.<br />
+          Verbo.io breaks language barriers with real time voice translation making every conversation natural, personal, and effortless.<br />
+          Whether you’re traveling, collaborating, holding professional meetings, or connecting with loved ones — Verbo.io is your best companion for seamless communication, anywhere and anytime.
+        </p>
 
         {/* הודעת שגיאה */}
         {error && <p style={{ color: "red", marginBottom: "1rem" }}>{error}</p>}
