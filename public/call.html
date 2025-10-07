@@ -276,7 +276,7 @@ client.on("user-left", (user) => {
 async function startLocalTracks() {
     [agoraMicTrack, cameraTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
      cameraTrack.play("local-player");
-      await client.publish([agoraMicTrack, cameraTrack]);
+      await client.publish([cameraTrack]);
 }
 
     function addParticipantVideo(userId, remoteTrack) {
