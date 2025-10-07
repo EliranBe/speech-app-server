@@ -4,6 +4,43 @@
   const crypto = require("crypto");
   const { SignJWT } = require("jose");
 
+// Middleware לבדיקה אם המשתמש מחובר פחות מ־24 שעות
+async function checkLastSignIn(req, res, next) {
+  try {
+    const authHeader = req.headers["authorization"];
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Missing or invalid Authorization header" });
+    }
+
+    const accessToken = authHeader.split(" ")[1];
+
+    // קבלת פרטי המשתמש מ‑Supabase
+    const { data, error } = await supabase.auth.getUser(accessToken);
+    if (error || !data?.user) {
+      return res.status(401).json({ error: "Invalid or expired access token" });
+    }
+
+    const user = data.user;
+
+    // בדיקת last_sign_in_at
+    const lastSignIn = new Date(user.last_sign_in_at);
+    const now = new Date();
+
+    const hoursSinceSignIn = (now - lastSignIn) / (1000 * 60 * 60);
+    if (hoursSinceSignIn > 24) {
+      return res.status(401).json({ error: "Session expired — please log in again" });
+    }
+
+    req.user = user; // שומר את המשתמש בבקשה להמשך שימוש
+    next();
+  } catch (err) {
+    console.error("checkLastSignIn error:", err);
+    return res.status(500).json({ error: "Server error" });
+  }
+}
+
+  router.use(checkLastSignIn);
+
   async function createMeetingToken(payload) {
     const secret = new TextEncoder().encode(process.env.JWT_SECRET);
     return await new SignJWT(payload)
