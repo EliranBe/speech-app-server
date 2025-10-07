@@ -26,8 +26,8 @@ async function checkLastSignIn(req, res, next) {
     const lastSignIn = new Date(user.last_sign_in_at);
     const now = new Date();
 
-    const hoursSinceSignIn = (now - lastSignIn) / (1000 * 60 );
-    if (hoursSinceSignIn > 0.1) {
+    const hoursSinceSignIn = (now - lastSignIn) / (1000 * 60 * 60 );
+    if (hoursSinceSignIn > 12) {
       return res.status(401).json({ error: "Session expired — please log in again" });
     }
 
