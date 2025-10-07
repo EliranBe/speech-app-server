@@ -151,7 +151,7 @@ export default function Login() {
           }}
         />
 
-       <h1 style={{ fontSize: "2rem", fontWeight: "600", marginBottom: "1rem", color: "#1E90FF" }}>
+       <h1 style={{ fontSize: "2rem", fontWeight: "600", marginBottom: "0.5rem", color: "#1E90FF" }}>
   Welcome to Verbo.io
 </h1>
 
@@ -160,7 +160,7 @@ export default function Login() {
   fontSize: "1.1rem",
   color: "#1E90FF",
   fontWeight: "600",
-  marginBottom: "1rem",
+  marginBottom: "0.5rem",
   lineHeight: "1.4",
   textAlign: "center" /* במרכז */
 }}>
@@ -171,7 +171,7 @@ export default function Login() {
 <p style={{
   fontSize: "1rem",
   color: "#1E90FF",
-  marginBottom: "1rem",
+  marginBottom: "0.5rem",
   lineHeight: "1.5",
   textAlign: "left" /* מתחיל משמאל לימין */
 }}>
