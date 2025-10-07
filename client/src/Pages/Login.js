@@ -174,6 +174,7 @@ export default function Login() {
   <h2 style={{
     color: "#1E90FF",
     fontWeight: "700",
+    marginTop: "0",
     marginBottom: "0.5rem",
     textAlign: "center" // כותרת במרכז
   }}>
