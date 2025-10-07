@@ -270,6 +270,12 @@ if ((!meetingRow || !meetingRow.meeting_id) && url_meeting) {
     let participantRow = null;
     let newParticipant = null;
 
+    
+    // 6. בדיקת is_active — מבוצעת תמיד אחרי HOST/Participants
+    if (!meetingRow.is_active) {
+      return res.status(400).json({ error: "Meeting is not active" });
+    }
+
     // 4. בדיקת HOST
     if (meetingRow.host_user_id === user_id) {
       // HOST — דילוג על בדיקת Participants → הולך ישר לבדיקה 6
@@ -293,6 +299,27 @@ let participantRow = participantData;
       
 if (participantRow) {
   if (participantRow.user_id === null) {
+        // ===== בדיקה נוספת לפני עדכון Participants =====
+    const { data: hostPrefs, error: hostPrefsErr } = await supabase
+      .from("user_preferences")
+      .select("native_language")
+      .eq("user_id", meetingRow.host_user_id)
+      .single();
+
+    if (hostPrefsErr || !hostPrefs) {
+      return res.status(500).json({
+        error: "Unable to verify host's native language — server error"
+      });
+    }
+
+    const userNativeLanguage = prefs.native_language?.trim().toLowerCase();
+    const hostNativeLanguage = hostPrefs.native_language?.trim().toLowerCase();
+
+    if (userNativeLanguage && hostNativeLanguage && userNativeLanguage === hostNativeLanguage) {
+      return res.status(403).json({
+        error: "Joining not allowed — your native language is the same as the host's native language."
+      });
+    }
     // 🟢 הרשומה קיימת אבל עדיין לא שויך אליה משתמש → נעדכן אותה
     const { data: updatedParticipant, error: updateErr } = await supabase
       .from("Participants")
@@ -319,11 +346,6 @@ if (participantRow) {
     .status(500)
     .json({ error: "Participant record not found for this meeting" });
 }
-    }
-
-    // 6. בדיקת is_active — מבוצעת תמיד אחרי HOST/Participants
-    if (!meetingRow.is_active) {
-      return res.status(400).json({ error: "Meeting is not active" });
     }
 
     // 8. יצירת JWT Token לפגישה — לא לשנות
