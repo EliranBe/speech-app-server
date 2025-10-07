@@ -151,22 +151,22 @@ export default function Login() {
           }}
         />
 
-        <h1 style={{ fontSize: "2rem", fontWeight: "600", marginBottom: "1.5rem", color: "#333" }}>
+        <h1 style={{ fontSize: "2rem", fontWeight: "600", marginBottom: "1.5rem", color: "#1E90FF" }}>
           Welcome to Verbo.io
         </h1>
         
         {/* תיאור האפליקציה */}
-        <p style={{
-          fontSize: "1rem",
-          color: "#1E90FF",
-          marginBottom: "1.5rem",
-          lineHeight: "1.5",
-          textAlign: "center"
-        }}>
-          Connect beyond words.<br />
-          <strong style={{ color: "#1E90FF" }}>Verbo.io</strong> breaks language barriers with <strong>real time</strong> voice translation making every conversation natural, personal, and effortless.<br />
-          Whether you’re traveling, collaborating, holding <strong>professional meetings</strong>, or connecting with loved ones — <strong style={{ color: "#1E90FF" }}>Verbo.io</strong> is your best companion for seamless communication, anywhere and anytime.
-        </p>
+          <p style={{
+            fontSize: "1rem",
+            color: "#1E90FF", /* צבע כחול */
+            marginBottom: "1.5rem",
+            lineHeight: "1.5",
+            textAlign: "left" /* מתחיל משמאל לימין */
+          }}>
+              <strong>Connect beyond words.</strong><br />
+              <strong style={{ color: "#1E90FF" }}>Verbo.io</strong> enables real-time voice translation for smooth, human communication across languages.<br />
+              Anywhere and anytime: travel, teamwork, connecting with loved ones, and beyond.
+            </p>
 
         {/* הודעת שגיאה */}
         {error && <p style={{ color: "red", marginBottom: "1rem" }}>{error}</p>}
