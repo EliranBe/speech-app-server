@@ -112,13 +112,13 @@ export default function Login() {
       style={{
         fontFamily: "'Segoe UI', sans-serif",
         background: "linear-gradient(135deg, #c9d6ff, #e2e2e2)",
-        height: "100vh",
+        minHeight: "100vh",
         width: "100vw",
         display: "flex",
         justifyContent: "center",
-        alignItems: "center",
-        position: "relative",
-        overflow: "hidden",
+        alignItems: "flex-start",
+        paddingTop: "3rem",
+        overflow: "auto",
       }}
     >
       {/* כרטיס התחברות */}
