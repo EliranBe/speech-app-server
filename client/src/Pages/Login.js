@@ -157,32 +157,36 @@ export default function Login() {
 
 <div
   style={{
-    padding: "1.5rem",
+    padding: "1rem 1.5rem", // padding קטן יותר
     borderRadius: "20px",
     background: "rgba(255,255,255,0.1)",
     backdropFilter: "blur(12px)",
     boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
-    maxWidth: "500px", // קטן יותר
-    textAlign: "center",
-    margin: "1.5rem auto",
+    maxWidth: "500px",
+    textAlign: "center", // רק הכותרת תהיה במרכז
+    margin: "1rem auto",
     display: "flex",
     flexDirection: "column",
-    alignItems: "flex-start", // מתחיל מהחלק העליון
+    alignItems: "stretch", // לאפשר פסקה משמאל לימין
   }}
 >
+  {/* כותרת מרכזית */}
   <h2 style={{
     color: "#1E90FF",
     fontWeight: "700",
-    marginBottom: "1rem"
+    marginBottom: "0.5rem",
+    textAlign: "center" // כותרת במרכז
   }}>
     Connect beyond words.
   </h2>
 
+  {/* פסקה משמאל לימין */}
   <p style={{
     color: "#333",
     fontSize: "1rem",
     lineHeight: "1.5",
-    margin: "0"
+    margin: "0",
+    textAlign: "left"
   }}>
     <strong style={{ color: "#1E90FF" }}>Verbo.io</strong> enables real-time voice translation for smooth, human communication across languages.
     <br />
