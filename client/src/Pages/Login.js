@@ -160,7 +160,7 @@ export default function Login() {
   fontSize: "1.1rem",
   color: "#1E90FF",
   fontWeight: "600",
-  marginBottom: "0.5rem",
+  marginBottom: "0",
   lineHeight: "1.4",
   textAlign: "center" /* במרכז */
 }}>
@@ -171,7 +171,7 @@ export default function Login() {
 <p style={{
   fontSize: "1rem",
   color: "#1E90FF",
-  marginBottom: "0.5rem",
+   marginTop: "0",
   lineHeight: "1.5",
   textAlign: "left" /* מתחיל משמאל לימין */
 }}>
