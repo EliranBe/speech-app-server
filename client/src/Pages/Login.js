@@ -157,14 +157,17 @@ export default function Login() {
 
 <div
   style={{
-    padding: "2rem",
+    padding: "1.5rem",
     borderRadius: "20px",
     background: "rgba(255,255,255,0.1)",
     backdropFilter: "blur(12px)",
     boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
-    maxWidth: "600px",
+    maxWidth: "500px", // קטן יותר
     textAlign: "center",
-    margin: "2rem auto"
+    margin: "1.5rem auto",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-start", // מתחיל מהחלק העליון
   }}
 >
   <h2 style={{
@@ -186,7 +189,6 @@ export default function Login() {
     Anywhere and anytime: travel, teamwork, connecting with loved ones, and beyond.
   </p>
 </div>
-
 
         {/* הודעת שגיאה */}
         {error && <p style={{ color: "red", marginBottom: "1rem" }}>{error}</p>}
