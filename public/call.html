@@ -218,7 +218,6 @@ video {
         try { await client.leave(); } catch(e) { console.warn("⚠️ client.leave failed:", e); }
         client = null;
     }
-    window.location.href = "/";
 }
 
     window.onload = async () => {
@@ -361,7 +360,10 @@ document.getElementById("btn_mic").onclick = async () => {
       }
     };
 
-document.getElementById("btn-leave").onclick = leaveCall;
+document.getElementById("btn-leave").onclick = async () => {
+    await leaveCall();
+    window.location.href = "/";
+};
 
     window.addEventListener("beforeunload", () => {
     leaveCall(); // לא מחכה ל-await, רק מבצע סגירה
