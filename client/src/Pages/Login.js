@@ -155,29 +155,38 @@ export default function Login() {
   Welcome to Verbo.io
 </h1>
 
-{/* משפט מרכזי */}
-<p style={{
-  fontSize: "1.1rem",
-  color: "#1E90FF",
-  fontWeight: "600",
-  marginBottom: "0",
-  lineHeight: "1.4",
-  textAlign: "center" /* במרכז */
-}}>
-  Connect beyond words.
-</p>
+<div
+  style={{
+    padding: "2rem",
+    borderRadius: "20px",
+    background: "rgba(255,255,255,0.1)",
+    backdropFilter: "blur(12px)",
+    boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
+    maxWidth: "600px",
+    textAlign: "center",
+    margin: "2rem auto"
+  }}
+>
+  <h2 style={{
+    color: "#1E90FF",
+    fontWeight: "700",
+    marginBottom: "1rem"
+  }}>
+    Connect beyond words.
+  </h2>
 
-{/* תיאור האפליקציה */}
-<p style={{
-  fontSize: "1rem",
-  color: "#1E90FF",
-   marginTop: "0",
-  lineHeight: "1.5",
-  textAlign: "left" /* מתחיל משמאל לימין */
-}}>
-  <strong style={{ color: "#1E90FF" }}>Verbo.io</strong> enables real time voice translation for smooth, human communication across languages.<br />
-  Anywhere and anytime: travel, teamwork, connecting with loved ones, and beyond.
-</p>
+  <p style={{
+    color: "#333",
+    fontSize: "1rem",
+    lineHeight: "1.5",
+    margin: "0"
+  }}>
+    <strong style={{ color: "#1E90FF" }}>Verbo.io</strong> enables real-time voice translation for smooth, human communication across languages.
+    <br />
+    Anywhere and anytime: travel, teamwork, connecting with loved ones, and beyond.
+  </p>
+</div>
+
 
         {/* הודעת שגיאה */}
         {error && <p style={{ color: "red", marginBottom: "1rem" }}>{error}</p>}
