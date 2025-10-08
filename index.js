@@ -6,7 +6,8 @@ dotenv.config();
 const { supabase } = require('./client/src/utils/supabaseClient');
 const cors = require('cors');
 const meetingsRouter = require("./server/meetings");
- 
+const checkBlockedUser = require("./server/middleware/checkBlockedUser");
+
 // בדיקה ש־Google TTS מוגדר
 if (!process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
   throw new Error("⚠️ Missing GOOGLE_APPLICATION_CREDENTIALS_JSON in environment variables");
@@ -43,6 +44,7 @@ if (!process.env.DEEPGRAM_PROJECT_ID) {
 
 app.use(cors());
 app.use(express.json());
+app.use(checkBlockedUser);
 
 // Serve React build
 app.use(express.static(path.join(__dirname, 'client/build')));
