@@ -218,6 +218,13 @@ if (!meeting_id && !url_meeting) {
         return res.status(400).json({ error: "Meeting is not active" });
       }
 
+      // עדכון שדה started_at לפגישה
+      await supabase
+        .from("Meetings")
+        .update({ started_at: new Date().toISOString() })
+        .eq("meeting_id", meeting_id)
+        .is("started_at", null);
+
       const jti =
     typeof crypto.randomUUID === "function"
       ? crypto.randomUUID()
@@ -411,6 +418,13 @@ if (participantRow) {
 }
     }
 
+    // עדכון שדה started_at לפגישה
+      await supabase
+        .from("Meetings")
+        .update({ started_at: new Date().toISOString() })
+        .eq("meeting_id", meeting_id)
+        .is("started_at", null);
+    
     // 8. יצירת JWT Token לפגישה — לא לשנות
     const jti =
       typeof crypto.randomUUID === "function"
@@ -444,5 +458,85 @@ if (participantRow) {
     return res.status(500).json({ error: "Server error" });
   }
 });
+
+// ✅ עדכון מספר התווים בסוף כל פגישה
+router.post("/updateTranslationCount", async (req, res) => {
+  try {
+    const { meeting_id, translation_char_count } = req.body;
+
+    if (!meeting_id || translation_char_count == null) {
+      return res.status(400).json({ error: "Missing meeting_id or translation_char_count" });
+    }
+
+    // 1. הבאת started_at מהפגישה
+    const { data: meeting, error: meetingError } = await supabase
+      .from("Meetings")
+      .select("started_at")
+      .eq("meeting_id", meeting_id)
+      .single();
+
+    if (meetingError || !meeting) {
+      return res.status(404).json({ error: "Meeting not found" });
+    }
+
+    const startedAt = new Date(meeting.started_at);
+    const month_year = `${startedAt.getFullYear()}-${String(startedAt.getMonth() + 1).padStart(2, "0")}`;
+
+    // 2. עדכון ספירת התווים של הפגישה
+    const { error: updateError } = await supabase
+      .from("Meetings")
+      .update({ translation_char_count })
+      .eq("meeting_id", meeting_id);
+
+    if (updateError) throw updateError;
+
+    // 3. חישוב סכום חודשי חדש עבור אותו חודש
+    const { data: monthlyMeetings, error: sumError } = await supabase
+      .from("Meetings")
+      .select("translation_char_count, started_at")
+      .gte("started_at", new Date(startedAt.getFullYear(), startedAt.getMonth(), 1).toISOString())
+      .lt("started_at", new Date(startedAt.getFullYear(), startedAt.getMonth() + 1, 1).toISOString());
+
+    if (sumError) throw sumError;
+
+    const translation_char_count_month = monthlyMeetings.reduce((sum, row) => {
+      return sum + (row.translation_char_count || 0);
+    }, 0);
+
+    // 4. עדכון או יצירת רשומה בטבלת MonthlyTotalTranslationCounts
+    const { data: existingMonth, error: existingError } = await supabase
+      .from("MonthlyTotalTranslationCounts")
+      .select("*")
+      .eq("month_year", month_year)
+      .single();
+
+    if (existingError && !existingMonth) {
+      // יצירת רשומה חדשה אם לא קיימת
+      const { error: insertError } = await supabase
+        .from("MonthlyTotalTranslationCounts")
+        .insert([{ month_year, total_translation_char_count: translation_char_count_month }]);
+
+      if (insertError) throw insertError;
+    } else {
+      // עדכון רשומה קיימת
+      const { error: updateMonthError } = await supabase
+        .from("MonthlyTotalTranslationCounts")
+        .update({ total_translation_char_count: translation_char_count_month })
+        .eq("month_year", month_year);
+
+      if (updateMonthError) throw updateMonthError;
+    }
+
+    return res.json({
+      success: true,
+      month_year,
+      translation_char_count_month
+    });
+  } catch (err) {
+    console.error("❌ Error updating translation count:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
   module.exports = router;
