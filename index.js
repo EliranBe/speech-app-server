@@ -3,7 +3,7 @@ const express = require('express');
 const http = require('http');
 const dotenv = require("dotenv");
 dotenv.config();
-const { supabase } = require('./client/src/utils/supabaseClient');
+const { supabase } = require('./server/utils/supabaseClient');
 const cors = require('cors');
 const meetingsRouter = require("./server/meetings");
 const checkBlockedUser = require("./server/middleware/checkBlockedUser");
