@@ -41,6 +41,13 @@ async function checkLastSignIn(req, res, next) {
 
   router.use(checkLastSignIn);
 
+function isUserBlocked(user_id) {
+  const blockedList = process.env.BLOCKED_USER_IDS
+    ? process.env.BLOCKED_USER_IDS.split(",").map(id => id.trim())
+    : [];
+  return blockedList.includes(user_id);
+}
+
   async function createMeetingToken(payload) {
     const secret = new TextEncoder().encode(process.env.JWT_SECRET);
     return await new SignJWT(payload)
@@ -150,6 +157,7 @@ async function checkLastSignIn(req, res, next) {
   // START ROUTE
   // =======================================
   router.post("/start", async (req, res) => {
+        let user_id;
     try {
       const { meeting_id } = req.body;
 if (!meeting_id && !url_meeting) {
@@ -168,12 +176,14 @@ if (!meeting_id && !url_meeting) {
       let user, prefs;
       try {
         ({ user, prefs } = await validateUserAndPreferences(accessToken));
+                user_id = user.id;
+          if (isUserBlocked(user_id)) {
+            return res.status(403).json({ error: "User is blocked from starting meetings" });
+          }
       } catch (err) {
         return res.status(401).json({ error: err.message });
       }
       
-      const user_id = user.id;
-
       const { data: meetingRow, error: meetingErr } = await supabase
         .from("Meetings")
         .select("*")
@@ -232,6 +242,7 @@ if (!meeting_id && !url_meeting) {
   // JOIN ROUTE — כולל כל 6 הבדיקות
   // =======================================
 router.post("/join", async (req, res) => {
+      let user_id;
   try {
     const { meeting_id, meeting_password, url_meeting } = req.body;
 
@@ -251,11 +262,13 @@ router.post("/join", async (req, res) => {
     let user, prefs;
     try {
       ({ user, prefs } = await validateUserAndPreferences(accessToken));
+            user_id = user.id;
+        if (isUserBlocked(user_id)) {
+          return res.status(403).json({ error: "User is blocked from joining meetings" });
+        }
     } catch (err) {
       return res.status(401).json({ error: err.message });
     }
-
-        const user_id = user.id;
 
     // 3. בדיקת הפגישה בטבלת Meetings
 
