@@ -82,13 +82,13 @@ app.post('/updateTranslationCount', async (req, res) => {
         if (fetchError) throw fetchError;
 
         const startedAt = meetingRow.started_at;
-        const month = startedAt.substring(0, 7); // YYYY-MM
+        const month_year = startedAt.substring(0, 7); // YYYY-MM
 
         // בדיקה אם רשומה לחודש כבר קיימת
         const { data: monthlyData, error: monthlyError } = await supabase
             .from('MonthlyTotalTranslationCounts')
             .select('total_translation_char_count')
-            .eq('month', month)
+            .eq('month_year', month_year)
             .single();
 
         if (monthlyError && monthlyError.code !== 'PGRST116') { // לא קיים = PGRST116
@@ -102,14 +102,14 @@ app.post('/updateTranslationCount', async (req, res) => {
                 .update({
                     total_translation_char_count: monthlyData.total_translation_char_count + translation_char_count
                 })
-                .eq('month', month);
+                .eq('month_year', month_year);
 
             if (updateError) throw updateError;
         } else {
             // יצירת רשומה חדשה
             const { error: insertError } = await supabase
                 .from('MonthlyTotalTranslationCounts')
-                .insert([{ month, total_translation_char_count: translation_char_count }]);
+                .insert([{ month_year, total_translation_char_count: translation_char_count }]);
 
             if (insertError) throw insertError;
         }
