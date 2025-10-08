@@ -63,15 +63,56 @@ app.post('/updateTranslationCount', async (req, res) => {
 
     console.log("Updating translation count:", meeting_id, translation_char_count);
 
-    // כאן אפשר לשמור ב־Supabase / DB
-    // לדוגמה:
     try {
-        const { data, error } = await supabase
+        // עדכון הערך ב־Meetings
+        const { data: meetingData, error: meetingError } = await supabase
             .from('Meetings')
             .update({ translation_char_count })
-            .eq('meeting_id', meeting_id);
-        
-        if (error) throw error;
+            .eq('id', meeting_id);
+
+        if (meetingError) throw meetingError;
+
+        // הבאת started_at של הפגישה
+        const { data: meetingRow, error: fetchError } = await supabase
+            .from('Meetings')
+            .select('started_at')
+            .eq('id', meeting_id)
+            .single();
+
+        if (fetchError) throw fetchError;
+
+        const startedAt = meetingRow.started_at;
+        const month = startedAt.substring(0, 7); // YYYY-MM
+
+        // בדיקה אם רשומה לחודש כבר קיימת
+        const { data: monthlyData, error: monthlyError } = await supabase
+            .from('MonthlyTotalTranslationCounts')
+            .select('total_translation_char_count')
+            .eq('month', month)
+            .single();
+
+        if (monthlyError && monthlyError.code !== 'PGRST116') { // לא קיים = PGRST116
+            throw monthlyError;
+        }
+
+        if (monthlyData) {
+            // עדכון הצטברתי קיים
+            const { error: updateError } = await supabase
+                .from('MonthlyTotalTranslationCounts')
+                .update({
+                    total_translation_char_count: monthlyData.total_translation_char_count + translation_char_count
+                })
+                .eq('month', month);
+
+            if (updateError) throw updateError;
+        } else {
+            // יצירת רשומה חדשה
+            const { error: insertError } = await supabase
+                .from('MonthlyTotalTranslationCounts')
+                .insert([{ month, total_translation_char_count: translation_char_count }]);
+
+            if (insertError) throw insertError;
+        }
 
         res.json({ success: true });
     } catch (err) {
