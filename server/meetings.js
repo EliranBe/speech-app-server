@@ -120,6 +120,21 @@ function isUserAllowed(user_id) {
     return pwd;
   }
 
+async function setStartedAtIfNull(meeting_id) {
+  const { data, error } = await supabase
+    .from("Meetings")
+    .select("started_at")
+    .eq("meeting_id", meeting_id)
+    .single();
+
+  if (!error && data && !data.started_at) {
+    await supabase
+      .from("Meetings")
+      .update({ started_at: new Date().toISOString() })
+      .eq("meeting_id", meeting_id);
+  }
+}
+
   // =======================================
   // יצירת פגישה חדשה
   // =======================================
@@ -219,11 +234,7 @@ if (!meeting_id && !url_meeting) {
       }
 
       // עדכון שדה started_at לפגישה
-      await supabase
-        .from("Meetings")
-        .update({ started_at: new Date().toISOString() })
-        .eq("meeting_id", meeting_id)
-        .is("started_at", null);
+      await setStartedAtIfNull(meeting_id);
 
       const jti =
     typeof crypto.randomUUID === "function"
@@ -419,11 +430,7 @@ if (participantRow) {
     }
 
     // עדכון שדה started_at לפגישה
-      await supabase
-        .from("Meetings")
-        .update({ started_at: new Date().toISOString() })
-        .eq("meeting_id", meeting_id)
-        .is("started_at", null);
+      await setStartedAtIfNull(meeting_id_to_use);
     
     // 8. יצירת JWT Token לפגישה — לא לשנות
     const jti =
@@ -464,6 +471,10 @@ router.post("/updateTranslationCount", async (req, res) => {
   try {
     const { meeting_id, translation_char_count } = req.body;
 
+        console.log("🔹 updateTranslationCount called");
+    console.log("📌 Meeting ID:", meeting_id);
+    console.log("🔢 Translation char count:", translation_char_count);
+    
     if (!meeting_id || translation_char_count == null) {
       return res.status(400).json({ error: "Missing meeting_id or translation_char_count" });
     }
@@ -489,6 +500,7 @@ router.post("/updateTranslationCount", async (req, res) => {
       .eq("meeting_id", meeting_id);
 
     if (updateError) throw updateError;
+        console.log("✅ Updated meeting with translation_char_count:", translation_char_count);
 
     // 3. חישוב סכום חודשי חדש עבור אותו חודש
     const { data: monthlyMeetings, error: sumError } = await supabase
