@@ -58,6 +58,28 @@ app.use("/api", userPreferencesRoutes);
 
 app.use("/api/meetings", meetingsRouter);
 
+app.post('/updateTranslationCount', async (req, res) => {
+    const { meeting_id, translation_char_count } = req.body;
+
+    console.log("Updating translation count:", meeting_id, translation_char_count);
+
+    // כאן אפשר לשמור ב־Supabase / DB
+    // לדוגמה:
+    try {
+        const { data, error } = await supabase
+            .from('Meetings')
+            .update({ translation_char_count })
+            .eq('meeting_id', meeting_id);
+        
+        if (error) throw error;
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // החזרת APP_ID בצורה בטוחה
 app.get('/appId', (req, res) => {
   res.json({ appId: process.env.AGORA_APP_ID });
