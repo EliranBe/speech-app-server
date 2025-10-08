@@ -218,6 +218,33 @@ video {
         try { await client.leave(); } catch(e) { console.warn("⚠️ client.leave failed:", e); }
         client = null;
     }
+      
+      // 🔹 חישוב סך כל התווים מהתרגומים
+let totalTranslationChars = 0;
+document.querySelectorAll("#translation div").forEach(div => {
+  totalTranslationChars += div.textContent.length;
+});
+
+// 🔹 שליחה לשרת לשמירה במסד הנתונים
+try {
+  const res = await fetch("/updateTranslationCount", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      meeting_id: CHANNEL_NAME,
+      translation_char_count: totalTranslationChars
+    })
+  });
+
+  const data = await res.json();
+  if (data?.success) {
+    console.log(`✅ Translation chars updated. Monthly total: ${data.translation_char_count_month}`);
+  } else {
+    console.warn("⚠️ Failed to update translation count:", data?.error);
+  }
+} catch (err) {
+  console.error("❌ Error sending translation count:", err);
+}
 }
 
     window.onload = async () => {
