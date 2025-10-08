@@ -1,4 +1,4 @@
-const { supabase } = require("../client/src/utils/supabaseClient");
+const { supabase } = require('../utils/supabaseClient');
 
 async function checkBlockedUser(req, res, next) {
   try {
