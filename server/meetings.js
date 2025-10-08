@@ -41,11 +41,22 @@ async function checkLastSignIn(req, res, next) {
 
   router.use(checkLastSignIn);
 
-function isUserBlocked(user_id) {
+function isUserAllowed(user_id) {
+  const allowedList = process.env.ALLOWED_USER_IDS
+    ? process.env.ALLOWED_USER_IDS.split(",").map(id => id.trim())
+    : null; // null = אין רשימת גישה מוגדרת
+
   const blockedList = process.env.BLOCKED_USER_IDS
     ? process.env.BLOCKED_USER_IDS.split(",").map(id => id.trim())
     : [];
-  return blockedList.includes(user_id);
+
+  // אם רשימת גישה קיימת — רק משתמשים בה נמצאים בה יורשו
+  if (allowedList && allowedList.length > 0) {
+    return allowedList.includes(user_id);
+  }
+
+  // אם אין רשימת גישה — כולם מורשים למעט אלו שב‐BLOCKED
+  return !blockedList.includes(user_id);
 }
 
   async function createMeetingToken(payload) {
@@ -177,8 +188,8 @@ if (!meeting_id && !url_meeting) {
       try {
         ({ user, prefs } = await validateUserAndPreferences(accessToken));
                 user_id = user.id;
-          if (isUserBlocked(user_id)) {
-            return res.status(403).json({ error: "User is blocked from starting meetings" });
+          if (!isUserAllowed(user_id)) {
+            return res.status(403).json({ error: "User is not allowed to use this service" });
           }
       } catch (err) {
         return res.status(401).json({ error: err.message });
@@ -263,9 +274,9 @@ router.post("/join", async (req, res) => {
     try {
       ({ user, prefs } = await validateUserAndPreferences(accessToken));
             user_id = user.id;
-        if (isUserBlocked(user_id)) {
-          return res.status(403).json({ error: "User is blocked from joining meetings" });
-        }
+        if (!isUserAllowed(user_id)) {
+            return res.status(403).json({ error: "User is not allowed to use this service" });
+          }
     } catch (err) {
       return res.status(401).json({ error: err.message });
     }
