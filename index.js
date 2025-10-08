@@ -68,7 +68,7 @@ app.post('/updateTranslationCount', async (req, res) => {
         const { data: meetingData, error: meetingError } = await supabase
             .from('Meetings')
             .update({ translation_char_count })
-            .eq('id', meeting_id);
+            .eq('meeting_id', meeting_id);
 
         if (meetingError) throw meetingError;
 
@@ -76,7 +76,7 @@ app.post('/updateTranslationCount', async (req, res) => {
         const { data: meetingRow, error: fetchError } = await supabase
             .from('Meetings')
             .select('started_at')
-            .eq('id', meeting_id)
+            .eq('meeting_id', meeting_id)
             .single();
 
         if (fetchError) throw fetchError;
