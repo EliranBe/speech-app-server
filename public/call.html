@@ -150,6 +150,10 @@ video {
     }
 
     let userToken = getQueryParam("userToken");
+          if (userToken) {
+        sessionStorage.setItem("meetingToken", userToken);
+        console.log("✅ meetingToken saved to sessionStorage");
+      }
     let userPayload = null;
 
     if (!userToken) {
@@ -184,6 +188,19 @@ video {
         btn.style.cursor = "not-allowed";
     });
 
+          // 🚀 שליחת JWT והנתונים בזמן סגירת הדף
+    const meetingToken = sessionStorage.getItem("meetingToken");
+    const leaveData = {
+      meeting_id: CHANNEL_NAME,
+      user_id: userPayload?.user_id,
+      char_count: document.getElementById("translation").innerText.length
+    };
+
+    if (meetingToken) {
+      const payload = JSON.stringify({ ...leaveData, token: meetingToken });
+      navigator.sendBeacon("/api/meetings/participantTranslationCount", payload);
+    }
+      
     // 🎥 סגירת כל הוידאו והאודיו של Agora
     if (agoraMicTrack) { agoraMicTrack.stop(); agoraMicTrack.close(); agoraMicTrack = null; }
     if (cameraTrack) { cameraTrack.stop(); cameraTrack.close(); cameraTrack = null; }
@@ -195,7 +212,18 @@ let totalTranslationChars = document.getElementById("translation").innerText.len
 const leave_at = new Date().toISOString();
 
 try {
-const accessToken = userToken;
+  const {
+  data: { session: authSession },
+  error: sessionError,
+} = await supabase.auth.getSession();
+
+if (sessionError || !authSession?.user) {
+  console.error("❌ Session invalid");
+  return;
+}
+
+const accessToken = authSession.access_token;
+
   const res = await fetch("/api/meetings/participantTranslationCount", {
     method: "POST",
     headers: {
@@ -396,9 +424,23 @@ document.getElementById("btn-leave").onclick = async () => {
     window.location.href = "/";
 };
 
-    window.addEventListener("beforeunload", () => {
-    leaveCall(); // לא מחכה ל-await, רק מבצע סגירה
+window.addEventListener("beforeunload", () => {
+    const meetingToken = sessionStorage.getItem("meetingToken");
+    const leaveData = {
+        meeting_id: CHANNEL_NAME,
+        user_id: userPayload?.user_id,
+        char_count: document.getElementById("translation").innerText.length,
+        token: meetingToken
+    };
+
+    if (meetingToken) {
+        const payload = JSON.stringify(leaveData);
+        navigator.sendBeacon("/api/meetings/participantTranslationCount", payload);
+    }
+
+    leaveCall();
 });
+
 
     //שילוב עם Deppgram//
 
