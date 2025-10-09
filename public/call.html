@@ -195,11 +195,24 @@ let totalTranslationChars = document.getElementById("translation").innerText.len
 const leave_at = new Date().toISOString();
 
 try {
+  const {
+  data: { session: authSession },
+  error: sessionError,
+} = await supabase.auth.getSession();
+
+if (sessionError || !authSession?.user) {
+  console.error("❌ Session invalid");
+  return;
+}
+
+const accessToken = authSession.access_token;
+
+
   const res = await fetch("/api/meetings/participantTranslationCount", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${userToken}`
+      "Authorization": `Bearer ${accessToken}`
     },
     body: JSON.stringify({
       meeting_id: CHANNEL_NAME,
