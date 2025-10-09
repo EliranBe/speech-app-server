@@ -1,8 +1,8 @@
-  const express = require("express");
+const express = require("express");
   const router = express.Router();
   const { supabase } = require("../client/src/utils/supabaseClient");
   const crypto = require("crypto");
-  const { SignJWT, jwtVerify } = require("jose");
+  const { SignJWT } = require("jose");
 
 // Middleware לבדיקה אם המשתמש מחובר פחות מ־24 שעות
 async function checkLastSignIn(req, res, next) {
@@ -209,7 +209,7 @@ if (!meeting_id && !url_meeting) {
       } catch (err) {
         return res.status(401).json({ error: err.message });
       }
-      
+
       const { data: meetingRow, error: meetingErr } = await supabase
         .from("Meetings")
         .select("*")
@@ -351,7 +351,7 @@ if ((!meetingRow || !meetingRow.meeting_id) && url_meeting) {
     let participantRow = null;
     let newParticipant = null;
 
-    
+
     // 6. בדיקת is_active — מבוצעת תמיד אחרי HOST/Participants
     if (!meetingRow.is_active) {
       return res.status(400).json({ error: "Meeting is not active" });
@@ -364,7 +364,7 @@ if ((!meetingRow || !meetingRow.meeting_id) && url_meeting) {
 
 // 5. בדיקת משתתף נוסף (Participants)
 const checkMeetingId = meeting_id_to_use; // עכשיו משתמשים ב־meeting_id שנמצא
-   
+
 // נבדוק אם יש רשומת משתתף קיימת עבור הפגישה
 const { data: participantData, error: participantErr } = await supabase
   .from("Participants")
@@ -377,7 +377,7 @@ if (participantErr) {
 }
 
 let participantRow = participantData;
-      
+
 if (participantRow) {
   if (participantRow.user_id === null) {
         // ===== בדיקה נוספת לפני עדכון Participants =====
@@ -431,7 +431,7 @@ if (participantRow) {
 
     // עדכון שדה started_at לפגישה
       await setStartedAtIfNull(meeting_id_to_use);
-    
+
     // 8. יצירת JWT Token לפגישה — לא לשנות
     const jti =
       typeof crypto.randomUUID === "function"
@@ -467,101 +467,85 @@ if (participantRow) {
 });
 
 // ✅ עדכון מספר התווים בסוף כל פגישה
-async function updateTranslationCount(meeting_id, translation_char_count) {
-  const { data: meeting, error: meetingError } = await supabase
-    .from("Meetings")
-    .select("started_at, translation_char_count")
-    .eq("meeting_id", meeting_id)
-    .single();
-
-  if (meetingError || !meeting) throw new Error("Meeting not found");
-
-  const startedAt = new Date(meeting.started_at);
-  const month_year = `${startedAt.getFullYear()}-${String(startedAt.getMonth() + 1).padStart(2, "0")}`;
-
-  const oldValue = parseInt(meeting.translation_char_count) || 0;
-  const newValue = oldValue + parseInt(translation_char_count);
-
-  const { error: updateError } = await supabase
-    .from("Meetings")
-    .update({ translation_char_count: newValue })
-    .eq("meeting_id", meeting_id);
-
-  if (updateError) throw updateError;
-
-  const { data: existingMonth, error: existingError } = await supabase
-    .from("MonthlyTotalTranslationCounts")
-    .select("total_translation_char_count")
-    .eq("month_year", month_year)
-    .single();
-
-  if (existingError && !existingMonth) {
-    await supabase
-      .from("MonthlyTotalTranslationCounts")
-      .insert([{ month_year, total_translation_char_count: parseInt(translation_char_count) }]);
-  } else {
-    const oldMonthValue = parseInt(existingMonth?.total_translation_char_count) || 0;
-    const newMonthValue = oldMonthValue + parseInt(translation_char_count);
-
-    await supabase
-      .from("MonthlyTotalTranslationCounts")
-      .update({ total_translation_char_count: newMonthValue })
-      .eq("month_year", month_year);
-  }
-}
-
-router.post("/participantTranslationCount", async (req, res) => {
+router.post("/updateTranslationCount", async (req, res) => {
   try {
-    const { meeting_id, user_id, char_count, leave_at } = req.body;
+    const { meeting_id, translation_char_count } = req.body;
 
-    if (!meeting_id || !user_id || char_count == null) {
-      return res.status(400).json({ error: "Missing required fields" });
+        console.log("🔹 updateTranslationCount called");
+    console.log("📌 Meeting ID:", meeting_id);
+    console.log("🔢 Translation char count:", translation_char_count);
+    
+    if (!meeting_id || translation_char_count == null) {
+      return res.status(400).json({ error: "Missing meeting_id or translation_char_count" });
     }
 
-    // ❗ קריאת ה־JWT מתוך ה־Authorization header
-    const authHeader = req.headers["authorization"];
-    if (!authHeader) {
-      return res.status(401).json({ error: "Missing Authorization header" });
+    // 1. הבאת started_at מהפגישה
+    const { data: meeting, error: meetingError } = await supabase
+      .from("Meetings")
+      .select("started_at")
+      .eq("meeting_id", meeting_id)
+      .single();
+
+    if (meetingError || !meeting) {
+      return res.status(404).json({ error: "Meeting not found" });
     }
 
-    const token = authHeader.split(" ")[1]; // מסיר את "Bearer "
+    const startedAt = new Date(meeting.started_at);
+    const month_year = `${startedAt.getFullYear()}-${String(startedAt.getMonth() + 1).padStart(2, "0")}`;
 
-    if (!token) {
-      return res.status(401).json({ error: "Missing token" });
+    // 2. עדכון ספירת התווים של הפגישה
+    const { error: updateError } = await supabase
+      .from("Meetings")
+      .update({ translation_char_count })
+      .eq("meeting_id", meeting_id);
+
+    if (updateError) throw updateError;
+        console.log("✅ Updated meeting with translation_char_count:", translation_char_count);
+
+    // 3. חישוב סכום חודשי חדש עבור אותו חודש
+    const { data: monthlyMeetings, error: sumError } = await supabase
+      .from("Meetings")
+      .select("translation_char_count, started_at")
+      .gte("started_at", new Date(startedAt.getFullYear(), startedAt.getMonth(), 1).toISOString())
+      .lt("started_at", new Date(startedAt.getFullYear(), startedAt.getMonth() + 1, 1).toISOString());
+
+    if (sumError) throw sumError;
+
+    const translation_char_count_month = monthlyMeetings.reduce((sum, row) => {
+      return sum + (row.translation_char_count || 0);
+    }, 0);
+
+    // 4. עדכון או יצירת רשומה בטבלת MonthlyTotalTranslationCounts
+    const { data: existingMonth, error: existingError } = await supabase
+      .from("MonthlyTotalTranslationCounts")
+      .select("*")
+      .eq("month_year", month_year)
+      .single();
+
+    if (existingError && !existingMonth) {
+      // יצירת רשומה חדשה אם לא קיימת
+      const { error: insertError } = await supabase
+        .from("MonthlyTotalTranslationCounts")
+        .insert([{ month_year, total_translation_char_count: translation_char_count_month }]);
+
+      if (insertError) throw insertError;
+    } else {
+      // עדכון רשומה קיימת
+      const { error: updateMonthError } = await supabase
+        .from("MonthlyTotalTranslationCounts")
+        .update({ total_translation_char_count: translation_char_count_month })
+        .eq("month_year", month_year);
+
+      if (updateMonthError) throw updateMonthError;
     }
 
-    // אימות ה־JWT
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-    const { payload } = await jwtVerify(token, secret);
-
-    const decodedUserId = payload.user_id;
-    const decodedMeetingId = payload.meeting_id;
-
-    // בדיקת התאמה בין הנתונים ב־token לנתוני הבקשה
-    if (decodedUserId !== user_id || decodedMeetingId !== meeting_id) {
-      return res.status(401).json({ error: "Token does not match user or meeting" });
-    }
-
-    // הוספת רשומה חדשה למסד
-    const { error: insertError } = await supabase
-      .from("ParticipantTranslationCounts")
-      .insert([
-        {
-          meeting_id,
-          user_id,
-          char_count,
-          leave_at: leave_at || new Date().toISOString()
-        }
-      ]);
-
-    if (insertError) throw insertError;
-
-    await updateTranslationCount(meeting_id, char_count);
-
-    res.json({ success: true });
-
+    return res.json({
+      success: true,
+      month_year,
+      translation_char_count_month
+    });
   } catch (err) {
-    console.error("❌ Error in participantTranslationCount:", err);
+    console.error("❌ Error updating translation count:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
