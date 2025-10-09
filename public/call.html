@@ -195,55 +195,59 @@ let totalTranslationChars = document.getElementById("translation").innerText.len
 const leave_at = new Date().toISOString();
 
 try {
-const res = await fetch("/api/meetings/participantTranslationCount", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    "Authorization": `Bearer ${userToken}`
-  },
-  body: JSON.stringify({
-    meeting_id: CHANNEL_NAME,
-    user_id: userPayload?.user_id,
-    char_count: totalTranslationChars
-  })
-});
+  const res = await fetch("/api/meetings/participantTranslationCount", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${userToken}`
+    },
+    body: JSON.stringify({
+      meeting_id: CHANNEL_NAME,
+      user_id: userPayload?.user_id,
+      char_count: totalTranslationChars
+    })
+  });
 
-const data = await res.json();
-if (data?.success) {
-  console.log(`✅ Participant translation count saved: ${totalTranslationChars}`);
-} else {
-  console.warn("⚠️ Failed to save participant translation count:", data?.error);
+  const data = await res.json();
+  if (data?.success) {
+    console.log(`✅ Participant translation count saved: ${totalTranslationChars}`);
+  } else {
+    console.warn("⚠️ Failed to save participant translation count:", data?.error);
+  }
+
+  // 📹 הסרת כל הוידאו מה-DOM
+  document.getElementById("local-player").innerHTML = "";
+  document.querySelectorAll("[id^='participant-']").forEach(el => el.remove());
+
+  // 📴 סגירת MediaRecorder
+  if (recorder && recorder.state !== "inactive") {
+    recorder.stop();
+    recorder = undefined;
+  }
+
+  // 🔌 סגירת WebSocket
+  const closeSocket = () => {
+    return new Promise((resolve) => {
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.addEventListener("close", () => resolve());
+        socket.close();
+        socket = null;
+      } else {
+        resolve();
+      }
+    });
+  };
+  await closeSocket();
+
+  // 📴 עזיבת ערוץ Agora
+  if (client) {
+    try { await client.leave(); } catch(e) { console.warn("⚠️ client.leave failed:", e); }
+    client = null;
+  }
+
+} catch (error) {
+  console.error("⚠️ Error in leaveCall:", error);
 }
-
-    // 📹 הסרת כל הוידאו מה-DOM
-    document.getElementById("local-player").innerHTML = "";
-    document.querySelectorAll("[id^='participant-']").forEach(el => el.remove());
-
-    // 📴 סגירת MediaRecorder
-    if (recorder && recorder.state !== "inactive") {
-        recorder.stop();
-        recorder = undefined;
-    }
-
-    // 🔌 סגירת WebSocket
-    const closeSocket = () => {
-        return new Promise((resolve) => {
-            if (socket && socket.readyState === WebSocket.OPEN) {
-                socket.addEventListener("close", () => resolve());
-                socket.close();
-                socket = null;
-            } else {
-                resolve();
-            }
-        });
-    };
-    await closeSocket();
-
-    // 📴 עזיבת ערוץ Agora
-    if (client) {
-        try { await client.leave(); } catch(e) { console.warn("⚠️ client.leave failed:", e); }
-        client = null;
-    }
       }
 
     window.onload = async () => {
