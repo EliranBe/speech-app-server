@@ -58,6 +58,69 @@ app.use("/api", userPreferencesRoutes);
 
 app.use("/api/meetings", meetingsRouter);
 
+app.post('/updateTranslationCount', async (req, res) => {
+    const { meeting_id, translation_char_count } = req.body;
+
+    console.log("Updating translation count:", meeting_id, translation_char_count);
+
+    try {
+        // עדכון הערך ב־Meetings
+        const { data: meetingData, error: meetingError } = await supabase
+            .from('Meetings')
+            .update({ translation_char_count })
+            .eq('meeting_id', meeting_id);
+
+        if (meetingError) throw meetingError;
+
+        // הבאת started_at של הפגישה
+        const { data: meetingRow, error: fetchError } = await supabase
+            .from('Meetings')
+            .select('started_at')
+            .eq('meeting_id', meeting_id)
+            .single();
+
+        if (fetchError) throw fetchError;
+
+        const startedAt = meetingRow.started_at;
+        const month_year = startedAt.substring(0, 7); // YYYY-MM
+
+        // בדיקה אם רשומה לחודש כבר קיימת
+        const { data: monthlyData, error: monthlyError } = await supabase
+            .from('MonthlyTotalTranslationCounts')
+            .select('total_translation_char_count')
+            .eq('month_year', month_year)
+            .single();
+
+        if (monthlyError && monthlyError.code !== 'PGRST116') { // לא קיים = PGRST116
+            throw monthlyError;
+        }
+
+        if (monthlyData) {
+            // עדכון הצטברתי קיים
+            const { error: updateError } = await supabase
+                .from('MonthlyTotalTranslationCounts')
+                .update({
+                    total_translation_char_count: monthlyData.total_translation_char_count + translation_char_count
+                })
+                .eq('month_year', month_year);
+
+            if (updateError) throw updateError;
+        } else {
+            // יצירת רשומה חדשה
+            const { error: insertError } = await supabase
+                .from('MonthlyTotalTranslationCounts')
+                .insert([{ month_year, total_translation_char_count: translation_char_count }]);
+
+            if (insertError) throw insertError;
+        }
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // החזרת APP_ID בצורה בטוחה
 app.get('/appId', (req, res) => {
   res.json({ appId: process.env.AGORA_APP_ID });
