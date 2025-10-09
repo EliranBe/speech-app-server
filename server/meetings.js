@@ -467,85 +467,77 @@ if (participantRow) {
 });
 
 // ✅ עדכון מספר התווים בסוף כל פגישה
-router.post("/updateTranslationCount", async (req, res) => {
-  try {
-    const { meeting_id, translation_char_count } = req.body;
+async function updateTranslationCount(meeting_id, translation_char_count) {
+  const { data: meeting, error: meetingError } = await supabase
+    .from("Meetings")
+    .select("started_at, translation_char_count")
+    .eq("meeting_id", meeting_id)
+    .single();
 
-        console.log("🔹 updateTranslationCount called");
-    console.log("📌 Meeting ID:", meeting_id);
-    console.log("🔢 Translation char count:", translation_char_count);
-    
-    if (!meeting_id || translation_char_count == null) {
-      return res.status(400).json({ error: "Missing meeting_id or translation_char_count" });
-    }
+  if (meetingError || !meeting) throw new Error("Meeting not found");
 
-    // 1. הבאת started_at מהפגישה
-    const { data: meeting, error: meetingError } = await supabase
-      .from("Meetings")
-      .select("started_at")
-      .eq("meeting_id", meeting_id)
-      .single();
+  const startedAt = new Date(meeting.started_at);
+  const month_year = `${startedAt.getFullYear()}-${String(startedAt.getMonth() + 1).padStart(2, "0")}`;
 
-    if (meetingError || !meeting) {
-      return res.status(404).json({ error: "Meeting not found" });
-    }
+  const oldValue = parseInt(meeting.translation_char_count) || 0;
+  const newValue = oldValue + parseInt(translation_char_count);
 
-    const startedAt = new Date(meeting.started_at);
-    const month_year = `${startedAt.getFullYear()}-${String(startedAt.getMonth() + 1).padStart(2, "0")}`;
+  const { error: updateError } = await supabase
+    .from("Meetings")
+    .update({ translation_char_count: newValue })
+    .eq("meeting_id", meeting_id);
 
-    // 2. עדכון ספירת התווים של הפגישה
-    const { error: updateError } = await supabase
-      .from("Meetings")
-      .update({ translation_char_count })
-      .eq("meeting_id", meeting_id);
+  if (updateError) throw updateError;
 
-    if (updateError) throw updateError;
-        console.log("✅ Updated meeting with translation_char_count:", translation_char_count);
+  const { data: existingMonth, error: existingError } = await supabase
+    .from("MonthlyTotalTranslationCounts")
+    .select("total_translation_char_count")
+    .eq("month_year", month_year)
+    .single();
 
-    // 3. חישוב סכום חודשי חדש עבור אותו חודש
-    const { data: monthlyMeetings, error: sumError } = await supabase
-      .from("Meetings")
-      .select("translation_char_count, started_at")
-      .gte("started_at", new Date(startedAt.getFullYear(), startedAt.getMonth(), 1).toISOString())
-      .lt("started_at", new Date(startedAt.getFullYear(), startedAt.getMonth() + 1, 1).toISOString());
-
-    if (sumError) throw sumError;
-
-    const translation_char_count_month = monthlyMeetings.reduce((sum, row) => {
-      return sum + (row.translation_char_count || 0);
-    }, 0);
-
-    // 4. עדכון או יצירת רשומה בטבלת MonthlyTotalTranslationCounts
-    const { data: existingMonth, error: existingError } = await supabase
+  if (existingError && !existingMonth) {
+    await supabase
       .from("MonthlyTotalTranslationCounts")
-      .select("*")
-      .eq("month_year", month_year)
-      .single();
+      .insert([{ month_year, total_translation_char_count: parseInt(translation_char_count) }]);
+  } else {
+    const oldMonthValue = parseInt(existingMonth?.total_translation_char_count) || 0;
+    const newMonthValue = oldMonthValue + parseInt(translation_char_count);
 
-    if (existingError && !existingMonth) {
-      // יצירת רשומה חדשה אם לא קיימת
-      const { error: insertError } = await supabase
-        .from("MonthlyTotalTranslationCounts")
-        .insert([{ month_year, total_translation_char_count: translation_char_count_month }]);
+    await supabase
+      .from("MonthlyTotalTranslationCounts")
+      .update({ total_translation_char_count: newMonthValue })
+      .eq("month_year", month_year);
+  }
+}
 
-      if (insertError) throw insertError;
-    } else {
-      // עדכון רשומה קיימת
-      const { error: updateMonthError } = await supabase
-        .from("MonthlyTotalTranslationCounts")
-        .update({ total_translation_char_count: translation_char_count_month })
-        .eq("month_year", month_year);
+router.post("/participantTranslationCount", async (req, res) => {
+  try {
+    const { meeting_id, user_id, char_count, leave_at } = req.body;
 
-      if (updateMonthError) throw updateMonthError;
+    if (!meeting_id || !user_id || char_count == null) {
+      return res.status(400).json({ error: "Missing required fields" });
     }
 
-    return res.json({
-      success: true,
-      month_year,
-      translation_char_count_month
-    });
+    // הוספת רשומה חדשה ל־ParticipantTranslationCounts
+    const { error: insertError } = await supabase
+      .from("ParticipantTranslationCounts")
+      .insert([
+        {
+          meeting_id,
+          user_id,
+          char_count,
+          leave_at: leave_at || new Date().toISOString()
+        }
+      ]);
+
+    if (insertError) throw insertError;
+
+    // קריאה ישירה לפונקציה לעדכון תווים בפגישה
+    await updateTranslationCount(meeting_id, char_count);
+
+    res.json({ success: true });
   } catch (err) {
-    console.error("❌ Error updating translation count:", err.message);
+    console.error("❌ Error in participantTranslationCount:", err);
     res.status(500).json({ error: err.message });
   }
 });
