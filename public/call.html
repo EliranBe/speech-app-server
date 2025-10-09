@@ -109,7 +109,7 @@ video {
   </style>
 </head>
 <body>
-  
+
   <div id="captions"></div>
   <div id="translation"></div>
 
@@ -150,10 +150,6 @@ video {
     }
 
     let userToken = getQueryParam("userToken");
-          if (userToken) {
-        sessionStorage.setItem("meetingToken", userToken);
-        console.log("✅ meetingToken saved to sessionStorage");
-      }
     let userPayload = null;
 
     if (!userToken) {
@@ -179,7 +175,7 @@ video {
     console.error("❌ Failed to parse JWT:", e);
   }
 }
-  
+
     async function leaveCall() {
     // 🔒 השבתת כל הכפתורים
     document.querySelectorAll("button").forEach(btn => {
@@ -188,95 +184,69 @@ video {
         btn.style.cursor = "not-allowed";
     });
 
-          // 🚀 שליחת JWT והנתונים בזמן סגירת הדף
-    const meetingToken = sessionStorage.getItem("meetingToken");
-    const leaveData = {
-      meeting_id: CHANNEL_NAME,
-      user_id: userPayload?.user_id,
-      char_count: document.getElementById("translation").innerText.length
-    };
-
-    if (meetingToken) {
-      const payload = JSON.stringify({ ...leaveData, token: meetingToken });
-      navigator.sendBeacon("/api/meetings/participantTranslationCount", payload);
-    }
-      
     // 🎥 סגירת כל הוידאו והאודיו של Agora
     if (agoraMicTrack) { agoraMicTrack.stop(); agoraMicTrack.close(); agoraMicTrack = null; }
     if (cameraTrack) { cameraTrack.stop(); cameraTrack.close(); cameraTrack = null; }
-      
+
       // 🔹 חישוב סך כל התווים מהתרגומים
-let totalTranslationChars = document.getElementById("translation").innerText.length;
-
-// 🔹 שליחה לשרת לשמירה במסד הנתונים
-const leave_at = new Date().toISOString();
-
-try {
-  const {
-  data: { session: authSession },
-  error: sessionError,
-} = await supabase.auth.getSession();
-
-if (sessionError || !authSession?.user) {
-  console.error("❌ Session invalid");
-  return;
+const translationElement = document.getElementById("translation");
+let totalTranslationChars = 0;
+if (translationElement) {
+  totalTranslationChars = translationElement.innerText.length; // כוללת רווחים וסימנים
 }
 
-const accessToken = authSession.access_token;
-
-  const res = await fetch("/api/meetings/participantTranslationCount", {
+// 🔹 שליחה לשרת לשמירה במסד הנתונים
+try {
+  const res = await fetch("/updateTranslationCount", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${accessToken}`
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       meeting_id: CHANNEL_NAME,
-      user_id: userPayload?.user_id,
-      char_count: totalTranslationChars
+      translation_char_count: totalTranslationChars
     })
   });
 
   const data = await res.json();
   if (data?.success) {
-    console.log(`✅ Participant translation count saved: ${totalTranslationChars}`);
+    console.log(`✅ Translation chars updated: ${totalTranslationChars}`);
   } else {
-    console.warn("⚠️ Failed to save participant translation count:", data?.error);
+    console.warn("⚠️ Failed to update translation count:", data?.error);
   }
-
-  // 📹 הסרת כל הוידאו מה-DOM
-  document.getElementById("local-player").innerHTML = "";
-  document.querySelectorAll("[id^='participant-']").forEach(el => el.remove());
-
-  // 📴 סגירת MediaRecorder
-  if (recorder && recorder.state !== "inactive") {
-    recorder.stop();
-    recorder = undefined;
-  }
-
-  // 🔌 סגירת WebSocket
-  const closeSocket = () => {
-    return new Promise((resolve) => {
-      if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.addEventListener("close", () => resolve());
-        socket.close();
-        socket = null;
-      } else {
-        resolve();
-      }
-    });
-  };
-  await closeSocket();
-
-  // 📴 עזיבת ערוץ Agora
-  if (client) {
-    try { await client.leave(); } catch(e) { console.warn("⚠️ client.leave failed:", e); }
-    client = null;
-  }
-
-} catch (error) {
-  console.error("⚠️ Error in leaveCall:", error);
+} catch (err) {
+  console.error("❌ Error sending translation count:", err);
 }
+
+    // 📹 הסרת כל הוידאו מה-DOM
+    document.getElementById("local-player").innerHTML = "";
+    document.querySelectorAll("[id^='participant-']").forEach(el => el.remove());
+
+    // 📴 סגירת MediaRecorder
+    if (recorder && recorder.state !== "inactive") {
+        recorder.stop();
+        recorder = undefined;
+    }
+
+    // 🔌 סגירת WebSocket
+    const closeSocket = () => {
+        return new Promise((resolve) => {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.addEventListener("close", () => resolve());
+                socket.close();
+                socket = null;
+            } else {
+                resolve();
+            }
+        });
+    };
+
+    await sendTranslationCount();
+    await closeSocket();
+
+    // 📴 עזיבת ערוץ Agora
+    if (client) {
+        try { await client.leave(); } catch(e) { console.warn("⚠️ client.leave failed:", e); }
+        client = null;
+    }
       }
 
     window.onload = async () => {
@@ -424,23 +394,10 @@ document.getElementById("btn-leave").onclick = async () => {
     window.location.href = "/";
 };
 
-window.addEventListener("beforeunload", () => {
-    const meetingToken = sessionStorage.getItem("meetingToken");
-    const leaveData = {
-        meeting_id: CHANNEL_NAME,
-        user_id: userPayload?.user_id,
-        char_count: document.getElementById("translation").innerText.length,
-        token: meetingToken
-    };
-
-    if (meetingToken) {
-        const payload = JSON.stringify(leaveData);
-        navigator.sendBeacon("/api/meetings/participantTranslationCount", payload);
-    }
-
-    leaveCall();
+    window.addEventListener("beforeunload", () => {
+    leaveCall(); // לא מחכה ל-await, רק מבצע סגירה
+      sendTranslationCount();
 });
-
 
     //שילוב עם Deppgram//
 
@@ -460,7 +417,7 @@ async function startMicAndTranscription() {
 
   socket.addEventListener("open", async () => {
     console.log("✅ connected to server");
-    
+
     try {
       recorder = await getMicrophone();
       // 🎤 הפעלת Agora
@@ -523,7 +480,7 @@ if (ttsPlayer) {
       console.error("⚠️ Failed to parse JSON:", e);
       return;
     }
-    
+
       // ======== תמלול ========
     if (data && data.channel && data.channel.alternatives[0].transcript !== "") {
       const span = document.createElement("div");
@@ -625,6 +582,38 @@ async function openMicrophone(recorder, socket) {
      recorder.start(100); // שולח כל 100 ms
   });
 }
+
+   function sendTranslationCount() {
+    return new Promise((resolve) => {
+        const translationElement = document.getElementById("translation");
+        const totalTranslationChars = translationElement ? translationElement.innerText.length : 0;
+
+        const payload = JSON.stringify({
+            meeting_id: CHANNEL_NAME,
+            translation_char_count: totalTranslationChars
+        });
+
+        if (navigator.sendBeacon) {
+            const blob = new Blob([payload], { type: "application/json" });
+            navigator.sendBeacon("/updateTranslationCount", blob);
+            console.log("✅ Translation count sent with sendBeacon:", totalTranslationChars);
+            resolve();
+        } else {
+            fetch("/updateTranslationCount", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: payload
+            }).then(() => {
+                console.log("✅ Translation count sent with fetch:", totalTranslationChars);
+                resolve();
+            }).catch(err => {
+                console.error("❌ Error sending translation count:", err);
+                resolve();
+            });
+        }
+    });
+}
+
 
   </script>
 </body>
