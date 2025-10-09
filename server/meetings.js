@@ -2,7 +2,7 @@
   const router = express.Router();
   const { supabase } = require("../client/src/utils/supabaseClient");
   const crypto = require("crypto");
-  const { SignJWT } = require("jose");
+  const { SignJWT, jwtVerify } = require("jose");
 
 // Middleware לבדיקה אם המשתמש מחובר פחות מ־24 שעות
 async function checkLastSignIn(req, res, next) {
@@ -518,7 +518,31 @@ router.post("/participantTranslationCount", async (req, res) => {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    // הוספת רשומה חדשה ל־ParticipantTranslationCounts
+    // ❗ קריאת ה־JWT מתוך ה־Authorization header
+    const authHeader = req.headers["authorization"];
+    if (!authHeader) {
+      return res.status(401).json({ error: "Missing Authorization header" });
+    }
+
+    const token = authHeader.split(" ")[1]; // מסיר את "Bearer "
+
+    if (!token) {
+      return res.status(401).json({ error: "Missing token" });
+    }
+
+    // אימות ה־JWT
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+    const { payload } = await jwtVerify(token, secret);
+
+    const decodedUserId = payload.user_id;
+    const decodedMeetingId = payload.meeting_id;
+
+    // בדיקת התאמה בין הנתונים ב־token לנתוני הבקשה
+    if (decodedUserId !== user_id || decodedMeetingId !== meeting_id) {
+      return res.status(401).json({ error: "Token does not match user or meeting" });
+    }
+
+    // הוספת רשומה חדשה למסד
     const { error: insertError } = await supabase
       .from("ParticipantTranslationCounts")
       .insert([
@@ -532,10 +556,10 @@ router.post("/participantTranslationCount", async (req, res) => {
 
     if (insertError) throw insertError;
 
-    // קריאה ישירה לפונקציה לעדכון תווים בפגישה
     await updateTranslationCount(meeting_id, char_count);
 
     res.json({ success: true });
+
   } catch (err) {
     console.error("❌ Error in participantTranslationCount:", err);
     res.status(500).json({ error: err.message });
