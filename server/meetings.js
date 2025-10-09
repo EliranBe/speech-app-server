@@ -493,56 +493,61 @@ router.post("/updateTranslationCount", async (req, res) => {
     const startedAt = new Date(meeting.started_at);
     const month_year = `${startedAt.getFullYear()}-${String(startedAt.getMonth() + 1).padStart(2, "0")}`;
 
-    // 2. עדכון ספירת התווים של הפגישה
-    const { error: updateError } = await supabase
-      .from("Meetings")
-      .update({ translation_char_count })
-      .eq("meeting_id", meeting_id);
+// 2. עדכון ספירת התווים של הפגישה — חיבור במקום החלפה
+const { data: existingMeeting, error: getMeetingError } = await supabase
+  .from("Meetings")
+  .select("translation_char_count")
+  .eq("meeting_id", meeting_id)
+  .single();
 
-    if (updateError) throw updateError;
-        console.log("✅ Updated meeting with translation_char_count:", translation_char_count);
+if (getMeetingError || !existingMeeting) {
+  throw getMeetingError || new Error("Meeting not found");
+}
 
-    // 3. חישוב סכום חודשי חדש עבור אותו חודש
-    const { data: monthlyMeetings, error: sumError } = await supabase
-      .from("Meetings")
-      .select("translation_char_count, started_at")
-      .gte("started_at", new Date(startedAt.getFullYear(), startedAt.getMonth(), 1).toISOString())
-      .lt("started_at", new Date(startedAt.getFullYear(), startedAt.getMonth() + 1, 1).toISOString());
+const newTranslationCharCount = (existingMeeting.translation_char_count || 0) + translation_char_count;
 
-    if (sumError) throw sumError;
+const { error: updateError } = await supabase
+  .from("Meetings")
+  .update({ translation_char_count: newTranslationCharCount })
+  .eq("meeting_id", meeting_id);
 
-    const translation_char_count_month = monthlyMeetings.reduce((sum, row) => {
-      return sum + (row.translation_char_count || 0);
-    }, 0);
+if (updateError) throw updateError;
+console.log("✅ Updated meeting with translation_char_count:", newTranslationCharCount);
 
-    // 4. עדכון או יצירת רשומה בטבלת MonthlyTotalTranslationCounts
-    const { data: existingMonth, error: existingError } = await supabase
-      .from("MonthlyTotalTranslationCounts")
-      .select("*")
-      .eq("month_year", month_year)
-      .single();
+// 3. חיבור הערך החדש לסכום החודשי הקיים במקום חישוב מחדש
+const { data: existingMonth, error: existingError } = await supabase
+  .from("MonthlyTotalTranslationCounts")
+  .select("total_translation_char_count")
+  .eq("month_year", month_year)
+  .single();
 
-    if (existingError && !existingMonth) {
-      // יצירת רשומה חדשה אם לא קיימת
-      const { error: insertError } = await supabase
-        .from("MonthlyTotalTranslationCounts")
-        .insert([{ month_year, total_translation_char_count: translation_char_count_month }]);
+let newTotalTranslationCharCount = translation_char_count; // ערך ברירת מחדל אם אין חודש קיים
 
-      if (insertError) throw insertError;
-    } else {
-      // עדכון רשומה קיימת
-      const { error: updateMonthError } = await supabase
-        .from("MonthlyTotalTranslationCounts")
-        .update({ total_translation_char_count: translation_char_count_month })
-        .eq("month_year", month_year);
+if (!existingError && existingMonth) {
+  newTotalTranslationCharCount = (existingMonth.total_translation_char_count || 0) + translation_char_count;
+}
 
-      if (updateMonthError) throw updateMonthError;
-    }
+// 4. עדכון או יצירת רשומה בטבלת MonthlyTotalTranslationCounts
+if (existingError || !existingMonth) {
+  // יצירת רשומה חדשה אם לא קיימת
+  const { error: insertError } = await supabase
+    .from("MonthlyTotalTranslationCounts")
+    .insert([{ month_year, total_translation_char_count: newTotalTranslationCharCount }]);
+  if (insertError) throw insertError;
+} else {
+  // עדכון רשומה קיימת
+  const { error: updateMonthError } = await supabase
+    .from("MonthlyTotalTranslationCounts")
+    .update({ total_translation_char_count: newTotalTranslationCharCount })
+    .eq("month_year", month_year);
+  if (updateMonthError) throw updateMonthError;
+}
+
 
     return res.json({
       success: true,
       month_year,
-      translation_char_count_month
+      total_translation_char_count: newTotalTranslationCharCount
     });
   } catch (err) {
     console.error("❌ Error updating translation count:", err.message);
