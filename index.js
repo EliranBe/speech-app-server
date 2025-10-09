@@ -64,43 +64,47 @@ app.post('/updateTranslationCount', async (req, res) => {
     console.log("Updating translation count:", meeting_id, translation_char_count);
 
     try {
-        // עדכון הערך ב־Meetings
-        const { data: meetingData, error: meetingError } = await supabase
+        // 1. הבאת הערך הקיים ב־Meetings
+        const { data: meetingData, error: fetchMeetingError } = await supabase
             .from('Meetings')
-            .update({ translation_char_count })
+            .select('translation_char_count, started_at')
+            .eq('meeting_id', meeting_id)
+            .single();
+
+        if (fetchMeetingError) throw fetchMeetingError;
+
+        const oldValue = meetingData.translation_char_count ? parseInt(meetingData.translation_char_count) : 0;
+        const newValue = parseInt(translation_char_count) || 0;
+        const delta = newValue - oldValue; // הפרש
+
+        const startedAt = meetingData.started_at;
+        const month_year = startedAt.substring(0, 7); // YYYY-MM
+
+        // 2. עדכון הערך ב־Meetings
+        const { error: meetingError } = await supabase
+            .from('Meetings')
+            .update({ translation_char_count: newValue })
             .eq('meeting_id', meeting_id);
 
         if (meetingError) throw meetingError;
 
-        // הבאת started_at של הפגישה
-        const { data: meetingRow, error: fetchError } = await supabase
-            .from('Meetings')
-            .select('started_at')
-            .eq('meeting_id', meeting_id)
-            .single();
-
-        if (fetchError) throw fetchError;
-
-        const startedAt = meetingRow.started_at;
-        const month_year = startedAt.substring(0, 7); // YYYY-MM
-
-        // בדיקה אם רשומה לחודש כבר קיימת
+        // 3. בדיקה אם רשומה לחודש כבר קיימת
         const { data: monthlyData, error: monthlyError } = await supabase
             .from('MonthlyTotalTranslationCounts')
             .select('total_translation_char_count')
             .eq('month_year', month_year)
             .single();
 
-        if (monthlyError && monthlyError.code !== 'PGRST116') { // לא קיים = PGRST116
+        if (monthlyError && monthlyError.code !== 'PGRST116') { // לא קיים
             throw monthlyError;
         }
 
         if (monthlyData) {
-            // עדכון הצטברתי קיים
+            // עדכון הצטברתי קיים — מוסיפים רק את ההפרש
             const { error: updateError } = await supabase
                 .from('MonthlyTotalTranslationCounts')
                 .update({
-                    total_translation_char_count: monthlyData.total_translation_char_count + translation_char_count
+                    total_translation_char_count: parseInt(monthlyData.total_translation_char_count) + delta
                 })
                 .eq('month_year', month_year);
 
@@ -109,7 +113,7 @@ app.post('/updateTranslationCount', async (req, res) => {
             // יצירת רשומה חדשה
             const { error: insertError } = await supabase
                 .from('MonthlyTotalTranslationCounts')
-                .insert([{ month_year, total_translation_char_count: translation_char_count }]);
+                .insert([{ month_year, total_translation_char_count: newValue }]);
 
             if (insertError) throw insertError;
         }
