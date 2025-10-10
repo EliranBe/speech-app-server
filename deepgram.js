@@ -95,14 +95,15 @@ return otherUsersLangs.length > 0
         const transcriptText = data?.channel?.alternatives?.[0]?.transcript;
         let translated = null;
 
-        if (transcriptText) {
-          try {
-            const otherUsersLangs = getOtherUsersNativeLanguages(ws);
-            translated = await translateText(transcriptText, ws.native_language, otherUsersLangs);
-
-            const targetLang = getTargetLang(otherUsersLangs);
-
-            console.log("🌍 Translated text:", translated);
+       if (transcriptText) {
+    try {
+        translated = await translateText(transcriptText, ws.native_language, getOtherUsersNativeLanguages(ws));
+        const targetLang = getTargetLang(getOtherUsersNativeLanguages(ws));
+        console.log("🌍 Translated text:", translated);
+        if (translated && typeof translated === "object") {
+            const translatedText = translated[targetLang] || "";
+            ws.translationCharCount += translatedText.length;
+        }
 
             // שליחת התרגום ללקוחות האחרים
             wss.clients.forEach(client => {
@@ -206,6 +207,7 @@ const audioBase64 = await synthesizeTextToBase64(textForTTS, {
 
     ws.clientId = url.searchParams.get("user_id") || decoded.user_id;
     console.log("🔗 Client connected:", ws.clientId);
+    ws.translationCharCount = 0; // ספירה מצטברת של תווים לתרגום עבור המשתמש בפגישה הזו
 
     let lastChunkTime = null;
     const getLastChunkTime = () => lastChunkTime;
@@ -238,6 +240,16 @@ const audioBase64 = await synthesizeTextToBase64(textForTTS, {
         clearInterval(keepAlive);
         keepAlive = null;
       }
+      if (ws.translationCharCount > 0) {
+    const axios = require("axios"); 
+      axios.post("https://speech-app-server.onrender.com/api/meetings/updateTranslationCount", {
+        meeting_id: ws.meeting_id,
+        translation_char_count: ws.translationCharCount
+    })
+    .then(() => console.log(`✅ Sent translation count for meeting ${ws.meeting_id}: ${ws.translationCharCount}`))
+    .catch(err => console.error("❌ Error sending translation count:", err));
+}
+
       deepgram.finish();
       deepgram.removeAllListeners();
       deepgram = null;
