@@ -479,7 +479,7 @@ router.post("/updateTranslationCount", async (req, res) => {
 
         console.log("🔹 updateTranslationCount called");
     console.log("📌 Meeting ID:", meeting_id);
-    console.log("🔢 Translation char count:", translation_char_count);
+    console.log(`🔢 Total translation char count at this meeting for ${req.user?.display_name || "Unknown"}: ${translation_char_count}`);
     
     if (!meeting_id || translation_char_count == null) {
       return res.status(400).json({ error: "Missing meeting_id or translation_char_count" });
