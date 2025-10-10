@@ -103,6 +103,7 @@ return otherUsersLangs.length > 0
         if (translated && typeof translated === "object") {
             const translatedText = translated[targetLang] || "";
             ws.translationCharCount += translatedText.length;
+          console.log(`🔢 Translation char count for ${ws.display_name}: ${ws.translationCharCount}`);
         }
 
             // שליחת התרגום ללקוחות האחרים
