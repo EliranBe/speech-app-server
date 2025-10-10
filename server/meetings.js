@@ -39,7 +39,13 @@ async function checkLastSignIn(req, res, next) {
   }
 }
 
-  router.use(checkLastSignIn);
+// 🟠 עוקפים את האימות רק עבור /updateTranslationCount
+router.use((req, res, next) => {
+  if (req.path === "/updateTranslationCount") {
+    return next(); // דלג על האימות עבור הנתיב הזה בלבד
+  }
+  checkLastSignIn(req, res, next); // עבור כל שאר הנתיבים – תבדוק token כרגיל
+});
 
 function isUserAllowed(user_id) {
   const allowedList = process.env.ALLOWED_USER_IDS
