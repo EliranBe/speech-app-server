@@ -584,11 +584,11 @@ function sendTranslationCount() {
 
     if (navigator.sendBeacon) {
       const blob = new Blob([payload], { type: "application/json" });
-      navigator.sendBeacon("/updateTranslationCount", blob);
+navigator.sendBeacon("/api/meetings/updateTranslationCount", blob);
       console.log("✅ Translation count sent with sendBeacon:", totalTranslationChars);
       return resolve();
     } else {
-      fetch("/updateTranslationCount", {
+fetch("/api/meetings/updateTranslationCount", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: payload
