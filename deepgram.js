@@ -215,10 +215,8 @@ const audioBase64 = await synthesizeTextToBase64(textForTTS, {
     let { deepgram, keepAlive } = setupDeepgram(ws, getLastChunkTime);
 
     ws.on('message', (message) => {
-      console.log('Received audio chunk, size:', message.length);
       if (deepgram.getReadyState() === 1) {
         lastChunkTime = Date.now();
-        console.log("✅ WebSocket sent data to deepgram");
         deepgram.send(message);
       } else if (deepgram.getReadyState() >= 2) {
         console.log("⚠️ WebSocket couldn't be sent data to deepgram");
