@@ -4,6 +4,31 @@ const express = require("express");
   const crypto = require("crypto");
   const { SignJWT } = require("jose");
 
+async function checkMonthlyLimit() {
+  const now = new Date();
+  const month_year = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+  const { data, error } = await supabase
+    .from("MonthlyTotalTranslationCounts")
+    .select("total_translation_char_count")
+    .eq("month_year", month_year)
+    .single();
+
+  if (error && error.code !== "PGRST116") { // אם זו לא שגיאה של "לא נמצא"
+    throw new Error("Error checking monthly translation count");
+  }
+
+  if (data && data.total_translation_char_count >= Number(process.env.MONTHLY_TRANSLATION_LIMIT)) {
+
+    return {
+      limitExceeded: true,
+      month_year
+    };
+  }
+
+  return { limitExceeded: false };
+}
+
 // Middleware לבדיקה אם המשתמש מחובר פחות מ־24 שעות
 async function checkLastSignIn(req, res, next) {
   try {
@@ -191,6 +216,14 @@ async function setStartedAtIfNull(meeting_id) {
   router.post("/start", async (req, res) => {
         let user_id;
     try {
+      
+      const limitCheck = await checkMonthlyLimit();
+if (limitCheck.limitExceeded) {
+  return res.status(403).json({
+    error: "Please try again at the beginning of next month."
+  });
+}
+
       const { meeting_id } = req.body;
 if (!meeting_id && !url_meeting) {
   return res.status(400).json({ error: "Please enter a Meeting ID and Password or URL" });
@@ -279,6 +312,14 @@ if (!meeting_id && !url_meeting) {
 router.post("/join", async (req, res) => {
       let user_id;
   try {
+    
+    const limitCheck = await checkMonthlyLimit();
+if (limitCheck.limitExceeded) {
+  return res.status(403).json({
+    error: "Monthly translation limit reached. Please try again at the beginning of next month."
+  });
+}
+
     const { meeting_id, meeting_password, url_meeting } = req.body;
 
     // 1. בדיקת קלט — כמו שקיים כיום
