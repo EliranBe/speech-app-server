@@ -38,26 +38,26 @@ function mapNativeLanguageToCode(nativeLanguage) {
  */
 function mapVoiceName(languageCode, gender) {
   const voices = {
-    "en-AU": { MALE: "en-AU-Chirp3-HD-Schedar", FEMALE: "en-AU-Chirp3-HD-Sulafat" },
-    "en-GB": { MALE: "en-GB-Chirp3-HD-Schedar", FEMALE: "en-GB-Chirp3-HD-Sulafat" },
-    "en-US": { MALE: "en-US-Chirp3-HD-Schedar", FEMALE: "en-US-Chirp3-HD-Sulafat" },
-    "es-ES": { MALE: "es-ES-Chirp3-HD-Schedar", FEMALE: "es-ES-Chirp3-HD-Sulafat" },
-    "es-US": { MALE: "es-US-Chirp3-HD-Schedar", FEMALE: "es-US-Chirp3-HD-Sulafat" },
-    "fr-FR": { MALE: "fr-FR-Chirp3-HD-Schedar", FEMALE: "fr-FR-Chirp3-HD-Sulafat" },
-    "de-DE": { MALE: "de-DE-Chirp3-HD-Schedar", FEMALE: "de-DE-Chirp3-HD-Sulafat" },
-    "en-IN": { MALE: "en-IN-Chirp3-HD-Schedar", FEMALE: "en-IN-Chirp3-HD-Sulafat" },
-    "ru-RU": { MALE: "ru-RU-Chirp3-HD-Charon", FEMALE: "ru-RU-Chirp3-HD-Aoede" },
-    "pt-BR": { MALE: "pt-BR-Chirp3-HD-Schedar", FEMALE: "pt-BR-Chirp3-HD-Sulafat" },
+    "en-AU": { MALE: "en-AU-Wavenet-D", FEMALE: "en-AU-Wavenet-C" },
+    "en-GB": { MALE: "en-GB-Wavenet-D", FEMALE: "en-GB-Wavenet-C" },
+    "en-US": { MALE: "en-US-Wavenet-D", FEMALE: "en-US-Wavenet-C" },
+    "es-ES": { MALE: "es-ES-Wavenet-G", FEMALE: "es-ES-Wavenet-F" },
+    "es-US": { MALE: "es-US-Wavenet-C", FEMALE: "es-US-Wavenet-A" },
+    "fr-FR": { MALE: "fr-FR-Wavenet-G", FEMALE: "fr-FR-Wavenet-F" },
+    "de-DE": { MALE: "de-DE-Wavenet-H", FEMALE: "de-DE-Wavenet-G" },
+    "en-IN": { MALE: "en-IN-Wavenet-C", FEMALE: "en-IN-Wavenet-D" },
+    "ru-RU": { MALE: "ru-RU-Wavenet-D", FEMALE: "ru-RU-Wavenet-C" },
+    "pt-BR": { MALE: "pt-BR-Wavenet-E", FEMALE: "pt-BR-Wavenet-C" },
     "pt-PT": { MALE: "pt-PT-Wavenet-F", FEMALE: "pt-PT-Wavenet-E" },
-    "ja-JP": { MALE: "ja-JP-Chirp3-HD-Schedar", FEMALE: "ja-JP-Chirp3-HD-Sulafat" },
-    "it-IT": { MALE: "it-IT-Chirp3-HD-Schedar", FEMALE: "it-IT-Chirp3-HD-Sulafat" },
-    "nl-NL": { MALE: "nl-NL-Chirp3-HD-Schedar", FEMALE: "nl-NL-Chirp3-HD-Sulafat" },
-    "nl-BE": { MALE: "nl-BE-Chirp3-HD-Schedar", FEMALE: "nl-BE-Chirp3-HD-Sulafat" },
-    "sv-SE": { MALE: "sv-SE-Chirp3-HD-Schedar", FEMALE: "sv-SE-Chirp3-HD-Sulafat" },
-    "da-DK": { MALE: "da-DK-Chirp3-HD-Schedar", FEMALE: "da-DK-Chirp3-HD-Sulafat" },
-    "tr-TR": { MALE: "tr-TR-Chirp3-HD-Schedar", FEMALE: "tr-TR-Chirp3-HD-Sulafat" },
-    "nb-NO": { MALE: "nb-NO-Chirp3-HD-Schedar", FEMALE: "nb-NO-Chirp3-HD-Sulafat" },
-    "id-ID": { MALE: "id-ID-Chirp3-HD-Schedar", FEMALE: "id-ID-Chirp3-HD-Sulafat" }
+    "ja-JP": { MALE: "ja-JP-Wavenet-D", FEMALE: "ja-JP-Wavenet-A" },
+    "it-IT": { MALE: "it-IT-Wavenet-F", FEMALE: "it-IT-Wavenet-E" },
+    "nl-NL": { MALE: "nl-NL-Wavenet-G", FEMALE: "nl-NL-Wavenet-F" },
+    "nl-BE": { MALE: "nl-BE-Wavenet-D", FEMALE: "nl-BE-Wavenet-C" },
+    "sv-SE": { MALE: "sv-SE-Wavenet-G", FEMALE: "sv-SE-Wavenet-F" },
+    "da-DK": { MALE: "da-DK-Wavenet-G", FEMALE: "da-DK-Wavenet-F" },
+    "tr-TR": { MALE: "tr-TR-Wavenet-E", FEMALE: "tr-TR-Wavenet-C" },
+    "nb-NO": { MALE: "nb-NO-Wavenet-G", FEMALE: "nb-NO-Wavenet-F" },
+    "id-ID": { MALE: "id-ID-Wavenet-C", FEMALE: "id-ID-Wavenet-D" }
   };
   return voices[languageCode]?.[gender] || null;
 }
