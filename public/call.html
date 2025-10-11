@@ -119,7 +119,7 @@ video {
 
    <div class="controls">
     <button id="showMeetingCardButton">Meeting Details</button>
-    <button id="btn_mic">🔇 Mute</button>
+    <button id="btn_mic">🎤 Microphone</button>
     <button id="btn-cam">📷 Turn Off Camera</button>
     <button id="btn-leave">🚪 Leave</button>
   </div>
@@ -405,19 +405,10 @@ client.on("user-left", (user) => {
       const tokenData = await tokenRes.json();
       captions = document.getElementById('captions');
       translation = document.getElementById('translation');
-      const btn_mic = window.document.getElementById('btn_mic');
 
       await client.join(AGORA_APP_ID, CHANNEL_NAME, tokenData.rtcToken, null);
         console.log("✅ Connected to Agora channel");
-
-                await startLocalTracks();
     }
-
-async function startLocalTracks() {
-    [agoraMicTrack, cameraTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
-     cameraTrack.play("local-player");
-      await client.publish([cameraTrack]);
-}
 
     function addParticipantVideo(userId, remoteTrack) {
   const container = document.querySelector('.video-container');
@@ -467,31 +458,60 @@ const maxHeightPerVideo = Math.min(availableHeight / rows, 400); // 400px גוב
 
     window.addEventListener('resize', updateVideoLayout);
 
-    btn_mic.innerText = isRunning ? "🔇 Mute" : "🎤 Unmute";
+const micButton = document.getElementById("btn_mic");
+micButton.innerText = "🎤 Microphone"; // טקסט קבוע
 
-document.getElementById("btn_mic").onclick = async () => {
-    if (!agoraMicTrack) return; // אם המיקרופון לא מאותחל עדיין
+function updateMicButton() {
+  if (micMuted) {
+    micButton.innerText = "🎤 Microphone";
+    micButton.style.backgroundColor = "red";
+  } else {
+    micButton.innerText = "🎤 Microphone";
+    micButton.style.backgroundColor = "green";
+  }
+}
+
+    function updateCamButton() {
+  if (camMuted) {
+    btn_cam.innerText = "📷 Camera";
+    btn_cam.style.backgroundColor = "red";
+  } else {
+    btn_cam.innerText = "📷 Camera";
+    btn_cam.style.backgroundColor = "green";
+  }
+}
+
+micButton.onclick = async () => {
+  if (!agoraMicTrack) {
+    agoraMicTrack = await AgoraRTC.createMicrophoneAudioTrack();
+    await client.publish([agoraMicTrack]);
+    startMicAndTranscription();
+    micMuted = false;
+    updateMicButton();
+  } else {
     micMuted = !micMuted;
-    if (micMuted) {
-        agoraMicTrack.setEnabled(false);
-        document.getElementById("btn_mic").innerText = "🔇 Mute";
-    } else {
-        agoraMicTrack.setEnabled(true);
-        document.getElementById("btn_mic").innerText = "🎤 Unmute";
-    }
+    updateMicButton();
+    agoraMicTrack.setEnabled(!micMuted);
+  }
 };
 
+const camButton = document.getElementById("btn-cam");
+camButton.innerText = "📷 Camera"; // טקסט קבוע
 
-    document.getElementById("btn-cam").onclick = async () => {
-      camMuted = !camMuted;
-      if (camMuted) {
-        cameraTrack.setEnabled(false);
-        document.getElementById("btn-cam").innerText = "🎥 Turn On Camera";
-      } else {
-        cameraTrack.setEnabled(true);
-        document.getElementById("btn-cam").innerText = "📷 Turn Off Camera";
-      }
-    };
+camButton.onclick = async () => {
+  if (!cameraTrack) {
+    cameraTrack = await AgoraRTC.createCameraVideoTrack();
+    cameraTrack.play("local-player");
+    await client.publish([cameraTrack]);
+    camMuted = false;
+  } else {
+    camMuted = !camMuted;
+    cameraTrack.setEnabled(!camMuted);
+  }
+
+  // שינוי צבע לפי מצב
+  camButton.style.backgroundColor = camMuted ? "red" : "green";
+};
 
 document.getElementById("btn-leave").onclick = async () => {
     await leaveCall();
@@ -505,9 +525,8 @@ document.getElementById("btn-leave").onclick = async () => {
 });
 
     //שילוב עם Deppgram//
-
 async function startMicAndTranscription() {
-      if (!ttsPlayer) {
+  if (!ttsPlayer) {
     ttsPlayer = new Audio();
     try {
       // הפעלה ראשונה ריקה כדי "לפתוח" את הנגן
@@ -517,77 +536,71 @@ async function startMicAndTranscription() {
       console.warn("⚠️ TTS player init failed:", err);
     }
   }
-    // ✅ בדיקה אם כבר קיים WebSocket פעיל
-  if (socket && socket.readyState === WebSocket.OPEN) {
-    console.log("⚠️ WebSocket already open, skipping creation");
-    return; // או אפשר לעצור את הפונקציה כדי למנוע כפילויות
+
+  if (!userToken) {
+    console.error("❌ Missing userToken, cannot connect to WS");
+    return;
   }
 
-    if (!userToken) {
-  console.error("❌ Missing userToken, cannot connect to WS");
-  return;
-}
+  // אם WS כבר פתוח, רק הפעל את המיקרופון
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    console.log("⚠️ WebSocket already open, starting microphone only");
+    if (!recorder) {
+      recorder = await getMicrophone();
+      await openMicrophone(recorder, socket);
+      isRunning = true;
+      updateMicButton();
+    }
+    return;
+  }
 
+  // WS לא קיים או סגור – פתח חדש
   socket = new WebSocket(`wss://${window.location.host}?token=${userToken}&user_id=${userPayload?.user_id}`);
+  console.log("🔌 Opening WS and starting microphone");
 
   socket.addEventListener("open", async () => {
-    console.log("✅ connected to server");
+    console.log("✅ WebSocket connected");
 
     try {
       recorder = await getMicrophone();
-      // 🎤 הפעלת Agora
       await openMicrophone(recorder, socket);
       isRunning = true;
-      btn_mic.innerText = "🔇 Stop Transcription";
+      updateMicButton();
     } catch (error) {
       console.error("⚠️ error opening microphone:", error);
     }
   });
 
-  // תור TTS כדי למנוע השמעה מקבילה
-const ttsQueue = [];  // תור של משפטים
-let isTtsPlaying = false; // האם כרגע משמיעים משהו
-
-function enqueueTts(audioBase64) {
-  ttsQueue.push(audioBase64);
-  playNextTts();
+  // לא לשכוח להוסיף את אירועי message ו-close אם WS חדש נפתח
+  socket.addEventListener("message", handleWSMessage);
+  socket.addEventListener("close", () => console.log("❌ WebSocket closed"));
 }
 
-function playNextTts() {
-  if (isTtsPlaying || ttsQueue.length === 0) return;
-
- // הפיכת Base64 ל־Blob
-  const audioBase64 = ttsQueue.shift();
-  const byteChars = atob(audioBase64);
-  const byteNumbers = new Array(byteChars.length);
-  for (let i = 0; i < byteChars.length; i++) {
-    byteNumbers[i] = byteChars.charCodeAt(i);
+async function openWSOnly() {
+  if (!userToken) {
+    console.error("❌ Missing userToken, cannot connect to WS");
+    return;
   }
-  const byteArray = new Uint8Array(byteNumbers);
-  const audioBlob = new Blob([byteArray], { type: "audio/mp3" });
 
-  // השמעה
-  const audioUrl = URL.createObjectURL(audioBlob);
+  // אם כבר קיים WS פתוח, לא לפתוח חדש
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    console.log("⚠️ WebSocket already open, skipping creation");
+    return;
+  }
 
-if (ttsPlayer) {
-  ttsPlayer.src = audioUrl;
-  isTtsPlaying = true;
+  // יצירת ה-WebSocket
+  socket = new WebSocket(`wss://${window.location.host}?token=${userToken}&user_id=${userPayload?.user_id}`);
+  console.log("🔌 Opening WS (WS only, no audio yet)");
 
-  ttsPlayer.play().catch(err => {
-    console.error("⚠️ Error playing TTS:", err);
-    isTtsPlaying = false;
-    playNextTts();
+  // אירוע פתיחה
+  socket.addEventListener("open", () => {
+    console.log("✅ WebSocket connected (WS only, no audio sending yet)");
   });
 
-  ttsPlayer.onended = () => {
-    isTtsPlaying = false;
-    playNextTts();
-  };
-}
-}
-
+  // אירוע הודעות
   socket.addEventListener("message", (event) => {
-    if (event.data === "") return;
+    if (!event.data) return;
+
     let data;
     try {
       data = JSON.parse(event.data);
@@ -596,53 +609,49 @@ if (ttsPlayer) {
       return;
     }
 
-      // ======== תמלול ========
-    if (data && data.channel && data.channel.alternatives[0].transcript !== "") {
+    // ======== תמלול ========
+    if (data?.channel?.alternatives?.[0]?.transcript) {
       const span = document.createElement("div");
       span.textContent = data.channel.alternatives[0].transcript;
       captions.appendChild(span);
       captions.scrollTop = captions.scrollHeight;
 
-        // חישוב Latency
-  if (data.is_final) {  // רק כאשר התמלול סופי
-    STTtranscriptReceiveTime = Date.now(); // זמן קבלת התמלול
-    STTlatency = STTtranscriptReceiveTime - STTaudioSendTime; // חישוב ה-Latency
-    console.log(`STTLatency: ${STTlatency} ms`);
-  }
+      if (data.is_final) {
+        STTtranscriptReceiveTime = Date.now();
+        STTlatency = STTtranscriptReceiveTime - STTaudioSendTime;
+        console.log(`STTLatency: ${STTlatency} ms`);
+      }
     }
 
-      // ======== תרגום ========
-  if (data.type === "translation" && data.payload?.translated) {
-    const translated = data.payload.translated;
-
-  if (typeof translated === "string") {
-    // מחרוזת פשוטה
-    const span = document.createElement("div");
-    span.textContent = translated;
-    translation.appendChild(span);
-  } else if (typeof translated === "object") {
-    // אובייקט שפות
-    for (const [lang, text] of Object.entries(translated)) {
-      const span = document.createElement("div");
-      span.textContent = `[${lang}] ${text}`;
-      translation.appendChild(span);
+    // ======== תרגום ========
+    if (data.type === "translation" && data.payload?.translated) {
+      const translated = data.payload.translated;
+      if (typeof translated === "string") {
+        const span = document.createElement("div");
+        span.textContent = translated;
+        translation.appendChild(span);
+      } else if (typeof translated === "object") {
+        for (const [lang, text] of Object.entries(translated)) {
+          const span = document.createElement("div");
+          span.textContent = `[${lang}] ${text}`;
+          translation.appendChild(span);
+        }
+      }
+      translation.scrollTop = translation.scrollHeight;
     }
-  }
 
-  translation.scrollTop = translation.scrollHeight;
-}
-
-      // ======== טקסט לדיבור (TTS) ========
-if (data.type === "tts" && data.payload?.audioBase64) {
-  enqueueTts(data.payload.audioBase64);
-}
+    // ======== טקסט לדיבור (TTS) ========
+    if (data.type === "tts" && data.payload?.audioBase64) {
+      enqueueTts(data.payload.audioBase64);
+    }
   });
 
+  // אירוע סגירה
   socket.addEventListener("close", () => {
-    console.log("❌ disconnected from server");
+    console.log("❌ WebSocket closed");
   });
 }
-
+    
 async function stopMicAndTranscription() {
   // 🎤 סגירת Agora
     if (recorder && recorder.state !== "inactive") {
@@ -656,7 +665,6 @@ async function stopMicAndTranscription() {
   }
 
   isRunning = false;
-  btn_mic.innerText = "🎤 Start Transcription";
 }
 
     // ❗ יצירת modal פתיחה
@@ -709,20 +717,26 @@ function showStartupModal() {
     }
   });
 
-  // לחיצה על כפתור Confirm
-  document.getElementById("startupConfirm").onclick = async () => {
-    overlay.remove(); // מסיר את ההודעה
+// לחיצה על כפתור Confirm
+document.getElementById("startupConfirm").onclick = async () => {
+  overlay.remove(); // מסיר את ההודעה
 
-    // מחזיר את הכפתורים האחרים לפעילים
-    buttons.forEach(btn => {
-      btn.disabled = false;
-      btn.style.opacity = "1";
-      btn.style.cursor = "pointer";
-    });
+  // מחזיר את הכפתורים האחרים לפעילים
+  buttons.forEach(btn => {
+    btn.disabled = false;
+    btn.style.opacity = "1";
+    btn.style.cursor = "pointer";
+  });
 
-    // ❗ פתיחת ה-WS
-    startMicAndTranscription(); // פותח את WS אוטומטית
-  };
+  // ✅ פתיחת ה-WS בלבד (בלי להפעיל מיקרופון או מצלמה)
+  openWSOnly();
+
+  // ✅ ודא שמיקרופון ומצלמה מתחילים במצב כבוי (אדום)
+  micMuted = true;
+  camMuted = true;
+  updateMicButton();
+  updateCamButton();
+};
 }
 
   async function getMicrophone() {
@@ -752,13 +766,13 @@ async function openMicrophone(recorder, socket) {
                 }     
          };
 
-        recorder.ondataavailable = (event) => {
-      console.log("🎙️ microphone data received");
-      if (event.data.size > 0 && socket.readyState === WebSocket.OPEN) {
-        STTaudioSendTime = Date.now(); // זמן שליחת האודיו
-        socket.send(event.data);
-      }
-    };
+recorder.ondataavailable = (event) => {
+  if (micMuted) return; // אם מושתק, לא שולח אודיו
+  if (event.data.size > 0 && socket.readyState === WebSocket.OPEN) {
+    STTaudioSendTime = Date.now();
+    socket.send(event.data);
+  }
+};
 
      recorder.start(100); // שולח כל 100 ms
   });
