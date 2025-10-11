@@ -685,6 +685,8 @@ function showStartupModal() {
   overlay.style.alignItems = "center";
   overlay.style.justifyContent = "center";
   overlay.style.zIndex = "9999";
+  overlay.style.pointerEvents = "none";
+  modal.style.pointerEvents = "auto";
 
   // יצירת modal
   const modal = document.createElement("div");
