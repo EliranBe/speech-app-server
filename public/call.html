@@ -172,7 +172,71 @@ video {
     } else {
       console.warn("⚠️ No meeting_id in JWT, using fallback:", CHANNEL_NAME);
     }
+  // -------------------------------
+//  CARD - Meeting Details
+// -------------------------------
+const showCardButton = document.querySelector("#showMeetingCardButton");
+showCardButton.addEventListener("click", async () => {
+    await showMeetingCard();
+});
 
+async function showMeetingCard() {
+    // בדיקה אם CARD כבר קיים
+    let existingCard = document.querySelector("#meetingCard");
+    if (existingCard) return;
+
+    // בקשת פרטי הפגישה מהשרת
+    const response = await fetch(`/api/meetings/getMeeting?meeting_id=${CHANNEL_NAME}`, {
+        headers: { "Authorization": `Bearer ${userToken}` }
+    });
+    if (!response.ok) {
+        alert("Error fetching meeting details");
+        return;
+    }
+    const meetingDetails = await response.json();
+
+    // יצירת CARD
+    const card = document.createElement("div");
+    card.id = "meetingCard";
+    card.style.position = "fixed";
+    card.style.top = "50%";
+    card.style.left = "50%";
+    card.style.transform = "translate(-50%, -50%)";
+    card.style.background = "white";
+    card.style.padding = "1.5rem";
+    card.style.borderRadius = "10px";
+    card.style.boxShadow = "0 8px 24px rgba(0,0,0,0.2)";
+    card.style.zIndex = "9999";
+
+    card.innerHTML = `
+        <button id="closeMeetingCard" style="position:absolute; top:10px; right:10px;">X</button>
+        <h3>Meeting Details</h3>
+        <p><strong>Meeting ID:</strong> ${meetingDetails.meeting_id}</p>
+        <p><strong>Meeting Password:</strong> ${meetingDetails.meeting_password}</p>
+        <p><strong>Meeting URL:</strong> <a href="${meetingDetails.url_meeting}" target="_blank">${meetingDetails.url_meeting}</a></p>
+        <div>
+            <img src="${meetingDetails.qr_data}" alt="QR Code" style="width:150px; height:150px;"/>
+        </div>
+    `;
+
+    document.body.appendChild(card);
+
+    // סגירה בלחיצה על X
+    document.querySelector("#closeMeetingCard").addEventListener("click", () => {
+        card.remove();
+    });
+
+    // סגירה בלחיצה מחוץ ל-CARD
+    const outsideClickListener = (event) => {
+        if (!card.contains(event.target) && event.target !== showCardButton) {
+            card.remove();
+            document.removeEventListener("click", outsideClickListener);
+        }
+    };
+    setTimeout(() => {
+        document.addEventListener("click", outsideClickListener);
+    }, 0);
+}
   } catch (e) {
     console.error("❌ Failed to parse JWT:", e);
   }
