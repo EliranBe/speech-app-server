@@ -203,21 +203,66 @@ async function showMeetingCard() {
     card.style.top = "50%";
     card.style.left = "50%";
     card.style.transform = "translate(-50%, -50%)";
-    card.style.background = "white";
-    card.style.padding = "1.5rem";
-    card.style.borderRadius = "10px";
-    card.style.boxShadow = "0 8px 24px rgba(0,0,0,0.2)";
+    card.style.background = "rgba(255,255,255,0.2)"; // שקיפות כמו ב-Log Out
+    card.style.backdropFilter = "blur(12px)";        // glass effect
+    card.style.padding = "2rem";                     // יותר מרווח
+    card.style.borderRadius = "16px";                // גדול יותר, כמו Log Out
+    card.style.boxShadow = "0 6px 20px rgba(0,0,0,0.25)"; // צל דומה
     card.style.zIndex = "9999";
 
     card.innerHTML = `
-        <button id="closeMeetingCard" style="position:absolute; top:10px; right:10px;">X</button>
-        <h3>Meeting Details</h3>
-        <p><strong>Meeting ID:</strong> ${meetingDetails.meeting_id}</p>
-        <p><strong>Meeting Password:</strong> ${meetingDetails.meeting_password}</p>
-        <p><strong>Meeting URL:</strong> <a href="${meetingDetails.url_meeting}" target="_blank">${meetingDetails.url_meeting}</a></p>
-        <div>
-            <img src="${meetingDetails.qr_data}" alt="QR Code" style="width:150px; height:150px;"/>
-        </div>
+<button id="closeMeetingCard" style="
+    position:absolute;
+    top:10px;
+    right:10px;
+    border:none;
+    border-radius:8px;
+    padding:0.25rem 0.5rem;
+    background: rgba(255,255,255,0.3);
+    backdrop-filter: blur(10px);
+    cursor:pointer;
+    font-weight:600;
+">X</button>
+<h3 style="margin-bottom:1rem; font-weight:700; color:#333;">Meeting Details</h3>
+    <p><strong>Meeting ID:</strong> ${meetingDetails.meeting_id} 
+       <button onclick="navigator.clipboard.writeText('${meetingDetails.meeting_id}')"    style="
+        padding:0.5rem 1.5rem;
+        border-radius:8px;
+        border:none;
+        background: rgba(229,231,235,1); /* #e5e7eb */
+        cursor:pointer;
+        font-weight:600;
+        margin-left:0.5rem;
+    ">
+    Copy
+</button>
+    </p>
+    <p><strong>Meeting Password:</strong> ${meetingDetails.meeting_password} 
+       <button onclick="navigator.clipboard.writeText('${meetingDetails.meeting_password}')"    style="
+        padding:0.5rem 1.5rem;
+        border-radius:8px;
+        border:none;
+        background: rgba(229,231,235,1); /* #e5e7eb */
+        cursor:pointer;
+        font-weight:600;
+        margin-left:0.5rem;
+    ">
+    Copy
+</button>
+    </p>
+    <p><strong>Meeting URL:</strong> ${meetingDetails.url_meeting} 
+       <button onclick="navigator.clipboard.writeText('${meetingDetails.url_meeting}')"    style="
+        padding:0.5rem 1.5rem;
+        border-radius:8px;
+        border:none;
+        background: rgba(229,231,235,1); /* #e5e7eb */
+        cursor:pointer;
+        font-weight:600;
+        margin-left:0.5rem;
+    ">
+    Copy
+</button>
+    </p>
     `;
 
     document.body.appendChild(card);
