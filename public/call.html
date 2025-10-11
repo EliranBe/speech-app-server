@@ -132,7 +132,7 @@ video {
     let agoraMicTrack, cameraTrack; // Agora
     let recorder;                   // MediaRecorder
     let micMuted = false;
-    let camMuted = false;
+    let camMuted = true; // כבר בתחילת המסך המצלמה כבויה
     let ws; 
     let stream;
     let socket;
@@ -144,6 +144,7 @@ video {
     let translation;
     let tts;
     let ttsPlayer = null;
+    updateCamButton();
     
         function getQueryParam(param) {
       const urlParams = new URLSearchParams(window.location.search);
@@ -464,20 +465,20 @@ micButton.innerText = "🎤 Microphone"; // טקסט קבוע
 function updateMicButton() {
   if (micMuted) {
     micButton.innerText = "🎤 Microphone";
-    micButton.style.backgroundColor = "red";
+    micButton.style.backgroundColor = "#ff7f7f"; // אדום בהיר
   } else {
     micButton.innerText = "🎤 Microphone";
-    micButton.style.backgroundColor = "green";
+    micButton.style.backgroundColor = "#7fff7f"; // ירוק בהיר
   }
 }
 
-    function updateCamButton() {
+function updateCamButton() {
   if (camMuted) {
-    btn_cam.innerText = "📷 Camera";
-    btn_cam.style.backgroundColor = "red";
+    camButton.innerText = "📷 Camera";
+    camButton.style.backgroundColor = "#ff7f7f"; // אדום בהיר
   } else {
-    btn_cam.innerText = "📷 Camera";
-    btn_cam.style.backgroundColor = "green";
+    camButton.innerText = "📷 Camera";
+    camButton.style.backgroundColor = "#7fff7f"; // ירוק בהיר
   }
 }
 
@@ -708,14 +709,15 @@ function showStartupModal() {
   document.body.appendChild(overlay);
 
   // השבתת כל הכפתורים מלבד Leave ו-Meeting Details
-  const buttons = document.querySelectorAll(".controls button");
-  buttons.forEach(btn => {
-    if (btn.id !== "btn-leave" && btn.id !== "showMeetingCardButton") {
-      btn.disabled = true;
-      btn.style.opacity = "0.5";
-      btn.style.cursor = "not-allowed";
-    }
-  });
+const buttons = document.querySelectorAll(".controls button");
+buttons.forEach(btn => {
+  // מושבתים רק המיקרופון והמצלמה
+  if (btn.id === "btn_mic" || btn.id === "btn-cam") {
+    btn.disabled = true;
+    btn.style.opacity = "0.5";
+    btn.style.cursor = "not-allowed";
+  }
+});
 
 // לחיצה על כפתור Confirm
 document.getElementById("startupConfirm").onclick = async () => {
