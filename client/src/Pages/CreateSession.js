@@ -13,6 +13,7 @@ import { UserPreferencesAPI } from "../Entities/UserPreferencesAPI";
 import QRCode from "../Components/ui/QRCode";
 import { supabase } from "../utils/supabaseClient";
 import logo from "../images/logo-verbo.png";
+import BrandedLoader from "../Components/BrandedLoader";
 
 function generateMeetingId() {
   let id = "";
@@ -58,10 +59,12 @@ export default function CreateSession() {
   const [preferences, setPreferences] = useState(null);
   const [session, setSession] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [startingCall, setStartingCall] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [fadeIn, setFadeIn] = useState(false);
+  const [errorMessage, setErrorMessage] = useState(""); 
 
 // useEffect שמפעיל טעינה אוטומטית
 useEffect(() => {
@@ -188,16 +191,17 @@ const copyToClipboard = async (text, type) => {
 
   const startCall = async () => {
     try {
+      setStartingCall(true);
       const {
         data: { session: authSession },
         error: sessionError,
       } = await supabase.auth.getSession();
 
-      if (sessionError || !authSession?.user) {
-        alert("Meeting expired, please log in again");
-        navigate("/login");
-        return;
-      }
+if (sessionError || !authSession?.user) {
+  setErrorMessage("Meeting expired, please log in again");
+  navigate("/login");
+  return;
+}
 
       const accessToken = authSession.access_token;
 
@@ -213,25 +217,32 @@ const copyToClipboard = async (text, type) => {
 const data = await resp.json();
 
 if (!resp.ok) {
+  setStartingCall(false);
   console.error("Start call error:", data);
-  alert(data?.error || "Unable to start call");
+  setErrorMessage(data?.error || "Unable to start call");
   return;
 }
 
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        alert("No URL returned from server");
-      }
-    } catch (err) {
-      console.error("Failed to call /api/meetings/start:", err);
-      alert("Failed to start call");
-    }
+if (data.url) {
+  window.location.href = data.url;
+} else {
+  setStartingCall(false);
+  setErrorMessage("No URL returned from server");
+}
+} catch (err) {
+  setStartingCall(false);
+  console.error("Failed to call /api/meetings/start:", err);
+  setErrorMessage("Failed to start call");
+}
   };
 
   if (isCreating || !session) {
     return <BrandedLoader text="Creating your Verbo session..." />;
   }
+
+  if (startingCall) {
+  return <BrandedLoader text="Starting your Verbo session..." />;
+}
 
   return (
     <div style={{ fontFamily: "'Segoe UI', sans-serif", background: "linear-gradient(135deg, #c9d6ff, #e2e2e2)", minHeight: "100vh", width: "100vw", display: "flex", justifyContent: "center", alignItems: "flex-start", paddingTop: "3rem", overflowY: "auto" }}>
@@ -501,6 +512,12 @@ if (!resp.ok) {
             </div>
           ))}
         </div>
+
+{errorMessage && (
+  <p style={{ color: "red", marginBottom: "1rem", textAlign: "center" }}>
+    {errorMessage}
+  </p>
+)}
 
         {/* Action Button */}
         <button
