@@ -87,10 +87,24 @@ async function checkLastSignIn(req, res, next) {
   }
 }
 
-// 🟠 עוקפים את האימות רק עבור /updateTranslationCount ועבור /finishMeeting
+router.get("/getMeeting", async (req, res) => {
+    const { meeting_id } = req.query;
+    if (!meeting_id) return res.status(400).json({ error: "Missing meeting_id" });
+
+    const { data, error } = await supabase
+        .from("Meetings")
+        .select("*")
+        .eq("meeting_id", meeting_id)
+        .maybeSingle();
+
+    if (error || !data) return res.status(404).json({ error: "Meeting not found" });
+    res.json({ meeting: data });
+});
+
+// 🟠 עוקפים את האימות רק עבור /updateTranslationCount ועבור /finishMeeting ועבור /getMeeting
 router.use((req, res, next) => {
   // דלג על האימות עבור הנתיבים שצוינו
-  if (req.path === "/updateTranslationCount" || req.path === "/finishMeeting") {
+  if (req.path === "/updateTranslationCount" || req.path === "/finishMeeting" || req.path === "/getMeeting") {
     return next();
   }
   checkLastSignIn(req, res, next); // עבור כל שאר הנתיבים – תבדוק token כרגיל
@@ -745,19 +759,7 @@ if (participantUpdateError) {
   }
 });
 
-router.get("/getMeeting", async (req, res) => {
-    const { meeting_id } = req.query;
-    if (!meeting_id) return res.status(400).json({ error: "Missing meeting_id" });
 
-    const { data, error } = await supabase
-        .from("Meetings")
-        .select("*")
-        .eq("meeting_id", meeting_id)
-        .maybeSingle();
-
-    if (error || !data) return res.status(404).json({ error: "Meeting not found" });
-    res.json({ meeting: data });
-});
 
 
   module.exports = router;
