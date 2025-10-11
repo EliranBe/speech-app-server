@@ -672,6 +672,7 @@ const { error: participantUpdateError } = await supabase
   .eq("meeting_id", meeting_id);
 if (participantUpdateError) {
   console.error("❌ Error updating is_active in Participants:", participantUpdateError.message);
+  }
   
         // 🧮 חישוב זמן פגישה בדקות (בעיגול כלפי מעלה)
     const { data: meetingData, error: meetingFetchError } = await supabase
