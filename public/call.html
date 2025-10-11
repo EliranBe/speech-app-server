@@ -132,7 +132,7 @@ video {
     let agoraMicTrack, cameraTrack; // Agora
     let recorder;                   // MediaRecorder
     let micMuted = false;
-    let camMuted = true; // כבר בתחילת המסך המצלמה כבויה
+    let camMuted = false;
     let ws; 
     let stream;
     let socket;
@@ -144,8 +144,7 @@ video {
     let translation;
     let tts;
     let ttsPlayer = null;
-    updateCamButton();
-    
+
         function getQueryParam(param) {
       const urlParams = new URLSearchParams(window.location.search);
       return urlParams.get(param);
@@ -196,7 +195,7 @@ async function showMeetingCard() {
     }
     const result = await response.json();  
     const meetingDetails = result.meeting; 
-  
+
     // יצירת CARD
     const card = document.createElement("div");
     card.id = "meetingCard";
@@ -373,7 +372,7 @@ async function showMeetingCard() {
   }
 };
 
-    
+
 
     async function startCall() {
       if (!userPayload) {
@@ -409,6 +408,7 @@ client.on("user-left", (user) => {
 
       await client.join(AGORA_APP_ID, CHANNEL_NAME, tokenData.rtcToken, null);
         console.log("✅ Connected to Agora channel");
+
     }
 
     function addParticipantVideo(userId, remoteTrack) {
@@ -465,20 +465,20 @@ micButton.innerText = "🎤 Microphone"; // טקסט קבוע
 function updateMicButton() {
   if (micMuted) {
     micButton.innerText = "🎤 Microphone";
-    micButton.style.backgroundColor = "#ff7f7f"; // אדום בהיר
+    micButton.style.backgroundColor = "red";
   } else {
     micButton.innerText = "🎤 Microphone";
-    micButton.style.backgroundColor = "#7fff7f"; // ירוק בהיר
+    micButton.style.backgroundColor = "green";
   }
 }
 
-function updateCamButton() {
+    function updateCamButton() {
   if (camMuted) {
-    camButton.innerText = "📷 Camera";
-    camButton.style.backgroundColor = "#ff7f7f"; // אדום בהיר
+    btn_cam.innerText = "📷 Camera";
+    btn_cam.style.backgroundColor = "red";
   } else {
-    camButton.innerText = "📷 Camera";
-    camButton.style.backgroundColor = "#7fff7f"; // ירוק בהיר
+    btn_cam.innerText = "📷 Camera";
+    btn_cam.style.backgroundColor = "green";
   }
 }
 
@@ -526,6 +526,7 @@ document.getElementById("btn-leave").onclick = async () => {
 });
 
     //שילוב עם Deppgram//
+
 async function startMicAndTranscription() {
   if (!ttsPlayer) {
     ttsPlayer = new Audio();
@@ -600,7 +601,7 @@ async function openWSOnly() {
 
   // אירוע הודעות
   socket.addEventListener("message", (event) => {
-    if (!event.data) return;
+    if (event.data === "") return;
 
     let data;
     try {
@@ -610,13 +611,14 @@ async function openWSOnly() {
       return;
     }
 
-    // ======== תמלול ========
-    if (data?.channel?.alternatives?.[0]?.transcript) {
+      // ======== תמלול ========
+    if (data && data.channel && data.channel.alternatives[0].transcript !== "") {
       const span = document.createElement("div");
       span.textContent = data.channel.alternatives[0].transcript;
       captions.appendChild(span);
       captions.scrollTop = captions.scrollHeight;
 
+        // חישוב Latency
       if (data.is_final) {
         STTtranscriptReceiveTime = Date.now();
         STTlatency = STTtranscriptReceiveTime - STTaudioSendTime;
@@ -652,6 +654,7 @@ async function openWSOnly() {
     console.log("❌ WebSocket closed");
   });
 }
+
     
 async function stopMicAndTranscription() {
   // 🎤 סגירת Agora
@@ -709,15 +712,14 @@ function showStartupModal() {
   document.body.appendChild(overlay);
 
   // השבתת כל הכפתורים מלבד Leave ו-Meeting Details
-const buttons = document.querySelectorAll(".controls button");
-buttons.forEach(btn => {
-  // מושבתים רק המיקרופון והמצלמה
-  if (btn.id === "btn_mic" || btn.id === "btn-cam") {
-    btn.disabled = true;
-    btn.style.opacity = "0.5";
-    btn.style.cursor = "not-allowed";
-  }
-});
+  const buttons = document.querySelectorAll(".controls button");
+  buttons.forEach(btn => {
+    if (btn.id !== "btn-leave" && btn.id !== "showMeetingCardButton") {
+      btn.disabled = true;
+      btn.style.opacity = "0.5";
+      btn.style.cursor = "not-allowed";
+    }
+  });
 
 // לחיצה על כפתור Confirm
 document.getElementById("startupConfirm").onclick = async () => {
