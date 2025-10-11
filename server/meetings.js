@@ -745,4 +745,19 @@ if (participantUpdateError) {
   }
 });
 
+router.get("/getMeeting", async (req, res) => {
+    const { meeting_id } = req.query;
+    if (!meeting_id) return res.status(400).json({ error: "Missing meeting_id" });
+
+    const { data, error } = await supabase
+        .from("Meetings")
+        .select("*")
+        .eq("meeting_id", meeting_id)
+        .maybeSingle();
+
+    if (error || !data) return res.status(404).json({ error: "Meeting not found" });
+    res.json({ meeting: data });
+});
+
+
   module.exports = router;
