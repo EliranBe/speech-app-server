@@ -193,8 +193,9 @@ async function showMeetingCard() {
         alert("Error fetching meeting details");
         return;
     }
-    const meetingDetails = await response.json();
-
+    const result = await response.json();  
+    const meetingDetails = result.meeting; 
+  
     // יצירת CARD
     const card = document.createElement("div");
     card.id = "meetingCard";
