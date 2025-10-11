@@ -465,20 +465,23 @@ micButton.innerText = "🎤 Microphone"; // טקסט קבוע
 function updateMicButton() {
   if (micMuted) {
     micButton.innerText = "🎤 Microphone";
-    micButton.style.backgroundColor = "red";
+    micButton.style.backgroundColor = "#ff7f7f";
   } else {
     micButton.innerText = "🎤 Microphone";
-    micButton.style.backgroundColor = "green";
+    micButton.style.backgroundColor = "#7fff7f";
   }
 }
 
-    function updateCamButton() {
+    const camButton = document.getElementById("btn-cam");
+    camButton.innerText = "📷 Camera"; // טקסט קבוע
+    
+function updateCamButton() {
   if (camMuted) {
-    btn_cam.innerText = "📷 Camera";
-    btn_cam.style.backgroundColor = "red";
+    camButton.innerText = "📷 Camera";
+    camButton.style.backgroundColor = "#ff7f7f";
   } else {
-    btn_cam.innerText = "📷 Camera";
-    btn_cam.style.backgroundColor = "green";
+    camButton.innerText = "📷 Camera";
+    camButton.style.backgroundColor = "#7fff7f";
   }
 }
 
@@ -496,22 +499,17 @@ micButton.onclick = async () => {
   }
 };
 
-const camButton = document.getElementById("btn-cam");
-camButton.innerText = "📷 Camera"; // טקסט קבוע
-
 camButton.onclick = async () => {
   if (!cameraTrack) {
     cameraTrack = await AgoraRTC.createCameraVideoTrack();
-    cameraTrack.play("local-player");
     await client.publish([cameraTrack]);
     camMuted = false;
+    updateCamButton();
   } else {
     camMuted = !camMuted;
+    updateCamButton();
     cameraTrack.setEnabled(!camMuted);
   }
-
-  // שינוי צבע לפי מצב
-  camButton.style.backgroundColor = camMuted ? "red" : "green";
 };
 
 document.getElementById("btn-leave").onclick = async () => {
