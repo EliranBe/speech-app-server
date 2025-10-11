@@ -502,6 +502,7 @@ micButton.onclick = async () => {
 camButton.onclick = async () => {
   if (!cameraTrack) {
     cameraTrack = await AgoraRTC.createCameraVideoTrack();
+    cameraTrack.play("local-player");
     await client.publish([cameraTrack]);
     camMuted = false;
     updateCamButton();
