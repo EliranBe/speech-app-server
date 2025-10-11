@@ -29,7 +29,30 @@ async function checkMonthlyLimit() {
   return { limitExceeded: false };
 }
 
-// Middleware לבדיקה אם המשתמש מחובר פחות מ־24 שעות
+async function checkMonthlyDurationLimit() {
+  const now = new Date();
+  const month_year = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+  const { data, error } = await supabase
+    .from("MonthlyTotalTranslationCounts")
+    .select("total_duration_minutes")
+    .eq("month_year", month_year)
+    .single();
+
+  if (error && error.code !== "PGRST116") {
+    throw new Error("Error checking monthly duration limit");
+  }
+
+  const durationLimit = Number(process.env.MONTHLY_DURATION_LIMIT);
+
+  if (data && data.total_duration_minutes >= durationLimit) {
+    return { limitExceeded: true, month_year };
+  }
+
+  return { limitExceeded: false };
+}
+
+// Middleware לבדיקה אם המשתמש מחובר פחות מ־12 שעות
 async function checkLastSignIn(req, res, next) {
   try {
     const authHeader = req.headers["authorization"];
@@ -220,7 +243,15 @@ async function setStartedAtIfNull(meeting_id) {
       const limitCheck = await checkMonthlyLimit();
 if (limitCheck.limitExceeded) {
   return res.status(403).json({
-    error: "Please try again at the beginning of next month."
+    error: "Monthly translation limit reached. Please try again next month."
+  });
+}
+
+          // בדיקת מגבלת דקות חודשיות
+const durationCheck = await checkMonthlyDurationLimit();
+if (durationCheck.limitExceeded) {
+  return res.status(403).json({
+    error: `Monthly duration limit reached. Please try again next month.`
   });
 }
 
@@ -316,7 +347,15 @@ router.post("/join", async (req, res) => {
     const limitCheck = await checkMonthlyLimit();
 if (limitCheck.limitExceeded) {
   return res.status(403).json({
-    error: "Monthly translation limit reached. Please try again at the beginning of next month."
+    error: "Monthly translation limit reached. Please try again next month."
+  });
+}
+
+    // בדיקת מגבלת דקות חודשיות
+const durationCheck = await checkMonthlyDurationLimit();
+if (durationCheck.limitExceeded) {
+  return res.status(403).json({
+    error: `Monthly duration limit reached. Please try again next month.`
   });
 }
 
@@ -602,5 +641,98 @@ if (existingError || !existingMonth) {
   }
 });
 
+// ✅ עדכון שעת סיום הפגישה (finished_at)
+router.post("/finishMeeting", async (req, res) => {
+  try {
+    const { meeting_id, finished_at } = req.body;
+
+    console.log("🔹 finishMeeting called");
+    console.log("📌 Meeting ID:", meeting_id);
+    console.log("⏰ finished_at:", finished_at);
+
+    if (!meeting_id || !finished_at) {
+      return res.status(400).json({ error: "Missing meeting_id or finished_at" });
+    }
+
+    // עדכון השדה בטבלת Meetings
+    const { error: updateError } = await supabase
+      .from("Meetings")
+      .update({ finished_at, is_active: false })
+      .eq("meeting_id", meeting_id);
+    if (updateError) {
+  console.error("❌ Error updating finished_at and is_active:", updateError.message);
+  return res.status(500).json({ error: updateError.message });
+}
+
+        // 🧮 חישוב זמן פגישה בדקות (בעיגול כלפי מעלה)
+    const { data: meetingData, error: meetingFetchError } = await supabase
+      .from("Meetings")
+      .select("started_at")
+      .eq("meeting_id", meeting_id)
+      .single();
+
+    if (meetingFetchError || !meetingData?.started_at) {
+      console.error("❌ Error fetching started_at:", meetingFetchError?.message);
+    } else {
+      const start = new Date(meetingData.started_at);
+      const finish = new Date(finished_at);
+      const diffMs = finish - start;
+      const diffMinutes = Math.ceil(diffMs / (1000 * 60)); // עיגול מעלה גם אם עברו שניות בודדות
+
+      // עדכון משך הפגישה בטבלת Meetings
+      const { error: durationUpdateError } = await supabase
+        .from("Meetings")
+        .update({ duration_minutes: diffMinutes })
+        .eq("meeting_id", meeting_id);
+
+      if (durationUpdateError) {
+        console.error("❌ Error updating duration_minutes:", durationUpdateError.message);
+      } else {
+        console.log(`🕒 duration_minutes updated: ${diffMinutes}`);
+
+        // עדכון סך הדקות בטבלה החודשית
+        const month_year = `${finish.getFullYear()}-${String(finish.getMonth() + 1).padStart(2, "0")}`;
+
+        const { data: existingMonth, error: existingError } = await supabase
+          .from("MonthlyTotalTranslationCounts")
+          .select("total_duration_minutes")
+          .eq("month_year", month_year)
+          .maybeSingle();
+
+        let newTotalDuration = diffMinutes;
+
+        if (existingMonth && !existingError) {
+          newTotalDuration = (existingMonth.total_duration_minutes || 0) + diffMinutes;
+
+          const { error: updateMonthError } = await supabase
+            .from("MonthlyTotalTranslationCounts")
+            .update({ total_duration_minutes: newTotalDuration })
+            .eq("month_year", month_year);
+
+          if (updateMonthError) console.error("❌ Error updating total_duration_minutes:", updateMonthError.message);
+          else console.log(`📊 Updated total_duration_minutes for ${month_year}: ${newTotalDuration}`);
+        } else {
+          const { error: insertMonthError } = await supabase
+            .from("MonthlyTotalTranslationCounts")
+            .insert([{ month_year, total_duration_minutes: newTotalDuration }]);
+
+          if (insertMonthError) console.error("❌ Error inserting total_duration_minutes:", insertMonthError.message);
+          else console.log(`📊 Created total_duration_minutes for ${month_year}: ${newTotalDuration}`);
+        }
+      }
+    }
+
+    if (updateError) {
+      console.error("❌ Error updating finished_at:", updateError.message);
+      return res.status(500).json({ error: updateError.message });
+    }
+
+    console.log(`✅ Meeting ${meeting_id} finished_at updated successfully.`);
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("❌ Error in /finishMeeting:", err.message);
+    res.status(500).json({ error: "Server error" });
+  }
+});
 
   module.exports = router;
