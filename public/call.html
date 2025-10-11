@@ -365,6 +365,7 @@ async function showMeetingCard() {
     const data = await res.json();
     AGORA_APP_ID = data.appId;
 
+    showStartupModal();
     await startCall(); // עכשיו App ID כבר מוגדר
   } catch (err) {
     console.error("⚠️ Failed to fetch App ID:", err);
@@ -466,28 +467,20 @@ const maxHeightPerVideo = Math.min(availableHeight / rows, 400); // 400px גוב
 
     window.addEventListener('resize', updateVideoLayout);
 
-    btn_mic.innerText = isRunning ? "🔇 Stop Transcription" : "🎤 Start Transcription";
+    btn_mic.innerText = isRunning ? "🔇 Mute" : "🎤 Unmute";
 
 document.getElementById("btn_mic").onclick = async () => {
-    if (!ttsPlayer) {
-    ttsPlayer = new Audio();
-    try {
-      // הפעלה ראשונה ריקה כדי "לפתוח" את הנגן
-      ttsPlayer.play().catch(() => {});
-      console.log("🔊 TTS player primed");
-    } catch (err) {
-      console.warn("⚠️ TTS player init failed:", err);
+    if (!agoraMicTrack) return; // אם המיקרופון לא מאותחל עדיין
+    micMuted = !micMuted;
+    if (micMuted) {
+        agoraMicTrack.setEnabled(false);
+        document.getElementById("btn_mic").innerText = "🔇 Mute";
+    } else {
+        agoraMicTrack.setEnabled(true);
+        document.getElementById("btn_mic").innerText = "🎤 Unmute";
     }
-  }
-
-    if (!isRunning) {
-    await startMicAndTranscription();
-    document.getElementById("btn_mic").innerText = "🔇 Stop Transcription";
-  } else {
-    await stopMicAndTranscription();
-    document.getElementById("btn_mic").innerText = "🎤 Start Transcription";
-  }
 };
+
 
     document.getElementById("btn-cam").onclick = async () => {
       camMuted = !camMuted;
@@ -503,15 +496,27 @@ document.getElementById("btn_mic").onclick = async () => {
 document.getElementById("btn-leave").onclick = async () => {
     await leaveCall();
     window.location.href = "/";
+    stopMicAndTranscription();
 };
 
     window.addEventListener("beforeunload", () => {
     leaveCall(); // לא מחכה ל-await, רק מבצע סגירה
+    stopMicAndTranscription();
 });
 
     //שילוב עם Deppgram//
 
 async function startMicAndTranscription() {
+      if (!ttsPlayer) {
+    ttsPlayer = new Audio();
+    try {
+      // הפעלה ראשונה ריקה כדי "לפתוח" את הנגן
+      ttsPlayer.play().catch(() => {});
+      console.log("🔊 TTS player primed");
+    } catch (err) {
+      console.warn("⚠️ TTS player init failed:", err);
+    }
+  }
     // ✅ בדיקה אם כבר קיים WebSocket פעיל
   if (socket && socket.readyState === WebSocket.OPEN) {
     console.log("⚠️ WebSocket already open, skipping creation");
@@ -652,6 +657,72 @@ async function stopMicAndTranscription() {
 
   isRunning = false;
   btn_mic.innerText = "🎤 Start Transcription";
+}
+
+    // ❗ יצירת modal פתיחה
+function showStartupModal() {
+  // יצירת overlay
+  const overlay = document.createElement("div");
+  overlay.id = "startupOverlay";
+  overlay.style.position = "fixed";
+  overlay.style.top = "0";
+  overlay.style.left = "0";
+  overlay.style.width = "100%";
+  overlay.style.height = "100%";
+  overlay.style.background = "rgba(0,0,0,0.3)";
+  overlay.style.display = "flex";
+  overlay.style.alignItems = "center";
+  overlay.style.justifyContent = "center";
+  overlay.style.zIndex = "9999";
+
+  // יצירת modal
+  const modal = document.createElement("div");
+  modal.style.background = "rgba(255,255,255,0.2)";
+  modal.style.backdropFilter = "blur(12px)";
+  modal.style.padding = "2rem";
+  modal.style.borderRadius = "16px";
+  modal.style.boxShadow = "0 6px 20px rgba(0,0,0,0.25)";
+  modal.style.textAlign = "center";
+  modal.innerHTML = `
+    <p style="margin-bottom:1.5rem; font-weight:600; color:#333;">
+      Please confirm connection to Verbo.io services.
+    </p>
+    <button id="startupConfirm" style="
+      padding:0.5rem 1.5rem;
+      border-radius:8px;
+      border:none;
+      background: rgba(229,231,235,1);
+      cursor:pointer;
+      font-weight:600;
+    ">ACCEPT</button>
+  `;
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+
+  // השבתת כל הכפתורים מלבד Leave ו-Meeting Details
+  const buttons = document.querySelectorAll(".controls button");
+  buttons.forEach(btn => {
+    if (btn.id !== "btn-leave" && btn.id !== "showMeetingCardButton") {
+      btn.disabled = true;
+      btn.style.opacity = "0.5";
+      btn.style.cursor = "not-allowed";
+    }
+  });
+
+  // לחיצה על כפתור Confirm
+  document.getElementById("startupConfirm").onclick = async () => {
+    overlay.remove(); // מסיר את ההודעה
+
+    // מחזיר את הכפתורים האחרים לפעילים
+    buttons.forEach(btn => {
+      btn.disabled = false;
+      btn.style.opacity = "1";
+      btn.style.cursor = "pointer";
+    });
+
+    // ❗ פתיחת ה-WS
+    startMicAndTranscription(); // פותח את WS אוטומטית
+  };
 }
 
   async function getMicrophone() {
