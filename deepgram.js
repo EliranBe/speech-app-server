@@ -233,25 +233,43 @@ const audioBase64 = await synthesizeTextToBase64(textForTTS, {
       }
     });
 
-    ws.on('close', () => {
-      console.log("❌ Client disconnected from WebSocket");
-      if (keepAlive) {
-        clearInterval(keepAlive);
-        keepAlive = null;
-      }
-      if (ws.translationCharCount > 0) {
+ws.on('close', () => {
+  console.log("❌ Client disconnected from WebSocket");
+  if (keepAlive) {
+    clearInterval(keepAlive);
+    keepAlive = null;
+  }
+
+  // עדכון ספירת התווים אם נשלחו תרגומים
+  if (ws.translationCharCount > 0) {
     const axios = require("axios"); 
-      axios.post("https://speech-app-server.onrender.com/api/meetings/updateTranslationCount", {
-        meeting_id: ws.meeting_id,
-        translation_char_count: ws.translationCharCount
+    axios.post("https://speech-app-server.onrender.com/api/meetings/updateTranslationCount", {
+      meeting_id: ws.meeting_id,
+      translation_char_count: ws.translationCharCount
     })
     .then(() => console.log(`✅ Sent translation count for meeting ${ws.meeting_id}: ${ws.translationCharCount}`))
     .catch(err => console.error("❌ Error sending translation count:", err));
-}
+  }
 
-      deepgram.finish();
-      deepgram.removeAllListeners();
-      deepgram = null;
-    });
+  // ✅ בדיקה אם אין עוד משתתפים בפגישה
+  const otherClientsInMeeting = Array.from(wss.clients)
+    .filter(c => c.readyState === WebSocket.OPEN && c.meeting_id === ws.meeting_id);
+
+  if (otherClientsInMeeting.length === 0) {
+    console.log(`📌 Last participant left meeting ${ws.meeting_id}, setting finished_at`);
+
+    const axios = require("axios");
+    axios.post("https://speech-app-server.onrender.com/api/meetings/finishMeeting", {
+      meeting_id: ws.meeting_id,
+      finished_at: new Date().toISOString()
+    })
+    .then(() => console.log(`✅ Meeting ${ws.meeting_id} finished_at updated`))
+    .catch(err => console.error("❌ Error updating finished_at:", err));
+  }
+
+  deepgram.finish();
+  deepgram.removeAllListeners();
+  deepgram = null;
+});
   });
 };
