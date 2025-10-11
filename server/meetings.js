@@ -661,10 +661,18 @@ router.post("/finishMeeting", async (req, res) => {
       .update({ finished_at, is_active: false })
       .eq("meeting_id", meeting_id);
     if (updateError) {
-  console.error("❌ Error updating finished_at and is_active:", updateError.message);
+  console.error("❌ Error updating finished_at and is_active in Meetings:", updateError.message);
   return res.status(500).json({ error: updateError.message });
 }
-
+    
+// עדכון is_active לכל המשתתפים בטבלת Participants
+const { error: participantUpdateError } = await supabase
+  .from("Participants")
+  .update({ is_active: false })
+  .eq("meeting_id", meeting_id);
+if (participantUpdateError) {
+  console.error("❌ Error updating is_active in Participants:", participantUpdateError.message);
+  
         // 🧮 חישוב זמן פגישה בדקות (בעיגול כלפי מעלה)
     const { data: meetingData, error: meetingFetchError } = await supabase
       .from("Meetings")
