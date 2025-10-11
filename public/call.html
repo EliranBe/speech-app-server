@@ -225,44 +225,70 @@ async function showMeetingCard() {
 ">X</button>
 <h3 style="margin-bottom:1rem; font-weight:700; color:#333;">Meeting Details</h3>
     <p><strong>Meeting ID:</strong> ${meetingDetails.meeting_id} 
-       <button onclick="navigator.clipboard.writeText('${meetingDetails.meeting_id}')"    style="
+       <button onclick="
+         navigator.clipboard.writeText('${meetingDetails.meeting_id}');
+         const msg = document.createElement('span');
+         msg.innerText = ' Copied to clipboard!';
+         msg.style.color = 'green';
+         msg.style.marginLeft = '10px';
+         this.parentNode.appendChild(msg);
+         setTimeout(() => msg.remove(), 2000);
+       " style="
         padding:0.5rem 1.5rem;
         border-radius:8px;
         border:none;
-        background: rgba(229,231,235,1); /* #e5e7eb */
+        background: rgba(229,231,235,1);
         cursor:pointer;
         font-weight:600;
         margin-left:0.5rem;
     ">
     Copy
 </button>
-    </p>
-    <p><strong>Meeting Password:</strong> ${meetingDetails.meeting_password} 
-       <button onclick="navigator.clipboard.writeText('${meetingDetails.meeting_password}')"    style="
+</p>
+
+<p><strong>Meeting Password:</strong> ${meetingDetails.meeting_password} 
+       <button onclick="
+         navigator.clipboard.writeText('${meetingDetails.meeting_password}');
+         const msg = document.createElement('span');
+         msg.innerText = ' Copied to clipboard!';
+         msg.style.color = 'green';
+         msg.style.marginLeft = '10px';
+         this.parentNode.appendChild(msg);
+         setTimeout(() => msg.remove(), 2000);
+       " style="
         padding:0.5rem 1.5rem;
         border-radius:8px;
         border:none;
-        background: rgba(229,231,235,1); /* #e5e7eb */
+        background: rgba(229,231,235,1);
         cursor:pointer;
         font-weight:600;
         margin-left:0.5rem;
     ">
     Copy
 </button>
-    </p>
-    <p><strong>Meeting URL:</strong> ${meetingDetails.url_meeting} 
-       <button onclick="navigator.clipboard.writeText('${meetingDetails.url_meeting}')"    style="
+</p>
+
+<p><strong>Meeting URL:</strong> ${meetingDetails.url_meeting} 
+       <button onclick="
+         navigator.clipboard.writeText('${meetingDetails.url_meeting}');
+         const msg = document.createElement('span');
+         msg.innerText = ' Copied to clipboard!';
+         msg.style.color = 'green';
+         msg.style.marginLeft = '10px';
+         this.parentNode.appendChild(msg);
+         setTimeout(() => msg.remove(), 2000);
+       " style="
         padding:0.5rem 1.5rem;
         border-radius:8px;
         border:none;
-        background: rgba(229,231,235,1); /* #e5e7eb */
+        background: rgba(229,231,235,1);
         cursor:pointer;
         font-weight:600;
         margin-left:0.5rem;
     ">
     Copy
 </button>
-    </p>
+</p>
     `;
 
     document.body.appendChild(card);
