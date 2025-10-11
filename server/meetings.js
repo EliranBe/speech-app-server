@@ -87,10 +87,11 @@ async function checkLastSignIn(req, res, next) {
   }
 }
 
-// 🟠 עוקפים את האימות רק עבור /updateTranslationCount
+// 🟠 עוקפים את האימות רק עבור /updateTranslationCount ועבור /finishMeeting
 router.use((req, res, next) => {
-  if (req.path === "/updateTranslationCount") {
-    return next(); // דלג על האימות עבור הנתיב הזה בלבד
+  // דלג על האימות עבור הנתיבים שצוינו
+  if (req.path === "/updateTranslationCount" || req.path === "/finishMeeting") {
+    return next();
   }
   checkLastSignIn(req, res, next); // עבור כל שאר הנתיבים – תבדוק token כרגיל
 });
