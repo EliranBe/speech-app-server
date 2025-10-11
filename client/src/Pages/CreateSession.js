@@ -42,15 +42,6 @@ function generateMeetingUrl() {
   return `${BASE_URL}/Call?sessionId=${randomString}`;
 }
 
-const BrandedLoader = ({ text }) => (
-  <div style={{ height: "100vh", display: "flex", justifyContent: "center", alignItems: "center" }}>
-    <div style={{ textAlign: "center" }}>
-      <div style={{ width: "48px", height: "48px", border: "4px solid rgba(59,130,246,0.3)", borderTop: "4px solid #3b82f6", borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto 16px auto" }} />
-      <p style={{ color: "#555" }}>{text}</p>
-    </div>
-  </div>
-);
-
 export default function CreateSession() {
   const isMounted = useRef(true);
   const navigate = useNavigate();
