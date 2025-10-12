@@ -30,7 +30,7 @@ function mapNativeLanguageToCode(nativeLanguage) {
     "USA (English)": "en-US",
     "USA (Spanish)": "es-US"
   };
-  return map[nativeLanguage] || 'ru-RU'; // ברירת מחדל
+  return map[nativeLanguage]; // ללא ברירת מחדל
 }
 
 /**
@@ -70,7 +70,7 @@ function mapVoiceName(languageCode, gender) {
  */
 async function synthesizeTextToBase64(text, jwtPayload) {
   const languageCode = mapNativeLanguageToCode(jwtPayload.native_language);
-  const gender = jwtPayload.gender || "FEMALE";
+  const gender = jwtPayload.gender;
   const voiceName = mapVoiceName(languageCode, gender);
 
   const request = {
