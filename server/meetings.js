@@ -346,6 +346,11 @@ if (!meeting_id && !url_meeting) {
         meetingToken
       )}`;
 
+      // סיום אוטומטי לאחר 55 שניות
+setTimeout(() => {
+  finishMeetingLogic(meeting_id); // משתמש ב־meeting_id שנמצא/נבחר
+}, 55 * 1000);
+
       return res.status(200).json({ url: redirectUrl });
     } catch (err) {
       return res.status(500).json({ error: "Server error" });
@@ -557,6 +562,11 @@ if (participantRow) {
       "";
 
     const redirectUrl = `${CALL_BASE_URL}?userToken=${encodeURIComponent(meetingToken)}`;
+
+    // סיום אוטומטי לאחר 55 שניות
+setTimeout(() => {
+  finishMeetingLogic(meeting_id_to_use); // משתמש ב־meeting_id שנמצא/נבחר
+}, 55 * 1000);
 
     return res.status(200).json({
       participant: participantRow || newParticipant || null,
@@ -784,6 +794,50 @@ if (participantUpdateError) {
   }
 });
 
+async function finishMeetingLogic(meeting_id) {
+  const finished_at = new Date().toISOString();
+
+  const { data: meetingRow } = await supabase
+    .from("Meetings")
+    .select("finished_at, expiry")
+    .eq("meeting_id", meeting_id)
+    .single();
+
+  if (!meetingRow) return;
+
+  const updateData = { is_active: false };
+  if (!meetingRow.finished_at) updateData.finished_at = finished_at;
+  if (!meetingRow.expiry) updateData.expiry = finished_at;
+
+  await supabase.from("Meetings").update(updateData).eq("meeting_id", meeting_id);
+  await supabase.from("Participants").update({ is_active: false }).eq("meeting_id", meeting_id);
+
+  const { data: meetingData } = await supabase.from("Meetings").select("started_at").eq("meeting_id", meeting_id).single();
+  if (meetingData?.started_at) {
+    const start = new Date(meetingData.started_at);
+    const finish = new Date(finished_at);
+    const diffMinutes = Math.ceil((finish - start) / (1000 * 60));
+
+    await supabase.from("Meetings").update({ duration_minutes: diffMinutes }).eq("meeting_id", meeting_id);
+
+    const month_year = `${finish.getFullYear()}-${String(finish.getMonth() + 1).padStart(2, "0")}`;
+    const { data: existingMonth } = await supabase
+      .from("MonthlyTotalTranslationCounts")
+      .select("total_duration_minutes")
+      .eq("month_year", month_year)
+      .maybeSingle();
+
+    const newTotalDuration = diffMinutes + (existingMonth?.total_duration_minutes || 0);
+    if (existingMonth) {
+      await supabase.from("MonthlyTotalTranslationCounts")
+        .update({ total_duration_minutes: newTotalDuration })
+        .eq("month_year", month_year);
+    } else {
+      await supabase.from("MonthlyTotalTranslationCounts")
+        .insert([{ month_year, total_duration_minutes: newTotalDuration }]);
+    }
+  }
+}
 
 
 
