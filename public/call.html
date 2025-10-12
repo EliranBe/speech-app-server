@@ -652,7 +652,6 @@ function updateCamButton() {
 micButton.onclick = async () => {
   if (!agoraMicTrack) {
     agoraMicTrack = await AgoraRTC.createMicrophoneAudioTrack();
-    await client.publish([agoraMicTrack]);
     startMicAndTranscription();
     micMuted = false;
     updateMicButton();
