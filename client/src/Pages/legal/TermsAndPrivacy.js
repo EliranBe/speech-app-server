@@ -68,15 +68,19 @@ export default function TermsAndPrivacy() {
           <p>
             The Service is provided "as is" and "as available" without warranties. The developer, owners, or affiliates are not liable for damages, loss of data, profits, or legal claims arising from your use of the Service. You agree not to hold the developer responsible for claims, damages, or legal actions resulting from your use of the Service, including errors, bugs, viruses, third-party content, or service interruptions.
           </p>
+          <p>Verbo.io is currently in beta. There may be errors or issues, and by registering for this service, you agree not to make any claims or complaints against Verbo.io.</p>
 
           <h3>5. Intellectual Property</h3>
           <p>All content, logos, trademarks, and software are owned by the developer or licensors. You may not reproduce or distribute without permission.</p>
 
           <h3>6. Termination</h3>
           <p>We may suspend or terminate your access at our discretion.</p>
+          <p>Verbo.io reserves the right to suspend any account without prior notice and without providing any explanation.</p>
 
           <h3>7. Changes to Terms</h3>
           <p>We may update these Terms at any time; continued use constitutes acceptance.</p>
+          <p>Even if not all minutes of a meeting have been used, it will not be possible to return to it.</p>
+          <p>Verbo.io reserves the right to change, freeze, or cancel usage plans unilaterally and without prior notice.</p>
 
           </section>
 
