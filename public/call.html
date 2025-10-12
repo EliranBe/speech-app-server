@@ -195,6 +195,31 @@ video {
   }
 }
 
+
+      
+// פונקציית WS נפרדת לחלוטין
+async function openWSOnly() {
+  if (!userToken) {
+    console.error("❌ Missing userToken, cannot connect to WS");
+    return;
+  }
+
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    console.log("⚠️ WebSocket already open, skipping creation");
+    return;
+  }
+
+  socket = new WebSocket(`wss://${window.location.host}?token=${userToken}&user_id=${userPayload?.user_id}`);
+  console.log("🔌 Opening WS (WS only, no audio yet)");
+
+  socket.addEventListener("open", () => {
+    console.log("✅ WebSocket connected (WS only, no audio sending yet)");
+  });
+
+  socket.addEventListener("message", handleWSMessage);
+  socket.addEventListener("close", () => console.log("❌ WebSocket closed"));
+}
+    
         // תור TTS כדי למנוע השמעה מקבילה
 const ttsQueue = [];       // תור של משפטים
 let isTtsPlaying = false;  // האם כרגע משמיעים משהו
@@ -707,30 +732,6 @@ async function startMicAndTranscription() {
       console.error("⚠️ error opening microphone:", error);
     }
   });
-  
-// פונקציית WS נפרדת לחלוטין
-async function openWSOnly() {
-  if (!userToken) {
-    console.error("❌ Missing userToken, cannot connect to WS");
-    return;
-  }
-
-  if (socket && socket.readyState === WebSocket.OPEN) {
-    console.log("⚠️ WebSocket already open, skipping creation");
-    return;
-  }
-
-  socket = new WebSocket(`wss://${window.location.host}?token=${userToken}&user_id=${userPayload?.user_id}`);
-  console.log("🔌 Opening WS (WS only, no audio yet)");
-
-  socket.addEventListener("open", () => {
-    console.log("✅ WebSocket connected (WS only, no audio sending yet)");
-  });
-
-  socket.addEventListener("message", handleWSMessage);
-  socket.addEventListener("close", () => console.log("❌ WebSocket closed"));
-}
-
 }
 
     
