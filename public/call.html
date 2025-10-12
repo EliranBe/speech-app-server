@@ -145,6 +145,95 @@ video {
     let tts;
     let ttsPlayer = null;
 
+    
+  function handleWSMessage(event) {
+  if (!event.data) return;
+
+  let data;
+  try {
+    data = JSON.parse(event.data);
+  } catch (e) {
+    console.error("⚠️ Failed to parse JSON:", e);
+    return;
+  }
+
+  // ======== תמלול ========
+  if (data && data.channel && data.channel.alternatives[0].transcript !== "") {
+    const span = document.createElement("div");
+    span.textContent = data.channel.alternatives[0].transcript;
+    captions.appendChild(span);
+    captions.scrollTop = captions.scrollHeight;
+
+    // חישוב Latency
+    if (data.is_final) {
+      STTtranscriptReceiveTime = Date.now();
+      STTlatency = STTtranscriptReceiveTime - STTaudioSendTime;
+      console.log(`STTLatency: ${STTlatency} ms`);
+    }
+  }
+
+  // ======== תרגום ========
+  if (data.type === "translation" && data.payload?.translated) {
+    const translated = data.payload.translated;
+    if (typeof translated === "string") {
+      const span = document.createElement("div");
+      span.textContent = translated;
+      translation.appendChild(span);
+    } else if (typeof translated === "object") {
+      for (const [lang, text] of Object.entries(translated)) {
+        const span = document.createElement("div");
+        span.textContent = `[${lang}] ${text}`;
+        translation.appendChild(span);
+      }
+    }
+    translation.scrollTop = translation.scrollHeight;
+  }
+
+  // ======== טקסט לדיבור (TTS) ========
+  if (data.type === "tts" && data.payload?.audioBase64) {
+    enqueueTts(data.payload.audioBase64);
+  }
+}
+
+        // תור TTS כדי למנוע השמעה מקבילה
+const ttsQueue = [];       // תור של משפטים
+let isTtsPlaying = false;  // האם כרגע משמיעים משהו
+
+function enqueueTts(audioBase64) {
+  ttsQueue.push(audioBase64);
+  playNextTts();
+}
+
+function playNextTts() {
+  if (isTtsPlaying || ttsQueue.length === 0) return;
+
+  isTtsPlaying = true;
+  const audioBase64 = ttsQueue.shift();
+  const byteChars = atob(audioBase64);
+  const byteNumbers = new Array(byteChars.length);
+
+  for (let i = 0; i < byteChars.length; i++) {
+    byteNumbers[i] = byteChars.charCodeAt(i);
+  }
+
+  const audioBlob = new Blob([new Uint8Array(byteNumbers)], { type: "audio/mp3" });
+  const audioUrl = URL.createObjectURL(audioBlob);
+
+  if (!ttsPlayer) ttsPlayer = new Audio();
+  ttsPlayer.src = audioUrl;
+
+  ttsPlayer.onended = () => {
+    isTtsPlaying = false;
+    playNextTts();
+  };
+
+  ttsPlayer.play().catch(err => {
+    console.error("⚠️ Error playing TTS:", err);
+    isTtsPlaying = false;
+    playNextTts();
+  });
+}
+
         function getQueryParam(param) {
       const urlParams = new URLSearchParams(window.location.search);
       return urlParams.get(param);
@@ -605,9 +694,6 @@ async function startMicAndTranscription() {
     return;
   }
 
-  // WS לא קיים או סגור – פתח חדש
-  socket = new WebSocket(`wss://${window.location.host}?token=${userToken}&user_id=${userPayload?.user_id}`);
-  console.log("🔌 Opening WS and starting microphone");
 
   socket.addEventListener("open", async () => {
     console.log("✅ WebSocket connected");
@@ -621,87 +707,30 @@ async function startMicAndTranscription() {
       console.error("⚠️ error opening microphone:", error);
     }
   });
-
-  // לא לשכוח להוסיף את אירועי message ו-close אם WS חדש נפתח
-  socket.addEventListener("message", handleWSMessage);
-  socket.addEventListener("close", () => console.log("❌ WebSocket closed"));
-}
-
+  
+// פונקציית WS נפרדת לחלוטין
 async function openWSOnly() {
   if (!userToken) {
     console.error("❌ Missing userToken, cannot connect to WS");
     return;
   }
 
-  // אם כבר קיים WS פתוח, לא לפתוח חדש
   if (socket && socket.readyState === WebSocket.OPEN) {
     console.log("⚠️ WebSocket already open, skipping creation");
     return;
   }
 
-  // יצירת ה-WebSocket
   socket = new WebSocket(`wss://${window.location.host}?token=${userToken}&user_id=${userPayload?.user_id}`);
   console.log("🔌 Opening WS (WS only, no audio yet)");
 
-  // אירוע פתיחה
   socket.addEventListener("open", () => {
     console.log("✅ WebSocket connected (WS only, no audio sending yet)");
   });
 
-  // אירוע הודעות
-  socket.addEventListener("message", (event) => {
-    if (event.data === "") return;
+  socket.addEventListener("message", handleWSMessage);
+  socket.addEventListener("close", () => console.log("❌ WebSocket closed"));
+}
 
-    let data;
-    try {
-      data = JSON.parse(event.data);
-    } catch (e) {
-      console.error("⚠️ Failed to parse JSON:", e);
-      return;
-    }
-
-      // ======== תמלול ========
-    if (data && data.channel && data.channel.alternatives[0].transcript !== "") {
-      const span = document.createElement("div");
-      span.textContent = data.channel.alternatives[0].transcript;
-      captions.appendChild(span);
-      captions.scrollTop = captions.scrollHeight;
-
-        // חישוב Latency
-      if (data.is_final) {
-        STTtranscriptReceiveTime = Date.now();
-        STTlatency = STTtranscriptReceiveTime - STTaudioSendTime;
-        console.log(`STTLatency: ${STTlatency} ms`);
-      }
-    }
-
-    // ======== תרגום ========
-    if (data.type === "translation" && data.payload?.translated) {
-      const translated = data.payload.translated;
-      if (typeof translated === "string") {
-        const span = document.createElement("div");
-        span.textContent = translated;
-        translation.appendChild(span);
-      } else if (typeof translated === "object") {
-        for (const [lang, text] of Object.entries(translated)) {
-          const span = document.createElement("div");
-          span.textContent = `[${lang}] ${text}`;
-          translation.appendChild(span);
-        }
-      }
-      translation.scrollTop = translation.scrollHeight;
-    }
-
-    // ======== טקסט לדיבור (TTS) ========
-    if (data.type === "tts" && data.payload?.audioBase64) {
-      enqueueTts(data.payload.audioBase64);
-    }
-  });
-
-  // אירוע סגירה
-  socket.addEventListener("close", () => {
-    console.log("❌ WebSocket closed");
-  });
 }
 
     
