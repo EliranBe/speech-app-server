@@ -671,14 +671,14 @@ router.post("/finishMeeting", async (req, res) => {
 
     // עדכון השדה בטבלת Meetings
 // 1️⃣ קבלת השורה הנוכחית מהטבלה
-const { data: meetingRow, error: meetingFetchError } = await supabase
+const { data: meetingRow, error: meetingStartError } = await supabase
   .from("Meetings")
   .select("finished_at, expiry")
   .eq("meeting_id", meeting_id)
   .single();
 
-if (meetingFetchError || !meetingRow) {
-  console.error("❌ Meeting not found:", meetingFetchError?.message);
+if (meetingStartError || !meetingRow) {
+  console.error("❌ Meeting not found:", meetingStartError?.message);
   return res.status(404).json({ error: "Meeting not found" });
 }
 
