@@ -38,7 +38,7 @@ module.exports = function startWebSocketServer(server, app) {
       "USA (English)": "en-US",
       "USA (Spanish)": "es"
     };
-    return map[nativeLanguage] || "multi";
+    return map[nativeLanguage];
   }
 
   function getOtherUsersNativeLanguages(currentWs) {
