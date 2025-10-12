@@ -670,14 +670,39 @@ router.post("/finishMeeting", async (req, res) => {
     }
 
     // עדכון השדה בטבלת Meetings
-    const { error: updateError } = await supabase
-      .from("Meetings")
-      .update({ finished_at, is_active: false })
-      .eq("meeting_id", meeting_id);
-    if (updateError) {
-  console.error("❌ Error updating finished_at and is_active in Meetings:", updateError.message);
+// 1️⃣ קבלת השורה הנוכחית מהטבלה
+const { data: meetingRow, error: meetingFetchError } = await supabase
+  .from("Meetings")
+  .select("finished_at, expiry")
+  .eq("meeting_id", meeting_id)
+  .single();
+
+if (meetingFetchError || !meetingRow) {
+  console.error("❌ Meeting not found:", meetingFetchError?.message);
+  return res.status(404).json({ error: "Meeting not found" });
+}
+
+// 2️⃣ הכנת אובייקט לעדכון בהתאם לערכים קיימים
+const updateData = { is_active: false }; // תמיד נשאר עדכון ל-is_active
+
+if (!meetingRow.finished_at) {
+  updateData.finished_at = finished_at;
+}
+if (!meetingRow.expiry) {
+  updateData.expiry = finished_at;
+}
+
+// 3️⃣ ביצוע העדכון
+const { error: updateError } = await supabase
+  .from("Meetings")
+  .update(updateData)
+  .eq("meeting_id", meeting_id);
+
+if (updateError) {
+  console.error("❌ Error updating finished_at and expiry in Meetings:", updateError.message);
   return res.status(500).json({ error: updateError.message });
 }
+
     
 // עדכון is_active לכל המשתתפים בטבלת Participants
 const { error: participantUpdateError } = await supabase
