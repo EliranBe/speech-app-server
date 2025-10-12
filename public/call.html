@@ -164,13 +164,13 @@ video {
         }).join(''));
 
             userPayload = JSON.parse(jsonPayload);
-    console.log("✅ JWT Payload:", userPayload);
+    console.log("✅ JWT Payload");
 
     if (userPayload?.meeting_id) {
       CHANNEL_NAME = userPayload.meeting_id;
-      console.log("✅ Using meeting_id from JWT:", CHANNEL_NAME);
+      console.log("✅ Using meeting_id from JWT");
     } else {
-      console.warn("⚠️ No meeting_id in JWT, using fallback:", CHANNEL_NAME);
+      console.warn("⚠️ No meeting_id in JWT, using fallback");
     }
   // -------------------------------
 //  CARD - Meeting Details
@@ -413,6 +413,7 @@ const interval = setInterval(() => {
     clearInterval(interval);
     countdownDiv.remove();
     leaveCall(); // מבצע את כל הלוגיקה של לחיצה על LEAVE
+    window.location.href = "/";
   }
 }, 1000);
 
