@@ -21,9 +21,11 @@ export default function JoinSession() {
   const [sessionCode, setSessionCode] = useState("");
   const [sessionUrl, setSessionUrl] = useState("");
   const [isJoining, setIsJoining] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const [error, setError] = useState("");
   const [isScanning, setIsScanning] = useState(false);
   const [fadeIn, setFadeIn] = useState(false);
+
 
   useEffect(() => {
     if (!location) return;
@@ -53,11 +55,11 @@ export default function JoinSession() {
       error: sessionError,
     } = await supabase.auth.getSession();
 
-    if (sessionError || !authSession?.user) {
-      alert("Session expired, please log in again");
-      navigate("/login");
-      return;
-    }
+ if (sessionError || !authSession?.user) {
+  setErrorMessage("Session expired, please log in again");
+  setTimeout(() => navigate("/login"), 2000); 
+  return;
+}
 
     const accessToken = authSession.access_token;
     const user_id = authSession.user.id;
@@ -135,11 +137,11 @@ const joinWithCredentials = async () => {
       error: sessionError,
     } = await supabase.auth.getSession();
 
-    if (sessionError || !authSession?.user) {
-      alert("Session expired, please log in again");
-      navigate("/login");
-      return;
-    }
+if (sessionError || !authSession?.user) {
+  setErrorMessage("Session expired, please log in again");
+  setTimeout(() => navigate("/login"), 2000); 
+  return;
+}
 
     const user_id = authSession.user.id;
 
@@ -182,6 +184,10 @@ const joinWithCredentials = async () => {
     setIsJoining(false);
   }
 };
+
+  if (isJoining) {
+  return <BrandedLoader text="Joining your Verbo session..." />;
+}
 
   return (
     <div
@@ -252,6 +258,26 @@ const joinWithCredentials = async () => {
         >
           Join Verbo Call
         </h1>
+{errorMessage && (
+  <div
+    style={{
+      padding: "1rem",
+      borderRadius: "12px",
+      background: "rgba(255,0,0,0.1)",
+      color: "#b91c1c",
+      marginBottom: "1rem",
+      textAlign: "center",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "0.5rem"
+    }}
+  >
+    <AlertCircle size={18} />
+    {errorMessage}
+  </div>
+)}
+
 
         {error && (
           <div
