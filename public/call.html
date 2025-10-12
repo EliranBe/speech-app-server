@@ -412,7 +412,8 @@ const interval = setInterval(() => {
   if (countdown <= 0) {
     clearInterval(interval);
     countdownDiv.remove();
-    leaveCall(); // מבצע את כל הלוגיקה של לחיצה על LEAVE
+    await leaveCall(); // מבצע את כל הלוגיקה של לחיצה על LEAVE
+     window.location.href = "/";
   }
 }, 1000);
 
