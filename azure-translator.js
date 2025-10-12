@@ -24,7 +24,7 @@ function mapNativeLanguageToAzure(nativeLanguage) {
     "USA (English)": "en",
     "USA (Spanish)": "es"
   };
-  return map[nativeLanguage] || "en"; // ברירת מחדל אנגלית
+  return map[nativeLanguage]; // ללא ברירת מחדל 
 }
 
 const subscriptionKey = process.env.AZURE_TRANSLATOR_KEY1;
