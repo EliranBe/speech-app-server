@@ -81,6 +81,7 @@ export default function TermsAndPrivacy() {
           <p>We may update these Terms at any time; continued use constitutes acceptance.</p>
           <p>Even if not all minutes of a meeting have been used, it will not be possible to return to it.</p>
           <p>Verbo.io reserves the right to change, freeze, or cancel usage plans unilaterally and without prior notice.</p>
+          <p>Monthly limit applies; it may not be possible to use all meetings – first come, first served.</p>
 
           </section>
 
