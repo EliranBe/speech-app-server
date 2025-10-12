@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { UserPreferencesAPI } from "../Entities/UserPreferencesAPI";
-import { Rocket, Plus, ScanLine, Menu, Bot, Settings, LogOut, Zap } from "lucide-react";
+import { Rocket, Plus, ScanLine, Menu, Bot, Settings, LogOut, Zap, AudioLines } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import BrandedLoader from "../Components/BrandedLoader";
 import { supabase } from "../utils/supabaseClient";
@@ -352,6 +352,47 @@ const loadUserData = async () => {
           </div>
         </div>
       </div>
+
+<h3
+  style={{
+    textAlign: "center",
+    color: "#3b82f6",
+    fontSize: "1.3rem",
+    marginBottom: "1.5rem",
+  }}
+>
+  Pricing
+</h3>
+
+<div
+  style={{
+    margin: "0 auto 2rem auto", // מרכז את ה‑CARD במסך
+    width: "50%", // חצי מה‑width של Create Verbo
+    padding: "1.5rem",
+    borderRadius: "20px",
+    background: "rgba(255,255,255,0.2)",
+    backdropFilter: "blur(10px)",
+    boxShadow: "0 6px 20px rgba(0,0,0,0.2)",
+    textAlign: "center",
+  }}
+>
+  <h4 style={{ fontSize: "1.2rem", fontWeight: "700", marginBottom: "1rem" }}>Free</h4>
+
+  <ul style={{ listStyle: "none", padding: 0, fontSize: "0.95rem", color: "#555", textAlign: "left" }}>
+    <li style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "0.5rem" }}>
+      <AudioLines size={18} /> 4 meetings per month
+    </li>
+    <li style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "0.5rem" }}>
+      <AudioLines size={18} /> Each meeting lasts 50 seconds
+    </li>
+    <li style={{ marginTop: "1rem", fontStyle: "italic" }}>
+      Each meeting is considered fully used even if not all seconds are consumed.
+    </li>
+    <li style={{ fontStyle: "italic" }}>
+      Monthly limit applies; it may not be possible to use all meetings – first come, first served.
+    </li>
+  </ul>
+</div>
 
       {/* Logout Confirmation Modal */}
       {showLogoutConfirm && (
