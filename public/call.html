@@ -367,6 +367,55 @@ async function showMeetingCard() {
 
     showStartupModal();
     await startCall(); // עכשיו App ID כבר מוגדר
+// ==========================
+// ספירה אוטומטית של 50 שניות + הפעלת WS אוטומטית ב-5 שניות האחרונות
+// ==========================
+let callDuration = 50; 
+let countdown = callDuration;
+
+const countdownDiv = document.createElement("div");
+countdownDiv.style.position = "fixed";
+countdownDiv.style.bottom = "60px"; // מעל הכפתורים
+countdownDiv.style.left = "50%";
+countdownDiv.style.transform = "translateX(-50%)";
+countdownDiv.style.fontSize = "24px";
+countdownDiv.style.fontWeight = "bold";
+countdownDiv.style.color = "red";
+countdownDiv.style.zIndex = "1001";
+document.body.appendChild(countdownDiv);
+countdownDiv.style.display = "none"; // מוסתר בהתחלה
+
+const acceptButton = document.getElementById("startupConfirm");
+
+const interval = setInterval(() => {
+  countdown--;
+
+  // הצגת הספירה ב-10 השניות האחרונות
+  if (countdown <= 10) {
+    countdownDiv.style.display = "block";
+    countdownDiv.textContent = `Time left: ${countdown}s`;
+  }
+
+  // הפעלת WS אוטומטית ב-5 שניות האחרונות אם לא פעיל
+  if (countdown === 5 && (!socket || socket.readyState !== WebSocket.OPEN)) {
+    openWSOnly();
+
+    // כפתור ACCEPT כבר לא לחיץ
+    if (acceptButton) {
+      acceptButton.disabled = true;
+      acceptButton.style.opacity = "0.5";
+      acceptButton.style.cursor = "not-allowed";
+    }
+  }
+
+  // סיום השיחה ב-0 שניות
+  if (countdown <= 0) {
+    clearInterval(interval);
+    countdownDiv.remove();
+    leaveCall(); // מבצע את כל הלוגיקה של לחיצה על LEAVE
+  }
+}, 1000);
+
   } catch (err) {
     console.error("⚠️ Failed to fetch App ID:", err);
   }
@@ -707,9 +756,8 @@ function showStartupModal() {
       font-weight:600;
     ">ACCEPT</button>
   `;
-  overlay.appendChild(modal);
-// אחרי יצירת overlay ו-modal
-document.body.appendChild(overlay);
+//  יצירת -modal
+document.body.appendChild(modal);
 
 // השבתת כפתורים מלבד Leave ו-Meeting Details
 const buttons = document.querySelectorAll(".controls button");
@@ -718,17 +766,15 @@ buttons.forEach(btn => {
     btn.disabled = true;
     btn.style.opacity = "0.5";
     btn.style.cursor = "not-allowed";
-  } else {
-    // הכפתורים שאנחנו רוצים שיהיו לחיצים למרות ה-overlay
-    btn.style.pointerEvents = "auto";
-  }
+  } 
 });
 
 // לחיצה על כפתור Confirm
 document.getElementById("startupConfirm").onclick = async () => {
-  overlay.remove(); // מסיר את ההודעה
+  modal.remove(); 
 
   // מחזיר את הכפתורים האחרים לפעילים
+  const buttons = document.querySelectorAll(".controls button");
   buttons.forEach(btn => {
     btn.disabled = false;
     btn.style.opacity = "1";
