@@ -351,9 +351,8 @@ const loadUserData = async () => {
             </div>
           </div>
         </div>
-      </div>
-
-<h3
+                                    {/* Pricing Section */}
+              <h3
   style={{
     textAlign: "center",
     color: "#3b82f6",
@@ -376,23 +375,24 @@ const loadUserData = async () => {
     textAlign: "center",
   }}
 >
-  <h4 style={{ fontSize: "1.2rem", fontWeight: "700", marginBottom: "1rem" }}>Free</h4>
+<h4 style={{ fontSize: "1.2rem", fontWeight: "700", marginBottom: "1rem" }}>Free</h4>
 
-  <ul style={{ listStyle: "none", padding: 0, fontSize: "0.95rem", color: "#555", textAlign: "left" }}>
-    <li style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "0.5rem" }}>
-      <AudioLines size={18} /> 4 meetings per month
-    </li>
-    <li style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "0.5rem" }}>
-      <AudioLines size={18} /> Each meeting lasts 50 seconds
-    </li>
-    <li style={{ marginTop: "1rem", fontStyle: "italic" }}>
-      Each meeting is considered fully used even if not all seconds are consumed.
-    </li>
-    <li style={{ fontStyle: "italic" }}>
-      Monthly limit applies; it may not be possible to use all meetings – first come, first served.
-    </li>
-  </ul>
-</div>
+<ul style={{ listStyle: "none", padding: 0, fontSize: "0.95rem", color: "#555", textAlign: "center" }}>
+  <li style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", marginBottom: "0.5rem" }}>
+    <AudioLines size={18} /> <strong>4 meetings</strong> per month
+  </li>
+  <li style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", marginBottom: "1rem" }}>
+    <AudioLines size={18} /> Each meeting lasts <strong>50 seconds</strong>
+  </li>
+  <li style={{ fontStyle: "italic", textAlign: "center", marginBottom: "0.3rem" }}>
+    Each meeting is considered fully used even if not all seconds are consumed.
+  </li>
+  <li style={{ fontStyle: "italic", textAlign: "center" }}>
+    Monthly limit applies; it may not be possible to use all meetings – first come, first served.
+  </li>
+</ul>
+</div>    
+      </div>
 
       {/* Logout Confirmation Modal */}
       {showLogoutConfirm && (
