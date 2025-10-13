@@ -101,10 +101,10 @@ router.get("/getMeeting", async (req, res) => {
     res.json({ meeting: data });
 });
 
-// 🟠 עוקפים את האימות רק עבור /updateTranslationCount ועבור /finishMeeting ועבור /getMeeting
+// 🟠 עוקפים את האימות   
 router.use((req, res, next) => {
   // דלג על האימות עבור הנתיבים שצוינו
-  if (req.path === "/updateTranslationCount" || req.path === "/finishMeeting" || req.path === "/getMeeting") {
+  if (req.path === "/updateTranslationCount" || req.path === "/finishMeeting" || req.path === "/getMeeting" || req.path === "/checkMonthlyMeetingLimit" || req.path === "/incrementMonthlyMeetingCount") {
     return next();
   }
   checkLastSignIn(req, res, next); // עבור כל שאר הנתיבים – תבדוק token כרגיל
@@ -275,7 +275,6 @@ if (!meeting_id && !url_meeting) {
   return res.status(400).json({ error: "Please enter a Meeting ID and Password or URL" });
 }
 
-
       const authHeader = req.headers["authorization"];
       if (!authHeader || !authHeader.startsWith("Bearer ")) {
         return res
@@ -320,6 +319,15 @@ if (!meeting_id && !url_meeting) {
 
       // עדכון שדה started_at לפגישה
       await setStartedAtIfNull(meeting_id);
+      
+                // בדיקת מגבלת כמות הפגישות החודשית
+      if (user_id !== process.env.MEETING_LIMIT_EXEMPT_USER_ID) {
+              try {
+                await checkMonthlyMeetingLimit(user_id);
+              } catch (err) {
+                return res.status(403).json({ error: err.message });
+              }
+        }
 
       const jti =
     typeof crypto.randomUUID === "function"
@@ -346,6 +354,9 @@ if (!meeting_id && !url_meeting) {
         meetingToken
       )}`;
 
+          // עדכון כמות הפגישות בטבלה 
+      incrementMonthlyMeetingCount(user_id).catch(console.error);
+
       // סיום אוטומטי לאחר 55 שניות
 setTimeout(() => {
   finishMeetingLogic(meeting_id); // משתמש ב־meeting_id שנמצא/נבחר
@@ -370,7 +381,7 @@ if (limitCheck.limitExceeded) {
     error: "Monthly translation limit reached. Please try again next month."
   });
 }
-
+    
     // בדיקת מגבלת דקות חודשיות
 const durationCheck = await checkMonthlyDurationLimit();
 if (durationCheck.limitExceeded) {
@@ -538,6 +549,15 @@ if (participantRow) {
     // עדכון שדה started_at לפגישה
       await setStartedAtIfNull(meeting_id_to_use);
 
+                    // בדיקת מגבלת כמות הפגישות החודשית
+    if (user_id !== process.env.MEETING_LIMIT_EXEMPT_USER_ID) {
+          try {
+            await checkMonthlyMeetingLimit(user_id);
+          } catch (err) {
+            return res.status(403).json({ error: err.message });
+          }
+      }
+
     // 8. יצירת JWT Token לפגישה — לא לשנות
     const jti =
       typeof crypto.randomUUID === "function"
@@ -563,6 +583,9 @@ if (participantRow) {
 
     const redirectUrl = `${CALL_BASE_URL}?userToken=${encodeURIComponent(meetingToken)}`;
 
+              // עדכון כמות הפגישות בטבלה 
+      incrementMonthlyMeetingCount(user_id).catch(console.error);
+    
     // סיום אוטומטי לאחר 55 שניות
 setTimeout(() => {
   finishMeetingLogic(meeting_id_to_use); // משתמש ב־meeting_id שנמצא/נבחר
@@ -839,6 +862,54 @@ async function finishMeetingLogic(meeting_id) {
   }
 }
 
+// בודק אם המשתמש כבר הגיע למגבלת הפגישות בחודש
+async function checkMonthlyMeetingLimit(user_id) {
+  const now = new Date();
+  const month_year = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+  const { data, error } = await supabase
+    .from("MonthlyUserMeetings")
+    .select("monthly_meeting_count")
+    .eq("user_id", user_id)
+    .eq("month_year", month_year)
+    .single();
+
+  if (error && error.code !== "PGRST116") { // PGRST116 = לא נמצא
+    throw new Error("Error checking monthly meetings count");
+  }
+
+  const monthlyLimit = Number(process.env.MONTHLY_MEETING_LIMIT);
+  if (data && data.monthly_meeting_count >= monthlyLimit) {
+    throw new Error("Monthly meeting limit exceeded (max 4 per month).");
+  }
+}
+
+// מוסיף 1 לספירת הפגישות של המשתמש בחודש
+async function incrementMonthlyMeetingCount(user_id) {
+  const now = new Date();
+  const month_year = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+  const { data, error } = await supabase
+    .from("MonthlyUserMeetings")
+    .select("monthly_meeting_count")
+    .eq("user_id", user_id)
+    .eq("month_year", month_year)
+    .single();
+
+  if (!data || error?.code === "PGRST116") {
+    // אין רשומה קיימת → צור חדשה
+    await supabase
+      .from("MonthlyUserMeetings")
+      .insert([{ user_id, month_year, monthly_meeting_count: 1 }]);
+  } else {
+    // עדכן ספירה קיימת
+    await supabase
+      .from("MonthlyUserMeetings")
+      .update({ monthly_meeting_count: data.monthly_meeting_count + 1 })
+      .eq("user_id", user_id)
+      .eq("month_year", month_year);
+  }
+}
 
 
   module.exports = router;
