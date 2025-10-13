@@ -106,6 +106,20 @@ export default function Login() {
     }
   };
 
+    const handleGoogleLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.origin + "/",
+        // אפשר גם redirectTo: process.env.REACT_APP_HOME_URL
+      }
+    });
+    if (error) {
+      console.error("Error during Google login:", error.message);
+      setError("Error logging in with Google");
+    }
+  };
+  
   return (
     <div
       className="login-container"
@@ -272,6 +286,24 @@ export default function Login() {
     Login
   </button>
 </form>
+
+{/* כפתור התחברות עם גוגל */}
+<button
+  onClick={handleGoogleLogin}
+  type="button"
+  style={{
+    marginTop: "1rem",
+    padding: "0.75rem",
+    width: "100%",
+    backgroundColor: "#fff",
+    color: "#000",
+    border: "1px solid #ccc",
+    borderRadius: "6px",
+    cursor: "pointer",
+  }}
+>
+  Continue with Google
+</button>
 
         {/* Sign up */}
         <div style={{ fontSize: "0.9rem", marginTop: "1rem" }}>
