@@ -316,9 +316,6 @@ if (!meeting_id && !url_meeting) {
       if (!meetingRow.is_active) {
         return res.status(400).json({ error: "Meeting is not active" });
       }
-
-      // עדכון שדה started_at לפגישה
-      await setStartedAtIfNull(meeting_id);
       
                 // בדיקת מגבלת כמות הפגישות החודשית
       if (user_id !== process.env.MEETING_LIMIT_EXEMPT_USER_ID) {
@@ -353,6 +350,9 @@ if (!meeting_id && !url_meeting) {
       const redirectUrl = `${CALL_BASE_URL}?userToken=${encodeURIComponent(
         meetingToken
       )}`;
+      
+      // עדכון שדה started_at לפגישה
+      await setStartedAtIfNull(meeting_id);
 
           // עדכון כמות הפגישות בטבלה 
       incrementMonthlyMeetingCount(user_id).catch(console.error);
@@ -546,9 +546,6 @@ if (participantRow) {
 }
     }
 
-    // עדכון שדה started_at לפגישה
-      await setStartedAtIfNull(meeting_id_to_use);
-
                     // בדיקת מגבלת כמות הפגישות החודשית
     if (user_id !== process.env.MEETING_LIMIT_EXEMPT_USER_ID) {
           try {
@@ -583,6 +580,10 @@ if (participantRow) {
 
     const redirectUrl = `${CALL_BASE_URL}?userToken=${encodeURIComponent(meetingToken)}`;
 
+    
+    // עדכון שדה started_at לפגישה
+      await setStartedAtIfNull(meeting_id_to_use);
+    
               // עדכון כמות הפגישות בטבלה 
       incrementMonthlyMeetingCount(user_id).catch(console.error);
     
