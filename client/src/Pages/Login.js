@@ -310,7 +310,7 @@ export default function Login() {
 >
   {/* לוגו גוגל */}
   <img
-    src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg"
+    src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png"
     alt="Google logo"
     style={{ width: "20px", height: "20px" }}
   />
