@@ -310,7 +310,7 @@ export default function Login() {
 >
   {/* לוגו גוגל */}
   <img
-    src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_'G'_Logo.svg"
+    src="https://developers.google.com/identity/images/g-logo.png"
     alt="Google logo"
     style={{ width: "24px", height: "24px" }}
   />
@@ -324,6 +324,15 @@ export default function Login() {
             Sign Up
           </Link>
         </div>
+
+              {/* Terms and Privacy */}
+<div style={{ fontSize: "0.85rem", marginTop: "1rem", color: "#333" }}>
+  By signing up, you confirm that you accept our{" "}
+  <a href="/help/legal" style={{ fontWeight: "600", color: "#333" }}>
+    Terms of Service and Privacy Policy
+  </a>.
+</div>
+
       </div>
     </div>
   );
