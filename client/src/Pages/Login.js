@@ -110,8 +110,7 @@ export default function Login() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: window.location.origin + "/",
-        // אפשר גם redirectTo: process.env.REACT_APP_HOME_URL
+        redirectTo: "https://speech-app-server.onrender.com/",
       }
     });
     if (error) {
@@ -293,15 +292,28 @@ export default function Login() {
   type="button"
   style={{
     marginTop: "1rem",
-    padding: "0.75rem",
     width: "100%",
-    backgroundColor: "#fff",
-    color: "#000",
-    border: "1px solid #ccc",
-    borderRadius: "6px",
+    padding: "0.75rem",
+    borderRadius: "30px",
+    background: "rgba(255,255,255,0.3)", // רקע כמו כפתור Login
+    backdropFilter: "blur(6px)",
+    fontWeight: "600",
+    color: "#333",
     cursor: "pointer",
+    transition: "0.2s",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "0.5rem", // מרווח בין הלוגו לטקסט
+    marginBottom: "1rem",
   }}
 >
+  {/* לוגו גוגל */}
+  <img
+    src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg"
+    alt="Google logo"
+    style={{ width: "20px", height: "20px" }}
+  />
   Continue with Google
 </button>
 
