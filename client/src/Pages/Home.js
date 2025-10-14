@@ -235,7 +235,7 @@
               marginBottom: "0.5rem",
             }}
           >
-            Welcome back{" "}
+            Welcome {" "}
             {preferences?.display_name ? preferences.display_name : ""}
           </h1>
           <p style={{ color: "#555", marginBottom: "1rem" }}>
