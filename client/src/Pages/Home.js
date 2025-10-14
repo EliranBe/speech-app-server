@@ -174,7 +174,6 @@ const handleLogout = async () => {
                   onClick={async () => {
                         setMenuOpen(false);
                                 await handlePreferencesClick(); // כבר עושה את הבדיקה ומנווט
-                    }
                 }}
                 style={{
                   display: "flex",
