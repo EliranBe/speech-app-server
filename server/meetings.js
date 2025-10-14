@@ -133,7 +133,7 @@ function isUserAllowed(user_id) {
     return await new SignJWT(payload)
       .setProtectedHeader({ alg: "HS256" })
       .setIssuedAt()
-      .setExpirationTime("1h")
+      .setExpirationTime("55s")  //  התוקף 55 שניות
       .sign(secret);
   }
 
