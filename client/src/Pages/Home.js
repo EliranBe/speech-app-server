@@ -27,6 +27,17 @@ export default function Home() {
   const menuRef = useRef();
 
 useEffect(() => {
+  const init = async () => {
+    const result = await loadUserData(); // מחזיר user + preferences או עושה navigate ל-login
+    if (result) {
+      setUser(result.user);
+      setPreferences(result.preferences);
+    }
+    setIsLoading(false); // מסיר את מסך ה‑Loading
+  };
+
+  init();
+
   const timeout = setTimeout(() => setFadeIn(true), 50);
   return () => clearTimeout(timeout);
 }, []);
