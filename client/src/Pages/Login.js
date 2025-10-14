@@ -211,13 +211,16 @@ export default function Login() {
         {/* הודעת שגיאה */}
         {error && <p style={{ color: "red", marginBottom: "1rem" }}>{error}</p>}
 
+{/*
         {/* הודעה אם המשתמש הגיע מרישום */}
         {fromRegister && (
           <p style={{ color: "green", marginBottom: "1rem" }}>
             Please confirm your email to activate your account.
           </p>
         )}
+*/}
 
+{/*
 {/* טופס התחברות */}
 <form
   onSubmit={(e) => {
@@ -285,6 +288,7 @@ export default function Login() {
     Login
   </button>
 </form>
+*/}
 
 {/* כפתור התחברות עם גוגל */}
 <button
@@ -317,6 +321,7 @@ export default function Login() {
   Continue with Google
 </button>
 
+{/*
         {/* Sign up */}
         <div style={{ fontSize: "0.9rem", marginTop: "1rem" }}>
           <span>Don't have an account?</span>
@@ -324,6 +329,7 @@ export default function Login() {
             Sign Up
           </Link>
         </div>
+*/}
 
               {/* Terms and Privacy */}
 <div style={{ fontSize: "0.85rem", marginTop: "1rem", color: "#333" }}>
