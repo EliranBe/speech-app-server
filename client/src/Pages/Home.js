@@ -26,11 +26,10 @@ export default function Home() {
 
   const menuRef = useRef();
 
-  useEffect(() => {
-    loadUserData();
-    const timeout = setTimeout(() => setFadeIn(true), 50);
-    return () => clearTimeout(timeout);
-  }, []);
+useEffect(() => {
+  const timeout = setTimeout(() => setFadeIn(true), 50);
+  return () => clearTimeout(timeout);
+}, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -46,50 +45,65 @@ const loadUserData = async () => {
   try {
     // קודם בודקים אם יש session
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-    if (sessionError) {
-      console.error("Error fetching session:", sessionError.message);
+    if (sessionError || !session) {
       navigate("/login");
-      return;
+      return null;
     }
 
-    if (!session) {
-      console.warn("No session found → redirecting to Login");
-      navigate("/login");
-      return;
-    }
-
-    // אם יש session, מביאים את המשתמש
+    // מביאים את המשתמש
     const { data: userData, error: userError } = await supabase.auth.getUser();
-    if (userError) {
-      console.error("Error fetching user:", userError.message);
+    if (userError || !userData.user) {
       navigate("/login");
-      return;
+      return null;
     }
-
-    setUser(userData.user);
 
     // מביא את ההעדפות של המשתמש
     const userPrefs = await UserPreferencesAPI.get(userData.user.id);
-    if (userPrefs) {
-      setPreferences(userPrefs);
-    } else {
+    if (!userPrefs) {
       navigate("/Preferences");
-      return;
+      return null;
     }
+
+    // מחזירים את הנתונים כדי שנוכל להשתמש בהם בכפתורים
+    return { user: userData.user, preferences: userPrefs };
   } catch (error) {
     console.error("Error loading user data:", error);
     navigate("/login");
+    return null;
   }
-  setIsLoading(false);
 };
 
-  const handleCreateSession = () => navigate("/CreateSession");
-  const handleJoinSession = () => navigate("/JoinSession");
-  const handleLogout = async () => {
+
+const handleCreateSession = async () => {
+  const result = await loadUserData(); // מבצע אימות
+  if (!result) return; // אם המשתמש לא תקין או לא מוגדר, יוצא
+  setUser(result.user); // מעדכן סטייט עם המשתמש
+  setPreferences(result.preferences); // מעדכן סטייט עם העדפות
+  navigate("/CreateSession"); // נווט למסך יצירת הסשן
+};
+
+const handleJoinSession = async () => {
+  const result = await loadUserData(); // מבצע אימות
+  if (!result) return; // אם המשתמש לא תקין או לא מוגדר, יוצא
+  setUser(result.user); // מעדכן סטייט עם המשתמש
+  setPreferences(result.preferences); // מעדכן סטייט עם העדפות
+  navigate("/JoinSession"); // נווט למסך הצטרפות לסשן
+};
+
+  const handlePreferencesClick = async () => {
+  const verified = await loadUserData(); // בודק session + user + preferences
+  if (verified) {
+    navigate("/Preferences"); // רק אם הבדיקה עברה בהצלחה
+  }
+};
+
+const handleLogout = async () => {
+  const verified = await loadUserData(); // או verifyUser()
+  if (verified) {
     await supabase.auth.signOut();
     navigate("/login");
-  };
+  }
+};
 
   if (isLoading) return <BrandedLoader text="Loading Verbo.io..." />;
 
@@ -157,9 +171,10 @@ const loadUserData = async () => {
               }}
             >
               <div
-                onClick={() => {
-                  navigate("/Preferences");
-                  setMenuOpen(false);
+                  onClick={async () => {
+                        setMenuOpen(false);
+                                await handlePreferencesClick(); // כבר עושה את הבדיקה ומנווט
+                    }
                 }}
                 style={{
                   display: "flex",
@@ -174,9 +189,11 @@ const loadUserData = async () => {
                 <Settings size={18} /> Preferences
               </div>
               <div
-                onClick={() => {
-                  setShowLogoutConfirm(true);
-                  setMenuOpen(false);
+                  onClick={async () => {
+                         const result = await loadUserData(); // בודק אם המשתמש תקין
+                            if (!result) return;
+                            setShowLogoutConfirm(true); // רק עכשיו פותחים את תיבת האישור
+                            setMenuOpen(false);
                 }}
                 style={{
                   display: "flex",
