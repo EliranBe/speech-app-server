@@ -1,6 +1,6 @@
   import React, { useState, useEffect, useRef } from "react";
   import { UserPreferencesAPI } from "../Entities/UserPreferencesAPI";
-  import { Rocket, Plus, ScanLine, Menu, Bot, Settings, LogOut, Zap, AudioLines } from "lucide-react";
+  import { Rocket, Plus, ScanLine, Menu, Bot, Settings, LogOut, Zap, AudioLines, LogIn } from "lucide-react";
   import { useNavigate } from "react-router-dom";
   import BrandedLoader from "../Components/BrandedLoader";
   import { supabase } from "../utils/supabaseClient";
@@ -164,67 +164,92 @@
             }}
           />
   
-          {/* Dropdown Menu Button */}
-          <div style={{ position: "absolute", top: "2rem", right: "2rem" }} ref={menuRef}>
-            <Menu
-              size={32}
-              style={{ cursor: "pointer" }}
-              onClick={() => setMenuOpen(!menuOpen)}
-            />
-            {menuOpen && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: "40px",
-                  right: 0,
-                  background: "rgba(255,255,255,0.2)",
-                  backdropFilter: "blur(12px)",
-                  borderRadius: "12px",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                  padding: "0.5rem 0",
-                  zIndex: 10,
-                  width: "180px",
-                }}
-              >
-                <div
-                    onClick={async () => {
-                          setMenuOpen(false);
-                                  await handlePreferencesClick(); // כבר עושה את הבדיקה ומנווט
-                  }}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    padding: "0.5rem 1rem",
-                    cursor: "pointer",
-                    fontSize: "0.95rem",
-                    color: "#333",
-                  }}
-                >
-                  <Settings size={18} /> Preferences
-                </div>
-                <div
-                    onClick={async () => {
-                           const result = await loadUserData(); // בודק אם המשתמש תקין
-                              if (!result) return;
-                              setShowLogoutConfirm(true); // רק עכשיו פותחים את תיבת האישור
-                              setMenuOpen(false);
-                  }}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    padding: "0.5rem 1rem",
-                    cursor: "pointer",
-                    fontSize: "0.95rem",
-                    color: "#333",
-                  }}
-                >
-                  <LogOut size={18} /> Log out
-                </div>
-              </div>
-            )}
+         {/* Dropdown Menu Button */}
+<div style={{ position: "absolute", top: "2rem", right: "2rem" }} ref={menuRef}>
+  <Menu
+    size={32}
+    style={{ cursor: "pointer" }}
+    onClick={() => setMenuOpen(!menuOpen)}
+  />
+  {menuOpen && (
+    <div
+      style={{
+        position: "absolute",
+        top: "40px",
+        right: 0,
+        background: "rgba(255,255,255,0.2)",
+        backdropFilter: "blur(12px)",
+        borderRadius: "12px",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+        padding: "0.5rem 0",
+        zIndex: 10,
+        width: "180px",
+      }}
+    >
+      {user ? (
+        <>
+          <div
+            onClick={async () => {
+              setMenuOpen(false);
+              await handlePreferencesClick();
+            }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "0.5rem 1rem",
+              cursor: "pointer",
+              fontSize: "0.95rem",
+              color: "#333",
+            }}
+          >
+            <Settings size={18} /> Preferences
           </div>
+
+          <div
+            onClick={async () => {
+              const result = await loadUserData();
+              if (!result) return;
+              setShowLogoutConfirm(true);
+              setMenuOpen(false);
+            }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "0.5rem 1rem",
+              cursor: "pointer",
+              fontSize: "0.95rem",
+              color: "#333",
+            }}
+          >
+            <LogOut size={18} /> Log out
+          </div>
+        </>
+      ) : (
+        <div
+          onClick={() => {
+            setMenuOpen(false);
+            navigate("/login");
+          }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            padding: "0.5rem 1rem",
+            cursor: "pointer",
+            fontSize: "0.95rem",
+            color: "#333",
+          }}
+        >
+          <LogIn size={18} /> Sign in
+        </div>
+      )}
+    </div>
+  )}
+</div>
+
+
   
           {/* Welcome Section */}
           <h1
