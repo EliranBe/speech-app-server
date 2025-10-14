@@ -211,85 +211,6 @@ export default function Login() {
         {/* הודעת שגיאה */}
         {error && <p style={{ color: "red", marginBottom: "1rem" }}>{error}</p>}
 
-{/*
-        {/* הודעה אם המשתמש הגיע מרישום */}
-        {fromRegister && (
-          <p style={{ color: "green", marginBottom: "1rem" }}>
-            Please confirm your email to activate your account.
-          </p>
-        )}
-*/}
-
-{/*
-{/* טופס התחברות */}
-<form
-  onSubmit={(e) => {
-    e.preventDefault(); // מונע רענון דף
-    handleLogin();
-  }}
-  style={{ width: "100%" }}
->
-  {/* Email */}
-  <div style={{ width: "100%", marginBottom: "1rem" }}>
-    <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500" }}>Email</label>
-    <input
-      type="email"
-      placeholder="Enter your email address"
-      value={email}
-      onChange={(e) => setEmail(e.target.value)}
-      style={{
-        width: "100%",
-        padding: "0.75rem",
-        borderRadius: "12px",
-        background: "rgba(255,255,255,0.1)",
-        backdropFilter: "blur(6px)",
-        border: emailError ? "2px solid red" : "none",
-        outline: "none",
-      }}
-    />
-  </div>
-
-  {/* Password */}
-  <div style={{ width: "100%", marginBottom: "1.5rem" }}>
-    <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500" }}>Password</label>
-    <input
-      type="password"
-      placeholder="Enter your password"
-      value={password}
-      onChange={(e) => setPassword(e.target.value)}
-      style={{
-        width: "100%",
-        padding: "0.75rem",
-        borderRadius: "12px",
-        background: "rgba(255,255,255,0.1)",
-        backdropFilter: "blur(6px)",
-        border: passwordError ? "2px solid red" : "none",
-        outline: "none",
-      }}
-    />
-  </div>
-
-  {/* Login button */}
-  <button
-    type="submit" // <-- זה מה שחשוב
-    style={{
-      width: "100%",
-      padding: "0.75rem",
-      borderRadius: "30px",
-      background: "rgba(255,255,255,0.3)",
-      backdropFilter: "blur(6px)",
-      fontWeight: "600",
-      color: "#333",
-      cursor: "pointer",
-      transition: "0.2s",
-      marginBottom: "1rem",
-    }}
-  >
-    Login
-  </button>
-</form>
-*/}
-
 {/* כפתור התחברות עם גוגל */}
 <button
   onClick={handleGoogleLogin}
@@ -321,15 +242,6 @@ export default function Login() {
   Continue with Google
 </button>
 
-{/*
-        {/* Sign up */}
-        <div style={{ fontSize: "0.9rem", marginTop: "1rem" }}>
-          <span>Don't have an account?</span>
-          <Link to="/register" style={{ display: "block", fontWeight: "600", marginTop: "0.5rem", color: "#333" }}>
-            Sign Up
-          </Link>
-        </div>
-*/}
 
               {/* Terms and Privacy */}
 <div style={{ fontSize: "0.85rem", marginTop: "1rem", color: "#333" }}>
