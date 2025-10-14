@@ -381,12 +381,19 @@ const loadUserData = async () => {
   <li style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", marginBottom: "0.5rem" }}>
     <AudioLines size={18} /> <strong>4 meetings</strong> per month
   </li>
+  
   <li style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", marginBottom: "1rem" }}>
-    <AudioLines size={18} /> Each meeting lasts <strong>50 seconds</strong>
+    <AudioLines size={18} /> Each meeting has a duration of up to <strong>50 seconds</strong>
   </li>
+
+  <li style={{ fontStyle: "italic", textAlign: "left", marginBottom: "0.3rem" }}>
+    The meeting timer starts when the first participant joins.
+  </li>
+  
   <li style={{ fontStyle: "italic", textAlign: "left", marginBottom: "0.3rem" }}>
     Each meeting is considered fully used even if not all seconds are consumed.
   </li>
+      
   <li style={{ fontStyle: "italic", textAlign: "left" }}>
     Monthly limit applies; it may not be possible to use all meetings – first come, first served.
   </li>
