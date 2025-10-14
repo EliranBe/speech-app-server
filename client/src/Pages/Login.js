@@ -111,6 +111,7 @@ export default function Login() {
       provider: "google",
       options: {
         redirectTo: "https://speech-app-server.onrender.com/",
+        queryParams: { prompt: "select_account" }, // 👈 מוסיף כפיית בחירת חשבון
       }
     });
     if (error) {
