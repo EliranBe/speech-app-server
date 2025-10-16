@@ -139,9 +139,6 @@ async function checkAndUseMeetingTokenClient(jti) {
         </h2>`;
       throw new Error(error);
     }
-
-    // ✅ אם הכול תקין – האסימון תקף וחדש
-    console.log("Token verified and marked as used");
   } catch (err) {
     console.error("Token verification failed:", err);
     document.body.innerHTML = `
