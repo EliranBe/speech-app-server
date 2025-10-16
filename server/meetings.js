@@ -4,6 +4,42 @@ const express = require("express");
   const crypto = require("crypto");
   const { SignJWT } = require("jose");
 
+
+// Middleware לבדיקה אם המשתמש מחובר פחות מ־12 שעות
+async function checkLastSignIn(req, res, next) {
+  try {
+    const authHeader = req.headers["authorization"];
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Missing or invalid Authorization header" });
+    }
+
+    const accessToken = authHeader.split(" ")[1];
+
+    // קבלת פרטי המשתמש מ‑Supabase
+    const { data, error } = await supabase.auth.getUser(accessToken);
+    if (error || !data?.user) {
+      return res.status(401).json({ error: "Invalid or expired access token" });
+    }
+
+    const user = data.user;
+
+    // בדיקת last_sign_in_at
+    const lastSignIn = new Date(user.last_sign_in_at);
+    const now = new Date();
+
+    const hoursSinceSignIn = (now - lastSignIn) / (1000 * 60 * 60 );
+    if (hoursSinceSignIn > 12) {
+      return res.status(401).json({ error: "Session expired — please log in again" });
+    }
+
+    req.user = user; // שומר את המשתמש בבקשה להמשך שימוש
+    next();
+  } catch (err) {
+    console.error("checkLastSignIn error:", err);
+    return res.status(500).json({ error: "Server error" });
+  }
+}
+
 async function checkMonthlyLimit() {
   const now = new Date();
   const month_year = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -52,40 +88,6 @@ async function checkMonthlyDurationLimit() {
   return { limitExceeded: false };
 }
 
-// Middleware לבדיקה אם המשתמש מחובר פחות מ־12 שעות
-async function checkLastSignIn(req, res, next) {
-  try {
-    const authHeader = req.headers["authorization"];
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ error: "Missing or invalid Authorization header" });
-    }
-
-    const accessToken = authHeader.split(" ")[1];
-
-    // קבלת פרטי המשתמש מ‑Supabase
-    const { data, error } = await supabase.auth.getUser(accessToken);
-    if (error || !data?.user) {
-      return res.status(401).json({ error: "Invalid or expired access token" });
-    }
-
-    const user = data.user;
-
-    // בדיקת last_sign_in_at
-    const lastSignIn = new Date(user.last_sign_in_at);
-    const now = new Date();
-
-    const hoursSinceSignIn = (now - lastSignIn) / (1000 * 60 * 60 );
-    if (hoursSinceSignIn > 12) {
-      return res.status(401).json({ error: "Session expired — please log in again" });
-    }
-
-    req.user = user; // שומר את המשתמש בבקשה להמשך שימוש
-    next();
-  } catch (err) {
-    console.error("checkLastSignIn error:", err);
-    return res.status(500).json({ error: "Server error" });
-  }
-}
 
 router.get("/getMeeting", async (req, res) => {
     const { meeting_id } = req.query;
@@ -97,9 +99,43 @@ router.get("/getMeeting", async (req, res) => {
         .eq("meeting_id", meeting_id)
         .maybeSingle();
 
-    if (error || !data) return res.status(404).json({ error: "Meeting not found" });
-    res.json({ meeting: data });
+if (error || !data) return res.status(404).json({ error: "Meeting not found" }); 
+  res.json({ meeting: data });
 });
+
+
+router.get("/checkValidity", async (req, res) => {
+  const { meeting_id } = req.query;
+
+  if (!meeting_id) {
+    return res.status(400).json({ error: "Missing meeting_id" });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("Meetings")
+      .select("is_active")
+      .eq("meeting_id", meeting_id)
+      .single();
+
+    if (error || !data) {
+      return res.status(404).json({ error: "Meeting not found" });
+    }
+
+    if (!data.is_active) {
+      return res.status(403).json({ error: "Meeting is not active" });
+    }
+
+    res.json({ valid: true });
+  } catch (err) {
+    console.error("Error checking meeting validity:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// בסוף הקובץ כבר קיים:
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
 
 // 🟠 עוקפים את האימות   
 router.use((req, res, next) => {
