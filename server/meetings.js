@@ -133,9 +133,6 @@ router.get("/checkValidity", async (req, res) => {
   }
 });
 
-// בסוף הקובץ כבר קיים:
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
 
 // 🟠 עוקפים את האימות   
 router.use((req, res, next) => {
