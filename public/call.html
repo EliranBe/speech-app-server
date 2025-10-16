@@ -850,7 +850,6 @@ recorder.ondataavailable = (event) => {
     <script>
     window.onload = async () => {
     const meetingId = userPayload?.meeting_id;
-    const jti = userPayload?.jti;
       
         // אם אין meeting_id בכלל
   if (!meetingId) {
@@ -860,20 +859,8 @@ recorder.ondataavailable = (event) => {
       </h2>`;
     return;
   }
-
-        // אם אין jti בכלל
-  if (!jti) {
-    document.body.innerHTML = `
-      <h2 style="color:red;text-align:center;margin-top:20%">
-        ❌ Missing token (jti).
-      </h2>`;
-    return;
-  }
       
   try {
-        // 🔍 בדיקה שה־JWT תקף ועדיין לא שומש
-    await checkAndUseMeetingTokenClient(jti);
-    
         // 🔍 בדיקת תקפות הפגישה מול השרת
     await checkMeetingValidity(meetingId);
 
