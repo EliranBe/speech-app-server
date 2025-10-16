@@ -456,9 +456,6 @@ if (!meeting_id && !url_meeting) {
 setTimeout(() => {
   finishMeetingLogic(meeting_id); // משתמש ב־meeting_id שנמצא/נבחר
 }, 55 * 1000);
-
-       // פונקציה שחייבת להיות אחרונה
-     checkAndUseMeetingTokenAtTheTable(jti); 
       
       return res.status(200).json({ url: redirectUrl });
     } catch (err) {
@@ -689,9 +686,6 @@ setTimeout(() => {
   finishMeetingLogic(meeting_id_to_use); // משתמש ב־meeting_id שנמצא/נבחר
 }, 55 * 1000);
 
-           // פונקציה שחייבת להיות אחרונה
-     checkAndUseMeetingTokenAtTheTable(jti); 
-    
     return res.status(200).json({
       participant: participantRow || newParticipant || null,
       url: redirectUrl,
