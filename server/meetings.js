@@ -458,7 +458,7 @@ setTimeout(() => {
 }, 55 * 1000);
 
        // פונקציה שחייבת להיות אחרונה
-     await checkAndUseMeetingTokenAtTheTable(jti); 
+     checkAndUseMeetingTokenAtTheTable(jti); 
       
       return res.status(200).json({ url: redirectUrl });
     } catch (err) {
@@ -690,7 +690,7 @@ setTimeout(() => {
 }, 55 * 1000);
 
            // פונקציה שחייבת להיות אחרונה
-     await checkAndUseMeetingTokenAtTheTable(jti); 
+     checkAndUseMeetingTokenAtTheTable(jti); 
     
     return res.status(200).json({
       participant: participantRow || newParticipant || null,
