@@ -206,6 +206,21 @@ const audioBase64 = await synthesizeTextToBase64(textForTTS, {
       return;
     }
 
+      // ✅ בדיקה אם meeting_id פעיל לפני שממשיכים
+  const axios = require("axios");
+  try {
+    const res = await axios.get(`https://speech-app-server.onrender.com/api/meetings/checkValidity?meeting_id=${ws.meeting_id}`);
+    if (!res.data.valid) {
+      console.error(`❌ Meeting ${ws.meeting_id} is not active, closing WS`);
+      ws.close();
+      return;
+    }
+  } catch (err) {
+    console.error("❌ Error checking meeting validity:", err);
+    ws.close();
+    return;
+  }
+
     ws.clientId = url.searchParams.get("user_id") || decoded.user_id;
     console.log("🔗 Client connected:", ws.clientId);
     ws.translationCharCount = 0; // ספירה מצטברת של תווים לתרגום עבור המשתמש בפגישה הזו
