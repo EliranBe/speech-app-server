@@ -286,7 +286,7 @@ async function checkAndUseMeetingTokenAtTheTable(jti) {
   }
 
   // אם לא קיים — נרשום אותו כעת
-  await new Promise(resolve => setTimeout(resolve, 5000));
+  await new Promise(resolve => setTimeout(resolve, 10000));
 
   const { error: insertError } = await supabase
     .from("UsedMeetingTokens")
