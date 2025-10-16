@@ -222,6 +222,43 @@ function isUserAllowed(user_id) {
     return pwd;
   }
 
+
+// ----------------------------------------------------
+// ✅ בדיקה אם JWT כבר שומש (חד-פעמיות של אסימון)
+// ----------------------------------------------------
+router.get("/checkAndUseMeetingToken", async (req, res) => {
+  try {
+    const { jti } = req.query;
+
+    if (!jti) {
+      return res.status(400).json({ error: "Missing jti" });
+    }
+
+    // נבדוק אם כבר קיים
+    const { data: existing } = await supabase
+      .from("UsedMeetingTokens")
+      .select("*")
+      .eq("jti", jti)
+      .maybeSingle();
+
+    if (existing) {
+      return res.status(403).json({ error: "This meeting token has already been used" });
+    }
+
+    // אם לא קיים — נרשום אותו כעת
+    const { error } = await supabase
+      .from("UsedMeetingTokens")
+      .insert([{ jti, used_at: new Date().toISOString() }]);
+
+    if (error) throw error;
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("❌ Error checking token usage:", err.message);
+    res.status(500).json({ error: "Server error checking token usage" });
+  }
+});
+
 async function setStartedAtIfNull(meeting_id) {
   const { data, error } = await supabase
     .from("Meetings")
@@ -384,11 +421,8 @@ if (!meeting_id && !url_meeting) {
         meetingToken
       )}`;
 
-      try {
-  await checkAndUseMeetingToken(jti); // מונע שימוש חוזר
-} catch (err) {
-  return res.status(403).json({ error: err.message });
-}
+
+  await checkAndUseMeetingToken(jti); 
       
       // עדכון שדה started_at לפגישה
       await setStartedAtIfNull(meeting_id);
@@ -619,11 +653,7 @@ if (participantRow) {
 
     const redirectUrl = `${CALL_BASE_URL}?userToken=${encodeURIComponent(meetingToken)}`;
 
-      try {
-  await checkAndUseMeetingToken(jti); // מונע שימוש חוזר
-} catch (err) {
-  return res.status(403).json({ error: err.message });
-}
+   await checkAndUseMeetingToken(jti);
     
     // עדכון שדה started_at לפגישה
       await setStartedAtIfNull(meeting_id_to_use);
@@ -956,41 +986,6 @@ async function incrementMonthlyMeetingCount(user_id) {
   }
 }
 
-// ----------------------------------------------------
-// ✅ בדיקה אם JWT כבר שומש (חד-פעמיות של אסימון)
-// ----------------------------------------------------
-router.get("/checkAndUseMeetingToken", async (req, res) => {
-  try {
-    const { jti } = req.query;
-
-    if (!jti) {
-      return res.status(400).json({ error: "Missing jti" });
-    }
-
-    // נבדוק אם כבר קיים
-    const { data: existing } = await supabase
-      .from("UsedMeetingTokens")
-      .select("*")
-      .eq("jti", jti)
-      .maybeSingle();
-
-    if (existing) {
-      return res.status(403).json({ error: "This meeting token has already been used" });
-    }
-
-    // אם לא קיים — נרשום אותו כעת
-    const { error } = await supabase
-      .from("UsedMeetingTokens")
-      .insert([{ jti, used_at: new Date().toISOString() }]);
-
-    if (error) throw error;
-
-    return res.json({ success: true });
-  } catch (err) {
-    console.error("❌ Error checking token usage:", err.message);
-    res.status(500).json({ error: "Server error checking token usage" });
-  }
-});
 
 
   module.exports = router;
