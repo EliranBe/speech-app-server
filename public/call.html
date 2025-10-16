@@ -125,6 +125,30 @@ video {
   </div>
 
   <script src="https://cdn.agora.io/sdk/release/AgoraRTC_N-4.20.0.js"></script>
+
+<script>
+async function checkMeetingValidity(meetingId) {
+  try {
+    const res = await fetch(`/api/meetings/checkValidity?meeting_id=${meetingId}`);
+    if (!res.ok) {
+      const { error } = await res.json();
+      document.body.innerHTML = `
+        <h2 style="color:red;text-align:center;margin-top:20%">
+          ❌ ${error}
+        </h2>`;
+      throw new Error(error);
+    }
+  } catch (err) {
+    console.error("Meeting validity check failed:", err);
+    document.body.innerHTML = `
+      <h2 style="color:red;text-align:center;margin-top:20%">
+        ❌ Unable to load meeting.
+      </h2>`;
+    throw err;
+  }
+}
+</script>
+  
   <script>
     let AGORA_APP_ID = "";
     let CHANNEL_NAME = "test-room";
@@ -472,72 +496,6 @@ async function showMeetingCard() {
     }
       }
 
-    window.onload = async () => {
-
-  try {
-    const res = await fetch('/appId');
-    const data = await res.json();
-    AGORA_APP_ID = data.appId;
-
-    showStartupModal();
-    await startCall(); // עכשיו App ID כבר מוגדר
-// ==========================
-// ספירה אוטומטית של 50 שניות + הפעלת WS אוטומטית ב-5 שניות האחרונות
-// ==========================
-let callDuration = 50; 
-let countdown = callDuration;
-
-const countdownDiv = document.createElement("div");
-countdownDiv.style.position = "fixed";
-countdownDiv.style.bottom = "60px"; // מעל הכפתורים
-countdownDiv.style.left = "50%";
-countdownDiv.style.transform = "translateX(-50%)";
-countdownDiv.style.fontSize = "24px";
-countdownDiv.style.fontWeight = "bold";
-countdownDiv.style.color = "red";
-countdownDiv.style.zIndex = "1001";
-document.body.appendChild(countdownDiv);
-countdownDiv.style.display = "none"; // מוסתר בהתחלה
-
-const acceptButton = document.getElementById("startupConfirm");
-
-const interval = setInterval(() => {
-  countdown--;
-
-  // הצגת הספירה ב-10 השניות האחרונות
-  if (countdown <= 10) {
-    countdownDiv.style.display = "block";
-    countdownDiv.textContent = `Time left: ${countdown}s`;
-  }
-
-  // הפעלת WS אוטומטית ב-5 שניות האחרונות אם לא פעיל
-  if (countdown === 5 && (!socket || socket.readyState !== WebSocket.OPEN)) {
-    openWSOnly();
-
-    // כפתור ACCEPT כבר לא לחיץ
-    if (acceptButton) {
-      acceptButton.disabled = true;
-      acceptButton.style.opacity = "0.5";
-      acceptButton.style.cursor = "not-allowed";
-    }
-  }
-
-  // סיום השיחה ב-0 שניות
-  if (countdown <= 0) {
-    clearInterval(interval);
-    countdownDiv.remove();
-    leaveCall(); // מבצע את כל הלוגיקה של לחיצה על LEAVE
-    window.location.href = "/";
-  }
-}, 1000);
-
-  } catch (err) {
-    console.error("⚠️ Failed to fetch App ID:", err);
-  }
-};
-
-
-
     async function startCall() {
       if (!userPayload) {
   console.error("❌ Cannot start call without user payload");
@@ -862,5 +820,90 @@ recorder.ondataavailable = (event) => {
 }
 
   </script>
+
+  
+  
+    <script>
+    window.onload = async () => {
+const meetingId = getQueryParam("meeting_id");
+
+        // אם אין meeting_id בכלל
+  if (!meetingId) {
+    document.body.innerHTML = `
+      <h2 style="color:red;text-align:center;margin-top:20%">
+        ❌ Missing meeting ID in URL.
+      </h2>`;
+    return;
+  }
+      
+  try {
+        // 🔍 בדיקת תקפות הפגישה מול השרת
+    await checkMeetingValidity(meetingId);
+
+    // ✅ אם תקין — ממשיכים כרגיל
+    const res = await fetch('/appId');
+    const data = await res.json();
+    AGORA_APP_ID = data.appId;
+
+    showStartupModal();
+    await startCall(); // עכשיו App ID כבר מוגדר
+    
+// ==========================
+// ספירה אוטומטית של 50 שניות + הפעלת WS אוטומטית ב-5 שניות האחרונות
+// ==========================
+let callDuration = 50; 
+let countdown = callDuration;
+
+const countdownDiv = document.createElement("div");
+countdownDiv.style.position = "fixed";
+countdownDiv.style.bottom = "60px"; // מעל הכפתורים
+countdownDiv.style.left = "50%";
+countdownDiv.style.transform = "translateX(-50%)";
+countdownDiv.style.fontSize = "24px";
+countdownDiv.style.fontWeight = "bold";
+countdownDiv.style.color = "red";
+countdownDiv.style.zIndex = "1001";
+document.body.appendChild(countdownDiv);
+countdownDiv.style.display = "none"; // מוסתר בהתחלה
+
+const acceptButton = document.getElementById("startupConfirm");
+
+const interval = setInterval(() => {
+  countdown--;
+
+  // הצגת הספירה ב-10 השניות האחרונות
+  if (countdown <= 10) {
+    countdownDiv.style.display = "block";
+    countdownDiv.textContent = `Time left: ${countdown}s`;
+  }
+
+  // הפעלת WS אוטומטית ב-5 שניות האחרונות אם לא פעיל
+  if (countdown === 5 && (!socket || socket.readyState !== WebSocket.OPEN)) {
+    openWSOnly();
+
+    // כפתור ACCEPT כבר לא לחיץ
+    if (acceptButton) {
+      acceptButton.disabled = true;
+      acceptButton.style.opacity = "0.5";
+      acceptButton.style.cursor = "not-allowed";
+    }
+  }
+
+  // סיום השיחה ב-0 שניות
+  if (countdown <= 0) {
+    clearInterval(interval);
+    countdownDiv.remove();
+    leaveCall(); // מבצע את כל הלוגיקה של לחיצה על LEAVE
+    window.location.href = "/";
+  }
+}, 1000);
+
+  } catch (err) {
+    console.warn("❌ Meeting invalid — stopping load");
+    // אין צורך להציג שגיאה נוספת — היא כבר מוצגת בפונקציה למעלה
+  }
+};
+</script>
+  
 </body>
 </html>
