@@ -825,13 +825,13 @@ recorder.ondataavailable = (event) => {
   
     <script>
     window.onload = async () => {
-const meetingId = getQueryParam("meeting_id");
+    const meetingId = userPayload?.meeting_id;
 
         // אם אין meeting_id בכלל
   if (!meetingId) {
     document.body.innerHTML = `
       <h2 style="color:red;text-align:center;margin-top:20%">
-        ❌ Missing meeting ID in URL.
+        ❌ Missing meeting ID.
       </h2>`;
     return;
   }
