@@ -126,6 +126,33 @@ video {
 
   <script src="https://cdn.agora.io/sdk/release/AgoraRTC_N-4.20.0.js"></script>
 
+  <script>
+async function checkAndUseMeetingTokenClient(jti) {
+  try {
+    const res = await fetch(`/api/meetings/checkAndUseMeetingToken?jti=${jti}`);
+
+    if (!res.ok) {
+      const { error } = await res.json();
+      document.body.innerHTML = `
+        <h2 style="color:red;text-align:center;margin-top:20%">
+          ❌ ${error}
+        </h2>`;
+      throw new Error(error);
+    }
+
+    // ✅ אם הכול תקין – האסימון תקף וחדש
+    console.log("Token verified and marked as used");
+  } catch (err) {
+    console.error("Token verification failed:", err);
+    document.body.innerHTML = `
+      <h2 style="color:red;text-align:center;margin-top:20%">
+        ❌ Invalid or already used meeting token.
+      </h2>`;
+    throw err;
+  }
+}
+</script>
+
 <script>
 async function checkMeetingValidity(meetingId) {
   try {
@@ -826,7 +853,8 @@ recorder.ondataavailable = (event) => {
     <script>
     window.onload = async () => {
     const meetingId = userPayload?.meeting_id;
-
+    const jti = userPayload?.jti;
+      
         // אם אין meeting_id בכלל
   if (!meetingId) {
     document.body.innerHTML = `
@@ -835,8 +863,20 @@ recorder.ondataavailable = (event) => {
       </h2>`;
     return;
   }
+
+        // אם אין jti בכלל
+  if (!jti) {
+    document.body.innerHTML = `
+      <h2 style="color:red;text-align:center;margin-top:20%">
+        ❌ Missing token (jti).
+      </h2>`;
+    return;
+  }
       
   try {
+        // 🔍 בדיקה שה־JWT תקף ועדיין לא שומש
+    await checkAndUseMeetingTokenClient(jti);
+    
         // 🔍 בדיקת תקפות הפגישה מול השרת
     await checkMeetingValidity(meetingId);
 
