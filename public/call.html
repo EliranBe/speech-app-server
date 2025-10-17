@@ -140,7 +140,7 @@ async function checkAndUseMeetingTokenClient(jti) {
       throw new Error(error);
     }
   } catch (err) {
-    console.error("Token verification failed:", err);
+    console.error("Token verification failed");
     document.body.innerHTML = `
       <h2 style="color:red;text-align:center;margin-top:20%">
         ❌ Invalid or already used meeting token.
@@ -163,7 +163,7 @@ async function checkMeetingValidity(meetingId) {
       throw new Error(error);
     }
   } catch (err) {
-    console.error("Meeting validity check failed:", err);
+    console.error("Meeting validity check failed");
     document.body.innerHTML = `
       <h2 style="color:red;text-align:center;margin-top:20%">
         ❌ Unable to load meeting.
@@ -201,7 +201,7 @@ async function checkMeetingValidity(meetingId) {
   try {
     data = JSON.parse(event.data);
   } catch (e) {
-    console.error("⚠️ Failed to parse JSON:", e);
+    console.error("⚠️ Failed to parse JSON");
     return;
   }
 
@@ -301,7 +301,7 @@ function playNextTts() {
   };
 
   ttsPlayer.play().catch(err => {
-    console.error("⚠️ Error playing TTS:", err);
+    console.error("⚠️ Error playing TTS");
     isTtsPlaying = false;
     playNextTts();
   });
@@ -472,7 +472,7 @@ async function showMeetingCard() {
     }, 0);
 }
   } catch (e) {
-    console.error("❌ Failed to parse JWT:", e);
+    console.error("❌ Failed to parse JWT");
   }
 }
 
@@ -515,7 +515,7 @@ async function showMeetingCard() {
 
     // 📴 עזיבת ערוץ Agora
     if (client) {
-        try { await client.leave(); } catch(e) { console.warn("⚠️ client.leave failed:", e); }
+        try { await client.leave(); } catch(e) { console.warn("⚠️ client.leave failed"); }
         client = null;
     }
       }
@@ -679,7 +679,7 @@ async function startMicAndTranscription() {
       ttsPlayer.play().catch(() => {});
       console.log("🔊 TTS player primed");
     } catch (err) {
-      console.warn("⚠️ TTS player init failed:", err);
+      console.warn("⚠️ TTS player init failed");
     }
   }
 
@@ -710,7 +710,7 @@ async function startMicAndTranscription() {
       isRunning = true;
       updateMicButton();
     } catch (error) {
-      console.error("⚠️ error opening microphone:", error);
+      console.error("⚠️ error opening microphone");
     }
   });
 }
@@ -809,7 +809,7 @@ document.getElementById("startupConfirm").onclick = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     return new MediaRecorder(stream, { mimeType: "audio/webm" });
   } catch (error) {
-    console.error("⚠️ error accessing microphone:", error);
+    console.error("⚠️ error accessing microphone");
     throw error;
   }
 } 
