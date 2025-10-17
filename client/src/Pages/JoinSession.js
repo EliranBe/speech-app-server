@@ -97,7 +97,7 @@ if (url) {
 }
 
   } catch (error) {
-    console.error("Error joining session:", error);
+    console.error("Error joining session");
     setError("Failed to join session. Please try again.");
     setIsJoining(false);
   }
@@ -179,7 +179,7 @@ if (sessionError || !authSession?.user) {
       setIsJoining(false);
     }
   } catch (error) {
-    console.error("Error joining session:", error);
+    console.error("Error joining session");
     setError("Failed to join session. Please try again.");
     setIsJoining(false);
   }
