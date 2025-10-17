@@ -235,11 +235,11 @@ export default function Login() {
   }}
 >
   {/* לוגו גוגל */}
-  <img
-    src="https://developers.google.com/identity/images/g-logo.png"
-    alt="Google logo"
-    style={{ width: "24px", height: "24px" }}
-  />
+<img
+  src="/images/logo-google-g.png"
+  alt="Google logo"
+  style={{ width: "24px", height: "auto" }}
+/>
   Continue with Google
 </button>
 
