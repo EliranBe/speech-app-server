@@ -28,7 +28,7 @@ async function checkLastSignIn(req, res, next) {
     const now = new Date();
 
     const hoursSinceSignIn = (now - lastSignIn) / (1000 * 60 * 60 );
-    if (hoursSinceSignIn > 12) {
+    if (hoursSinceSignIn > 2) {
       return res.status(401).json({ error: "Session expired — please log in again" });
     }
 
@@ -314,7 +314,7 @@ async function checkAndUseMeetingTokenAtTheTable(jti) {
       const url_meeting = generateMeetingUrl();
       const qr_data = url_meeting;
       const created_at = new Date().toISOString();
-      const expiry = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+      const expiry = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // זמן תפוגה של פרטי הפגישה שנוצרו במסך CreateSession
       const is_active = true;
 
       const { data, error } = await supabase
