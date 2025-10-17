@@ -24,7 +24,7 @@ export default function Login() {
       const { data: { session }, error } = await supabase.auth.getSession();
 
       if (error) {
-        console.error("Error checking session:", error.message);
+        console.error("Error checking session");
       }
 
       if (session) {
@@ -85,9 +85,9 @@ export default function Login() {
     }
 
     if (signInData?.session) {
-      console.log("Login response session:", signInData.session);
-      console.log("Access token:", signInData.session?.access_token);
-      console.log("Token expires at:", new Date(signInData.session?.expires_at * 1000));
+      console.log("Login response session");
+      console.log("Access token");
+      console.log("Token expires at", new Date(signInData.session?.expires_at * 1000));
       console.log("User logged in, session stored by Supabase");
     }
 
@@ -115,7 +115,7 @@ export default function Login() {
       }
     });
     if (error) {
-      console.error("Error during Google login:", error.message);
+      console.error("Error during Google login");
       setError("Error logging in with Google");
     }
   };
