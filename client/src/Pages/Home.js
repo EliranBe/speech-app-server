@@ -9,7 +9,7 @@
   async function loadUser() {
     const { data, error } = await supabase.auth.getUser();
     if (error) {
-      console.error("Error fetching user:", error);
+      console.error("Error fetching user");
       return null;
     }
     return data.user;
@@ -76,7 +76,7 @@
       // מחזירים את הנתונים כדי שנוכל להשתמש בהם בכפתורים
       return { user: userData.user, preferences: userPrefs };
     } catch (error) {
-      console.error("Error loading user data:", error);
+      console.error("Error loading user data");
       return null;
     }
   };
