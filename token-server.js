@@ -15,7 +15,7 @@ app.get('/generate-token', (req, res) => {
   const channelName = req.query.channel;
   const uid = req.query.uid || 0;
   const role = RtcRole.PUBLISHER;
-  const expirationTimeInSeconds = 3600;
+  const expirationTimeInSeconds = 90; // טוקן לאגורה תקף לדקה וחצי
 
   if (!channelName) {
     return res.status(400).json({ error: 'Channel name is required' });
