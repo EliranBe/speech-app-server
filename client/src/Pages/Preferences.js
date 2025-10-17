@@ -9,14 +9,14 @@ import { UserPreferencesAPI } from "../Entities/UserPreferencesAPI";
 async function loadUser() {
   const { data, error } = await supabase.auth.getUser();
   if (error) {
-    console.error("Error fetching user:", error);
+    console.error("Error fetching user");
     return null;
   }
   if (!data.user || !data.user.id) {
     console.error("No user logged in or missing UUID");
     return null;
   }
-  console.log("Logged-in user:", data.user);
+  console.log("Logged-in user");
   return data.user;
 }
 
@@ -81,9 +81,9 @@ export default function Preferences() {
       setUser(userData);
 
       try {
-        console.log("Fetching preferences for user_id:", userData.id);
+        console.log("Fetching preferences for user_id");
         const existingPrefs = await UserPreferencesAPI.get(userData.id);
-        console.log("Existing preferences:", existingPrefs);
+        console.log("Existing preferences");
         if (existingPrefs) {
           setPreferences({
             native_language: existingPrefs.native_language || "",
@@ -92,13 +92,13 @@ export default function Preferences() {
           });
         }
       } catch (prefError) {
-        console.error("Error loading preferences:", prefError);
+        console.error("Error loading preferences");
         setSaveError(
           "Failed to load your preferences at the moment. Please try again later"
         );
       }
     } catch (error) {
-      console.error("Error loading user data:", error);
+      console.error("Error loading user data");
       setSaveError("Failed to load user data.");
     }
     setIsLoading(false);
@@ -137,11 +137,11 @@ export default function Preferences() {
     setErrorField("");
 
     try {
-      console.log("Saving preferences for user_id:", user.id, preferences);
+      console.log("Saving preferences for user_id");
       await UserPreferencesAPI.createOrUpdate(user.id, preferences);
       setSaveSuccess(true);
     } catch (error) {
-      console.error("Error saving preferences:", error);
+      console.error("Error saving preferences");
       setSaveError(
         "Failed to save preferences. Please ensure your display name contains only letters (A-Z, a-z), numbers, or allowed special characters."
       );
