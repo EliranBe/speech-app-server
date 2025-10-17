@@ -73,7 +73,7 @@ async function translateText(inputText, currentUserLang, otherUsersLangs) {
     return results;
 
   } catch (err) {
-    console.error("❌ Translation API error:", err.message);
+    console.error("❌ Translation API error");
     return {};
   }
 }
