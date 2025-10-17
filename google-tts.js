@@ -87,7 +87,7 @@ async function synthesizeTextToBase64(text, jwtPayload) {
     const [response] = await client.synthesizeSpeech(request);
     return response.audioContent.toString('base64');
   } catch (err) {
-    console.error('Google TTS error:', err);
+    console.error('Google TTS error');
     throw err;
   }
 }
