@@ -134,11 +134,11 @@ const audioBase64 = await synthesizeTextToBase64(textForTTS, {
                   }
                 });
               } catch (err) {
-                console.error("❌ Google TTS error:", err);
+                console.error("❌ Google TTS error");
               }
             }
           } catch (err) {
-            console.error("❌ Translation error:", err);
+            console.error("❌ Translation error");
           }
         }
       });
@@ -201,7 +201,7 @@ const audioBase64 = await synthesizeTextToBase64(textForTTS, {
       });
 
     } catch (err) {
-      console.error("❌ JWT verification failed:", err);
+      console.error("❌ JWT verification failed");
       ws.close();
       return;
     }
@@ -216,7 +216,7 @@ const audioBase64 = await synthesizeTextToBase64(textForTTS, {
       return;
     }
   } catch (err) {
-    console.error("❌ Error checking meeting validity:", err);
+    console.error("❌ Error checking meeting validity");
     ws.close();
     return;
   }
@@ -263,7 +263,7 @@ ws.on('close', () => {
       translation_char_count: ws.translationCharCount
     })
     .then(() => console.log(`✅ Sent translation count for meeting ${ws.meeting_id}: ${ws.translationCharCount}`))
-    .catch(err => console.error("❌ Error sending translation count:", err));
+    .catch(err => console.error("❌ Error sending translation count"));
   }
 
   // ✅ בדיקה אם אין עוד משתתפים בפגישה
@@ -279,7 +279,7 @@ ws.on('close', () => {
       finished_at: new Date().toISOString()
     })
     .then(() => console.log(`✅ Meeting ${ws.meeting_id} finished_at updated`))
-    .catch(err => console.error("❌ Error updating finished_at:", err));
+    .catch(err => console.error("❌ Error updating finished_at"));
   }
 
   deepgram.finish();
