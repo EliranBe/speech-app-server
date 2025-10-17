@@ -73,7 +73,7 @@ app.get('/rte-token', (req, res) => {
   try {
     const uid = 0;
     const role = RtcRole.PUBLISHER;
-    const expirationTimeInSeconds = 3600;
+    const expirationTimeInSeconds =  90; // טוקן לאגורה תקף לדקה וחצי
     const currentTimestamp = Math.floor(Date.now() / 1000);
     const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
 
