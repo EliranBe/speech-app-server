@@ -115,7 +115,14 @@ export default function TermsAndPrivacy() {
           <h3>8. Changes to Privacy Policy</h3>
           <p>We may update this policy at any time. Continued use constitutes acceptance.</p>
 
-
+         <h3>9. Google Services & User Data</h3>
+          <p>
+            We may access your Google account information, including your name, email, profile picture, and content you create or interact with in the app, such as meeting data and preferences. This data is used solely to provide and improve Verbo.io, personalize your experience, and enable core features like session creation, participation, and notifications.
+          </p>
+          <p>
+            We do not sell your Google data or share it for marketing purposes. Data may only be shared with trusted service providers to operate and maintain the app. Your data is retained only as long as necessary to provide services or comply with legal requirements. You can request deletion of your information at any time.
+          </p>
+          
         </section>
       </div>
     </div>
