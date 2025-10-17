@@ -151,6 +151,9 @@
             transition: "opacity 0.7s",
             opacity: fadeIn ? 1 : 0,
             position: "relative",
+            display: "flex",
+            flexDirection: "column",
+            minHeight: "80vh",
           }}
         >
           {/* Logo Centered */}
@@ -456,8 +459,17 @@
     </li>
   </ul>
   </div>    
+
+                                          {/* Terms and Privacy */}
+<div style={{ fontSize: "0.85rem", marginTop: "auto", color: "#333" }}>
+  By signing up, you confirm that you accept our{" "}
+  <a href="/help/legal" style={{ fontWeight: "600", color: "#333" }}>
+    Terms of Service and Privacy Policy
+  </a>.
+</div>
+      
         </div>
-  
+                      
         {/* Logout Confirmation Modal */}
         {showLogoutConfirm && (
           <div
@@ -517,8 +529,8 @@
                 >
                   Log out
                 </button>
-              </div>
-            </div>
+              </div>      
+            </div>     
           </div>
         )}
       </div>
