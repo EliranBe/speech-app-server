@@ -71,7 +71,7 @@ useEffect(() => {
 async function loadUser() {
   const { data, error } = await supabase.auth.getUser();
   if (error) {
-    console.error("Error fetching user:", error);
+    console.error("Error fetching user");
     return null;
   }
   return data.user;
@@ -97,7 +97,7 @@ const loadUserAndCreateSession = async () => {
 
     await createNewSession(userData);
   } catch (error) {
-    console.error("Error loading user:", error);
+    console.error("Error loading user");
     navigate("/login");
   }
 };
@@ -124,7 +124,7 @@ const { data: newSession, error } = await supabase
   .single();
 
 if (error) {
-  console.error("Error creating meeting:", error);
+  console.error("Error creating meeting");
   setSession(null);
   setIsCreating(false);
   return;
@@ -142,7 +142,7 @@ const { error: participantError } = await supabase
   ]);
 
 if (participantError) {
-  console.error("Error creating participant record:", participantError);
+  console.error("Error creating participant record");
   setSession(null);
   setIsCreating(false);
   return;
@@ -155,7 +155,7 @@ if (participantError) {
       session_code: newSession.meeting_password,
     });
   } catch (error) {
-    console.error("Error creating session:", error);
+    console.error("Error creating session");
     setSession(null);
   }
   setIsCreating(false);
@@ -176,7 +176,7 @@ const copyToClipboard = async (text, type) => {
       setTimeout(() => setCopiedCode(false), 2000);
     }
   } catch (error) {
-    console.error("Failed to copy:", error);
+    console.error("Failed to copy");
   }
 };
 
@@ -209,7 +209,7 @@ const data = await resp.json();
 
 if (!resp.ok) {
   setStartingCall(false);
-  console.error("Start call error:", data);
+  console.error("Start call error");
   setErrorMessage(data?.error || "Unable to start call");
   return;
 }
@@ -222,7 +222,7 @@ if (data.url) {
 }
 } catch (err) {
   setStartingCall(false);
-  console.error("Failed to call /api/meetings/start:", err);
+  console.error("Failed to call /api/meetings/start");
   setErrorMessage("Failed to start call");
 }
   };
