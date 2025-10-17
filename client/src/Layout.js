@@ -8,7 +8,7 @@ import { supabase } from "./utils/supabaseClient";
 async function loadUser() {
   const { data, error } = await supabase.auth.getUser();
   if (error) {
-    console.error("Error fetching user:", error);
+    console.error("Error fetching user");
     return null;
   }
   return data.user; // זה המשתמש האמיתי המחובר
@@ -41,7 +41,7 @@ export default function Layout({ children, currentPageName }) {
   }, { onConflict: "user_id" });
         }
       } catch (e) {
-        console.error("Error in checkUser:", e);
+        console.error("Error in checkUser");
         setUser(null);
       }
     };
