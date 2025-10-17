@@ -88,7 +88,7 @@ app.get('/rte-token', (req, res) => {
 
     res.json({ rtcToken: token });
   } catch (err) {
-    console.error('Failed to generate token:', err);
+    console.error('Failed to generate token');
     res.status(500).json({ error: 'Failed to generate token' });
   }
 });
