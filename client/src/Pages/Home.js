@@ -52,34 +52,45 @@
       return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
   
-  const loadUserData = async () => {
-    try {
-      // קודם בודקים אם יש session
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !session) {
-        return null;
-      }
-  
-      // מביאים את המשתמש
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      if (userError || !userData.user) {
-        return null;
-      }
-  
-      // מביא את ההעדפות של המשתמש
-      const userPrefs = await UserPreferencesAPI.get(userData.user.id);
-      if (!userPrefs) {
-        navigate("/Preferences");
-        return null;
-      }
-  
-      // מחזירים את הנתונים כדי שנוכל להשתמש בהם בכפתורים
-      return { user: userData.user, preferences: userPrefs };
-    } catch (error) {
-      console.error("Error loading user data");
+const loadUserData = async () => {
+  try {
+     // קודם בודקים אם יש session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !session) {
       return null;
     }
-  };
+      // מביאים את המשתמש
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData.user) {
+      return null;
+    }
+
+    // בדיקת תוקף התחברות
+    const lastSignIn = new Date(userData.user.last_sign_in_at);
+    const now = new Date();
+    const hoursSinceSignIn = (now - lastSignIn) / (1000 * 60 * 60); // שעות
+    const MAX_SESSION_HOURS = parseInt(process.env.MAX_SESSION_HOURS, 10);
+
+   if (hoursSinceSignIn > MAX_SESSION_HOURS) { 
+      console.warn("Session expired — please log in again");
+      return null;
+    }
+    
+      // מביא את ההעדפות של המשתמש
+    const userPrefs = await UserPreferencesAPI.get(userData.user.id);
+    if (!userPrefs) {
+      navigate("/Preferences");
+      return null;
+    }
+
+    // מחזירים את הנתונים כדי שנוכל להשתמש בהם בכפתורים
+    return { user: userData.user, preferences: userPrefs };
+  } catch (error) {
+    console.error("Error loading user data");
+    return null;
+  }
+};
+
   
   
   const handleCreateSession = async () => {
