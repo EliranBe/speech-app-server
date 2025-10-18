@@ -366,10 +366,10 @@ if (durationCheck.limitExceeded) {
 }
 
           // 🟢  בדיקה כמה פגישות פעילות קיימות
-      const MAX_ACTIVE_MEETINGS = parseInt(process.env.MAX_ACTIVE_MEETINGS, 10);
+      const MAX_START_ACTIVE_MEETINGS = parseInt(process.env.MAX_START_ACTIVE_MEETINGS, 10);
 
-if (isNaN(MAX_ACTIVE_MEETINGS)) {
-  console.error("❌ MAX_ACTIVE_MEETINGS is not defined or invalid in .env");
+if (isNaN(MAX_START_ACTIVE_MEETINGS)) {
+  console.error("❌ MAX_START_ACTIVE_MEETINGS is not defined or invalid");
   return res.status(500).json({ error: "Server configuration error" });
 }
 
@@ -384,7 +384,7 @@ if (isNaN(MAX_ACTIVE_MEETINGS)) {
       return res.status(500).json({ error: "Failed to check active meetings" });
     }
 
-    if (count >= MAX_ACTIVE_MEETINGS) {
+    if (count >= MAX_START_ACTIVE_MEETINGS) {
       console.warn("❌ Too many active meetings. Please try again later.");
       return res
         .status(429)
@@ -513,10 +513,10 @@ if (durationCheck.limitExceeded) {
 }
 
         // 🟢  בדיקה כמה פגישות פעילות קיימות
-      const MAX_ACTIVE_MEETINGS = parseInt(process.env.MAX_ACTIVE_MEETINGS, 10);
+      const MAX_JOIN_ACTIVE_MEETINGS = parseInt(process.env.MAX_JOIN_ACTIVE_MEETINGS, 10);
 
-if (isNaN(MAX_ACTIVE_MEETINGS)) {
-  console.error("❌ MAX_ACTIVE_MEETINGS is not defined or invalid in .env");
+if (isNaN(MAX_JOIN_ACTIVE_MEETINGS)) {
+  console.error("❌ MAX_JOIN_ACTIVE_MEETINGS is not defined or invalid");
   return res.status(500).json({ error: "Server configuration error" });
 }
 
@@ -531,7 +531,7 @@ if (isNaN(MAX_ACTIVE_MEETINGS)) {
       return res.status(500).json({ error: "Failed to check active meetings" });
     }
 
-    if (count >= MAX_ACTIVE_MEETINGS) {
+    if (count >= MAX_JOIN_ACTIVE_MEETINGS) {
       console.warn("❌ Too many active meetings. Please try again later.");
       return res
         .status(429)
