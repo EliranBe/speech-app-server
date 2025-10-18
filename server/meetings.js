@@ -365,6 +365,33 @@ if (durationCheck.limitExceeded) {
   });
 }
 
+          // 🟢  בדיקה כמה פגישות פעילות קיימות
+      const MAX_ACTIVE_MEETINGS = parseInt(process.env.MAX_ACTIVE_MEETINGS, 10);
+
+if (isNaN(MAX_ACTIVE_MEETINGS)) {
+  console.error("❌ MAX_ACTIVE_MEETINGS is not defined or invalid in .env");
+  return res.status(500).json({ error: "Server configuration error" });
+}
+
+    const { count, error: countError } = await supabase
+      .from("Meetings")
+      .select("*", { count: "exact", head: true })
+      .not("started_at", "is", null)
+      .is("finished_at", null);
+
+    if (countError) {
+      console.error("Error checking active meetings");
+      return res.status(500).json({ error: "Failed to check active meetings" });
+    }
+
+    if (count >= MAX_ACTIVE_MEETINGS) {
+      console.warn("❌ Too many active meetings. Please try again later.");
+      return res
+        .status(429)
+        .json({ error: "Too many active meetings. Please try again later." });
+    }
+      
+      
       const { meeting_id } = req.body;
 if (!meeting_id && !url_meeting) {
   return res.status(400).json({ error: "Please enter a Meeting ID and Password or URL" });
@@ -484,6 +511,33 @@ if (durationCheck.limitExceeded) {
     error: `Monthly duration limit reached. Please try again next month.`
   });
 }
+
+        // 🟢  בדיקה כמה פגישות פעילות קיימות
+      const MAX_ACTIVE_MEETINGS = parseInt(process.env.MAX_ACTIVE_MEETINGS, 10);
+
+if (isNaN(MAX_ACTIVE_MEETINGS)) {
+  console.error("❌ MAX_ACTIVE_MEETINGS is not defined or invalid in .env");
+  return res.status(500).json({ error: "Server configuration error" });
+}
+
+    const { count, error: countError } = await supabase
+      .from("Meetings")
+      .select("*", { count: "exact", head: true })
+      .not("started_at", "is", null)
+      .is("finished_at", null);
+
+    if (countError) {
+      console.error("Error checking active meetings");
+      return res.status(500).json({ error: "Failed to check active meetings" });
+    }
+
+    if (count >= MAX_ACTIVE_MEETINGS) {
+      console.warn("❌ Too many active meetings. Please try again later.");
+      return res
+        .status(429)
+        .json({ error: "Too many active meetings. Please try again later." });
+    }
+    
 
     const { meeting_id, meeting_password, url_meeting } = req.body;
 
