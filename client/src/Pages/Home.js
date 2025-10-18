@@ -69,7 +69,7 @@ const loadUserData = async () => {
     const lastSignIn = new Date(userData.user.last_sign_in_at);
     const now = new Date();
     const hoursSinceSignIn = (now - lastSignIn) / (1000 * 60 * 60); // שעות
-    const MAX_SESSION_HOURS = parseInt(process.env.MAX_SESSION_HOURS, 10);
+    const MAX_SESSION_HOURS = parseInt(process.env.REACT_APP_MAX_SESSION_HOURS, 10);
 
    if (hoursSinceSignIn > MAX_SESSION_HOURS) { 
       console.warn("Session expired — please log in again");
