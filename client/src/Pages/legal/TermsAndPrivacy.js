@@ -68,6 +68,9 @@ export default function TermsAndPrivacy() {
           <p>
             The Service is provided "as is" and "as available" without warranties. The developer, owners, or affiliates are not liable for damages, loss of data, profits, or legal claims arising from your use of the Service. You agree not to hold the developer responsible for claims, damages, or legal actions resulting from your use of the Service, including errors, bugs, viruses, third-party content, or service interruptions.
           </p>
+          <p>
+          Users are responsible for verifying the accuracy of all transcriptions, translations, and text-to-speech (TTS) outputs provided by Verbo.io. The company shall not be held liable for any errors, omissions, or misinterpretations in these automated processes, and users agree not to make any claims or complaints against Verbo.io in relation to them.
+          </p>
           <p>Verbo.io is currently in beta. There may be errors or issues, and by registering for this service, you agree not to make any claims or complaints against Verbo.io.</p>
 
           <h3>5. Intellectual Property</h3>
