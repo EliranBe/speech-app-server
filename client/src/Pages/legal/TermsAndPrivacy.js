@@ -71,6 +71,9 @@ export default function TermsAndPrivacy() {
           <p>
           Users are responsible for verifying the accuracy of all transcriptions, translations, and text-to-speech (TTS) outputs provided by Verbo.io. The company shall not be held liable for any errors, omissions, or misinterpretations in these automated processes, and users agree not to make any claims or complaints against Verbo.io in relation to them.
           </p>
+          <p>
+          Verbo.io utilizes third-party technologies and APIs for speech recognition, translation, and text-to-speech processing. These services are provided by external vendors, and Verbo.io has no control over their performance, accuracy, or availability. By using the Service, you acknowledge that such third-party integrations may affect the output quality and agree that Verbo.io is not liable for any issues, errors, or interruptions resulting from these third-party services.
+        </p>
           <p>Verbo.io is currently in beta. There may be errors or issues, and by registering for this service, you agree not to make any claims or complaints against Verbo.io.</p>
 
           <h3>5. Intellectual Property</h3>
