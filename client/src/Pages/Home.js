@@ -7,7 +7,7 @@
   import logo from "../images/logo-verbo.png";
   
   async function loadUser() {
-    const { data, error } = await supabase.auth.getUser();
+    const { data: { user }, error } = await supabase.auth.getUser();
     if (error) {
       console.error("Error fetching user");
       return null;
