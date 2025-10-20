@@ -286,6 +286,7 @@ export default function Preferences() {
             <option>Germany (German)</option>
             <option>India (English)</option>
             <option>Indonesia (Indonesian)</option>
+            <option>Israel (Hebrew)</option>
             <option>Italy (Italian)</option>
             <option>Japan (Japanese)</option>
             <option>Netherlands (Dutch)</option>
