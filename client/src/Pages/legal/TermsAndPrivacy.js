@@ -74,6 +74,9 @@ export default function TermsAndPrivacy() {
           <p>
           Verbo.io utilizes third-party technologies and APIs for speech recognition, translation, and text-to-speech processing. These services are provided by external vendors, and Verbo.io has no control over their performance, accuracy, or availability. By using the Service, you acknowledge that such third-party integrations may affect the output quality and agree that Verbo.io is not liable for any issues, errors, or interruptions resulting from these third-party services.
         </p>
+          <p>
+          An active internet connection is required for the Service to function properly. Performance and accessibility may vary depending on network conditions and device capabilities. Verbo.io does not guarantee that the Service will operate on all devices, operating systems, or browsers.
+        </p>
           <p>Verbo.io is currently in beta. There may be errors or issues, and by registering for this service, you agree not to make any claims or complaints against Verbo.io.</p>
 
           <h3>5. Intellectual Property</h3>
