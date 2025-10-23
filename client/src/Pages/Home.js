@@ -5,16 +5,7 @@
   import BrandedLoader from "../Components/BrandedLoader";
   import { supabase } from "../utils/supabaseClient";
   import logo from "../images/logo-verbo.png";
-  
-  async function loadUser() {
-    const { data: { user }, error } = await supabase.auth.getUser();
-    if (error) {
-      console.error("Error fetching user");
-      return null;
-    }
-    return data.user;
-  }
-  
+   
   export default function Home() {
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
@@ -23,7 +14,8 @@
     const [fadeIn, setFadeIn] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  
+    const [errorMessage, setErrorMessage] = useState(null);
+
     const menuRef = useRef();
   
   useEffect(() => {
@@ -54,39 +46,48 @@
   
 const loadUserData = async () => {
   try {
-     // קודם בודקים אם יש session
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError || !session) {
+    // 🔹 שלב 1: בדיקה של סשן פעיל וקבלת טוקן
+    const { data: { session: authSession } = {}, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !authSession?.user) {
+      setErrorMessage("Meeting expired, please log in again");
+      navigate("/login");
       return null;
     }
-      // מביאים את המשתמש
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    if (userError || !userData.user) {
+    const accessToken = authSession.access_token;
+
+    // 🔹 שלב 2: קריאה לשרת עם הטוקן
+    const response = await fetch("/api/meetings/user-data", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`, // ✅ שימוש נכון ב-backtick
+      },
+    });
+
+    // 🔹 שלב 3: בדיקת סטטוס התגובה מהשרת
+    if (!response.ok) {
+      const errorData = await response.json();
+      setErrorMessage(errorData.error || "Failed to load user data");
+      if (response.status === 401) navigate("/login");
       return null;
     }
 
-    // בדיקת תוקף התחברות
-    const lastSignIn = new Date(userData.user.last_sign_in_at);
-    const now = new Date();
-    const hoursSinceSignIn = (now - lastSignIn) / (1000 * 60 * 60); // שעות
-    const MAX_SESSION_HOURS = parseInt(process.env.REACT_APP_MAX_SESSION_HOURS, 10);
+    // 🔹 שלב 4: טיפול במידע המשתמש שהתקבל
+    const userData = await response.json();
 
-   if (hoursSinceSignIn > MAX_SESSION_HOURS) { 
-      console.warn("Session expired — please log in again");
-      return null;
-    }
-    
-      // מביא את ההעדפות של המשתמש
+    // 🔹 שלב 5: מביא את ההעדפות של המשתמש
     const userPrefs = await UserPreferencesAPI.get(userData.user.id);
     if (!userPrefs) {
       navigate("/Preferences");
       return null;
     }
 
-    // מחזירים את הנתונים כדי שנוכל להשתמש בהם בכפתורים
+    // 🔹 שלב 6: מחזירים את הנתונים כדי שנוכל להשתמש בהם
     return { user: userData.user, preferences: userPrefs };
-  } catch (error) {
-    console.error("Error loading user data");
+
+  } catch (err) {
+    console.error("❌ Error loading user data:", err);
+    setErrorMessage("Server error, please try again later");
     return null;
   }
 };
