@@ -5,7 +5,7 @@ const express = require("express");
   const { SignJWT } = require("jose");
 
 
-// Middleware לבדיקה אם המשתמש מחובר פחות מ־12 שעות
+// Middleware לבדיקה אם המשתמש מחובר 
 async function checkLastSignIn(req, res, next) {
   try {
     const authHeader = req.headers["authorization"];
@@ -1089,6 +1089,52 @@ async function incrementMonthlyMeetingCount(user_id) {
   }
 }
 
+router.get("/user-data", async (req, res) => {
+  try {
+    // 🔹 שליפת Authorization Header
+    const authHeader = req.headers["authorization"];
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        redirectTo: "/login",
+        error: "Missing or invalid Authorization header",
+      });
+    }
+
+    // 🔹 שליפת Access Token
+    const accessToken = authHeader.split(" ")[1];
+
+    // 🔹 אימות המשתמש מול Supabase
+    const { data, error } = await supabase.auth.getUser(accessToken);
+    if (error || !data?.user) {
+      return res.status(401).json({
+        redirectTo: "/login",
+        error: "Invalid or expired access token",
+      });
+    }
+
+    const user = data.user;
+
+    // 🔹 בדיקת תוקף התחברות
+    const lastSignIn = new Date(user.last_sign_in_at);
+    const now = new Date();
+    const hoursSinceSignIn = (now - lastSignIn) / (1000 * 60 * 60);
+    const MAX_SESSION_HOURS = parseInt(process.env.MAX_SESSION_HOURS, 10);
+
+    if (hoursSinceSignIn > MAX_SESSION_HOURS) {
+      return res.status(401).json({
+        redirectTo: "/login",
+        error: "Session expired — please log in again",
+      });
+    }
+
+    // 🔹 החזרה ללקוח (רק פרטי המשתמש)
+    return res.json({ user });
+
+  } catch (err) {
+    console.error("❌ Error in /user-data:", err);
+    return res.status(500).json({ error: "Server error" });
+  }
+});
 
 
   module.exports = router;
