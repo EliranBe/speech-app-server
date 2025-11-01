@@ -257,6 +257,7 @@ if (sessionError || !authSession?.user) {
             }}
             onClick={() => navigate("/")}
           />
+            </div>
 
         <h1
           style={{
