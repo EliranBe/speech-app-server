@@ -304,27 +304,32 @@ const loadUserData = async () => {
             Ready to break language barriers?
           </p>
   
-          {preferences && (
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                gap: "12px",
-                padding: "0.5rem 1rem",
-                borderRadius: "12px",
-                background: "rgba(255,255,255,0.3)",
-                fontSize: "0.9rem",
-                color: "#444",
-                marginBottom: "2rem",
-                width: "100%",
-              }}
-            >
-              🌍 {preferences.native_language}
-              <span>•</span>
-              {preferences.gender === "male" ? "👨 Male voice" : "👩 Female voice"}
-            </div>
-          )}
+        {preferences && (
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "center", // ✅ ממקם את הקופסה במרכז המסך
+      marginBottom: "2rem",
+    }}
+  >
+    <div
+      style={{
+        display: "inline-flex", // ✅ רק לפי גודל התוכן
+        alignItems: "center",
+        gap: "12px",
+        padding: "0.5rem 1rem",
+        borderRadius: "12px",
+        background: "rgba(255,255,255,0.3)",
+        fontSize: "0.9rem",
+        color: "#444",
+      }}
+    >
+      🌍 {preferences.native_language}
+      <span>•</span>
+      {preferences.gender === "male" ? "👨 Male voice" : "👩 Female voice"}
+    </div>
+  </div>
+)}
   
           {/* Main Actions */}
           <div
