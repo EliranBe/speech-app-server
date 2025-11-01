@@ -427,7 +427,9 @@ if (isNaN(MAX_START_ACTIVE_MEETINGS) || isNaN(MAX_START_ACTIVE_MEETINGS_HEBREW))
       .from("Meetings")
       .select("*", { count: "exact" })
       .not("started_at", "is", null)
-      .is("finished_at", null);
+      .is("finished_at", null)
+      .gte("started_at", new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()) // תחילת החודש
+      .lt("started_at", new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString()); // תחילת החודש הבא
 
     if (countError) {
       console.error("Error checking active meetings");
@@ -696,7 +698,9 @@ if (isNaN(MAX_JOIN_ACTIVE_MEETINGS) || isNaN(MAX_JOIN_ACTIVE_MEETINGS_HEBREW)) {
       .from("Meetings")
       .select("*", { count: "exact" })
       .not("started_at", "is", null)
-      .is("finished_at", null);
+      .is("finished_at", null)
+      .gte("started_at", new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()) // תחילת החודש
+      .lt("started_at", new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString()); // תחילת החודש הבא
 
     if (countError) {
       console.error("Error checking active meetings");
