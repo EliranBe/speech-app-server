@@ -37,44 +37,44 @@ useEffect(() => {
   
 const loadUserData = async () => {
   try {
-    // 🔹 שלב 1: בדיקה של סשן פעיל וקבלת טוקן
+    // 🔹 בדיקה של סשן פעיל
     const { data: { session: authSession } = {}, error: sessionError } = await supabase.auth.getSession();
     if (sessionError || !authSession?.user) {
       setErrorMessage("Meeting expired, please log in again");
+      await supabase.auth.signOut();
       navigate("/login");
       return null;
     }
     const accessToken = authSession.access_token;
 
-    // 🔹 שלב 2: קריאה לשרת עם הטוקן
+    // 🔹 קריאה לשרת
     const response = await fetch("/api/meetings/user-data", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`, // ✅ שימוש נכון ב-backtick
+        Authorization: `Bearer ${accessToken}`,
       },
     });
 
-    // 🔹 שלב 3: בדיקת סטטוס התגובה מהשרת
+    const responseData = await response.json(); // ✅ קריאה אחת בלבד
+
     if (!response.ok) {
-      const errorData = await response.json();
-      setErrorMessage(errorData.error || "Failed to load user data");
-      if (response.status === 401) navigate("/login");
+      setErrorMessage(responseData.error || "Failed to load user data");
+      if (response.status === 401) {
+        await supabase.auth.signOut();
+        navigate("/login");
+      }
       return null;
     }
 
-    // 🔹 שלב 4: טיפול במידע המשתמש שהתקבל
-    const userData = await response.json();
-
-    // 🔹 שלב 5: מביא את ההעדפות של המשתמש
-    const userPrefs = await UserPreferencesAPI.get(userData.user.id);
+    // 🔹 מביא את ההעדפות
+    const userPrefs = await UserPreferencesAPI.get(responseData.user.id);
     if (!userPrefs) {
       navigate("/Preferences");
       return null;
     }
 
-    // 🔹 שלב 6: מחזירים את הנתונים כדי שנוכל להשתמש בהם
-    return { user: userData.user, preferences: userPrefs };
+    return { user: responseData.user, preferences: userPrefs };
 
   } catch (err) {
     console.error("❌ Error loading user data:", err);
@@ -82,6 +82,7 @@ const loadUserData = async () => {
     return null;
   }
 };
+
 
   
   
@@ -234,10 +235,11 @@ const loadUserData = async () => {
         </>
       ) : (
         <div
-          onClick={() => {
-            setMenuOpen(false);
-            navigate("/login");
-          }}
+          onClick={async () => {
+          setMenuOpen(false);
+          await supabase.auth.signOut();
+          navigate("/login");
+        }}
           style={{
             display: "flex",
             alignItems: "center",
