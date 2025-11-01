@@ -425,7 +425,7 @@ if (isNaN(MAX_START_ACTIVE_MEETINGS) || isNaN(MAX_START_ACTIVE_MEETINGS_HEBREW))
       // בדיקה של כמות הפגישות הפעילות
     const { count, error: countError } = await supabase
       .from("Meetings")
-      .select("*", { count: "exact", head: true })
+      .select("*", { count: "exact" })
       .not("started_at", "is", null)
       .is("finished_at", null);
 
@@ -694,7 +694,7 @@ if (isNaN(MAX_JOIN_ACTIVE_MEETINGS) || isNaN(MAX_JOIN_ACTIVE_MEETINGS_HEBREW)) {
 
     const { count, error: countError } = await supabase
       .from("Meetings")
-      .select("*", { count: "exact", head: true })
+      .select("*", { count: "exact" })
       .not("started_at", "is", null)
       .is("finished_at", null);
 
