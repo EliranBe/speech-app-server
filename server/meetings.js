@@ -1120,7 +1120,8 @@ router.get("/user-data", async (req, res) => {
     const hoursSinceSignIn = (now - lastSignIn) / (1000 * 60 * 60);
     const MAX_SESSION_HOURS = parseInt(process.env.MAX_SESSION_HOURS, 10);
 
-    if (hoursSinceSignIn > MAX_SESSION_HOURS) {
+    // אם המשתמש לא קיים או חרג מזמן הסשן → החזר 401
+    if (!user || hoursSinceSignIn > MAX_SESSION_HOURS) {
       return res.status(401).json({
         redirectTo: "/login",
         error: "Session expired — please log in again",
