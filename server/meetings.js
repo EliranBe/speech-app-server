@@ -735,13 +735,19 @@ if (count >= maxAllowed) {
     
 
                     // בדיקת מגבלת כמות הפגישות החודשית
-    if (user_id !== process.env.MEETING_LIMIT_EXEMPT_USER_ID) {
-          try {
-            await checkMonthlyMeetingLimit(user_id);
-          } catch (err) {
-            return res.status(403).json({ error: err.message });
-          }
-      }
+ // יוצרים מערך ממזהי המשתמשים שמוצאים ב-ENV, מופרד בפסיקים 
+const exemptUserIds = process.env.MEETING_LIMIT_EXEMPT_USER_ID
+  .split(",")
+  .map(id => id.trim());
+
+// בודקים אם המשתמש **אינו** ברשימת המשתמשים המפוטרים
+if (!exemptUserIds.includes(user_id)) {
+  try {
+    await checkMonthlyMeetingLimit(user_id);
+  } catch (err) {
+    return res.status(403).json({ error: err.message });
+  }
+}
 
     // 8. יצירת JWT Token לפגישה — לא לשנות
     const jti =
