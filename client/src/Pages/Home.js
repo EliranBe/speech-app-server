@@ -24,18 +24,6 @@ useEffect(() => {
   setIsLoading(false); // נטען את HOME מיד
   return () => clearTimeout(timeout);
 }, []);
-
-    useEffect(() => {
-  const fetchUser = async () => {
-    const result = await loadUserData();
-    if (result) {
-      setUser(result.user);
-      setPreferences(result.preferences);
-    }
-  };
-  fetchUser();
-}, []);
-
     
     useEffect(() => {
       const handleClickOutside = (event) => {
@@ -188,7 +176,14 @@ const loadUserData = async () => {
   <Menu
     size={32}
     style={{ cursor: "pointer" }}
-    onClick={() => setMenuOpen(!menuOpen)}
+    onClick={async () => {
+    const result = await loadUserData(); // ✅ טוען את המשתמש
+    if (result) {
+      setUser(result.user);
+      setPreferences(result.preferences);
+    }
+    setMenuOpen(!menuOpen);
+  }}
   />
   {menuOpen && (
     <div
