@@ -307,7 +307,8 @@ const loadUserData = async () => {
           {preferences && (
             <div
               style={{
-                display: "inline-flex",
+                display: "flex",
+                justifyContent: "center",
                 alignItems: "center",
                 gap: "12px",
                 padding: "0.5rem 1rem",
@@ -316,6 +317,7 @@ const loadUserData = async () => {
                 fontSize: "0.9rem",
                 color: "#444",
                 marginBottom: "2rem",
+                width: "100%",
               }}
             >
               🌍 {preferences.native_language}
