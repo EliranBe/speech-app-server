@@ -467,7 +467,6 @@ const loadUserData = async () => {
 
                                           {/* Terms and Privacy */}
 <div style={{ fontSize: "0.85rem", marginTop: "auto", color: "#333" }}>
-  By signing up, you confirm that you accept our{" "}
   <a href="/help/legal" style={{ fontWeight: "600", color: "#333" }}>
     Terms of Service and Privacy Policy
   </a>.
