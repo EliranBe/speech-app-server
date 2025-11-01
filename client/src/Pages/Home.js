@@ -24,7 +24,19 @@ useEffect(() => {
   setIsLoading(false); // נטען את HOME מיד
   return () => clearTimeout(timeout);
 }, []);
-  
+
+    useEffect(() => {
+  const fetchUser = async () => {
+    const result = await loadUserData();
+    if (result) {
+      setUser(result.user);
+      setPreferences(result.preferences);
+    }
+  };
+  fetchUser();
+}, []);
+
+    
     useEffect(() => {
       const handleClickOutside = (event) => {
         if (menuRef.current && !menuRef.current.contains(event.target)) {
