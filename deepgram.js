@@ -393,7 +393,6 @@ ws.on('message', (message) => {
     }
   }
 });
-});
 
 
 ws.on('close', () => {
