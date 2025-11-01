@@ -769,7 +769,8 @@ function showStartupModal() {
     ">ACCEPT</button>
   `;
 //  יצירת -modal
-document.body.appendChild(modal);
+overlay.appendChild(modal);
+document.body.appendChild(overlay);
 
 // השבתת כפתורים מלבד Leave ו-Meeting Details
 const buttons = document.querySelectorAll(".controls button");
@@ -783,7 +784,14 @@ buttons.forEach(btn => {
 
 // לחיצה על כפתור Confirm
 document.getElementById("startupConfirm").onclick = async () => {
-  modal.remove(); 
+    // ======== "פותחים" הרשאת אודיו לדפדפן ========
+  if (!window.ttsPlayer) {
+    window.ttsPlayer = new Audio();
+    window.ttsPlayer.src = "";                 // אין צליל בהתחלה
+    await window.ttsPlayer.play().catch(() => {}); // ניסיון השמעה שקטה
+  }
+  overlay.remove();
+ 
 
   // מחזיר את הכפתורים האחרים לפעילים
   const buttons = document.querySelectorAll(".controls button");
