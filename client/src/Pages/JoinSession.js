@@ -238,14 +238,25 @@ if (sessionError || !authSession?.user) {
         </button>
 
         {/* Logo */}
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: "1rem" }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            marginBottom: "2rem",
+          }}
+        >
           <img
             src={logo}
-            alt="Verbo Logo"
-            style={{ width: "140px", height: "140px", objectFit: "contain" }}
+            alt="Verbo.io"
+            style={{
+              width: "140px",
+              height: "140px",
+              marginBottom: "1.5rem",
+              cursor: "pointer",
+            }}
             onClick={() => navigate("/")}
           />
-        </div>
 
         <h1
           style={{
