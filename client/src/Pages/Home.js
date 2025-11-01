@@ -19,11 +19,38 @@
     const menuRef = useRef();
   
 useEffect(() => {
-  // לא נבצע קריאה לשרת כאן
-  const timeout = setTimeout(() => setFadeIn(true), 50);
-  setIsLoading(false); // נטען את HOME מיד
-  return () => clearTimeout(timeout);
+  const loadInitialUserData = async () => {
+    try {
+      const { data: { session: authSession } = {} } = await supabase.auth.getSession();
+
+      if (authSession?.user) {
+        const accessToken = authSession.access_token;
+        const response = await fetch("/api/meetings/user-data", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+        const responseData = await response.json();
+
+        // מביא את ההעדפות אם יש
+        const userPrefs = await UserPreferencesAPI.get(responseData.user.id);
+        setUser(responseData.user);
+        setPreferences(userPrefs);
+      }
+    } catch (err) {
+      console.error("❌ Error loading initial user data:", err);
+      // לא עושים שום הפניה – המסך יוצג גם למי שלא מחובר
+    } finally {
+      setIsLoading(false);
+      setTimeout(() => setFadeIn(true), 50);
+    }
+  };
+
+  loadInitialUserData();
 }, []);
+
     
     useEffect(() => {
       const handleClickOutside = (event) => {
@@ -176,12 +203,7 @@ const loadUserData = async () => {
   <Menu
     size={32}
     style={{ cursor: "pointer" }}
-    onClick={async () => {
-    const result = await loadUserData(); // ✅ טוען את המשתמש
-    if (result) {
-      setUser(result.user);
-      setPreferences(result.preferences);
-    }
+    onClick={() => {
     setMenuOpen(!menuOpen);
   }}
   />
