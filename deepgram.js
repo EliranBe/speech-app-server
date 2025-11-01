@@ -1,4 +1,4 @@
-const WebSocket = require('ws'); 
+const WebSocket = require('ws');
 const { createClient, LiveTranscriptionEvents } = require('@deepgram/sdk');
 const express = require('express');
 const { translateText, mapNativeLanguageToAzure } = require('./azure-translator'); // ✅ ייבוא פונקציה
@@ -56,131 +56,6 @@ return otherUsersLangs.length > 0
     ? mapNativeLanguageToAzure(otherUsersLangs[0])
     : null;
   }
-
-function getSonioxConfig(ws) {
-  const apiKey = process.env.SONIOX_API_KEY;
-  if (!apiKey) throw new Error("Missing SONIOX_API_KEY");
-  return {
-    api_key: apiKey,
-    model: "stt-rt-preview",
-    language_hints: ["he"],
-    enable_language_identification: true,
-    enable_speaker_diarization: true,
-    enable_endpoint_detection: true,
-    audio_format: "auto",
-    translation: {
-      type: "two_way",
-      language_a: "he",
-      language_b: getOtherUsersNativeLanguages(ws)
-    }
-  };
-}
-
-function setupSoniox(ws, getLastChunkTime) {
-  const SONIOX_WS_URL = process.env.SONIOX_WS_URL;
-  const soniox = new WebSocket(SONIOX_WS_URL);
-  const config = getSonioxConfig(ws);
-
-  let keepAlive = setInterval(() => {
-    if (soniox.readyState === WebSocket.OPEN) {
-      soniox.send(JSON.stringify({ type: "ping" }));
-    }
-  }, 10000);
-
-  soniox.on("open", () => {
-    soniox.send(JSON.stringify(config));
-    console.log("🔗 Soniox connected for Hebrew STT + Translate");
-  });
-
-  soniox.on("message", async (msg) => {
-        let data;
-    try {
-      data = JSON.parse(msg.toString());
-    } catch (err) {
-      console.warn("⚠️ Non-JSON message from Soniox:", msg.toString());
-      return;
-    }
-    
-    // ⚠️ טיפול בשגיאות
-    if (data.error_code) {
-      console.error(`❌ Soniox error: ${data.error_code} - ${data.error_message}`);
-      soniox.close();
-      return;
-    }
-
-    if (data.finished) {
-      console.log("✅ Soniox session finished");
-      soniox.close();
-      return;
-    }
-
-    if (!Array.isArray(data.tokens)) return;
-
-    const finalTokens = [];
-    const nonFinalTokens = [];
-    for (const token of data.tokens) {
-      if (!token || !token.text) continue;
-      if (token.is_final) finalTokens.push(token);
-      else nonFinalTokens.push(token);
-    }
-    
-  // טוקנים מקוריים
-  const transcriptText = finalTokens
-      .filter(t => t.translation_status !== "translation")
-      .map(t => t.text)
-      .join(" ");
-
-  // טוקנים מתורגמים
-  const translatedText = finalTokens
-      .filter(t => t.translation_status === "translation")
-      .map(t => t.text)
-      .join(" ");
-
-    if (transcriptText && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: "transcript", payload: transcriptText }));
-
-      // שליחה לאחרים
-      wss.clients.forEach(client => {
-        if (client.readyState === WebSocket.OPEN && client.clientId !== ws.clientId) {
-          client.send(JSON.stringify({
-            type: "translation",
-            payload: { original: transcriptText, translated: translatedText }
-          }));
-        }
-      });
-
-      // TTS
-      try {
-        const audioBase64 = await synthesizeTextToBase64(translatedText || transcriptText, {
-          native_language: ws.native_language,
-          gender: ws.gender
-        });
-        wss.clients.forEach(client => {
-          if (client.readyState === WebSocket.OPEN && client.clientId !== ws.clientId) {
-            client.send(JSON.stringify({
-              type: "tts",
-              payload: { audioBase64 }
-            }));
-          }
-        });
-      } catch (err) {
-        console.error("❌ Google TTS error", err);
-      }
-    }
-  });
-
-  soniox.on("close", () => {
-    clearInterval(keepAlive);
-    console.log("❌ Soniox WS closed");
-  });
-
-  soniox.on("error", (err) => console.error("❌ Soniox WS error:", err));
-
-  return { soniox, keepAlive };
-}
-
-
-
 
   const setupDeepgram = (ws, getLastChunkTime) => {
     const deepgram = deepgramClient.listen.live({
@@ -259,11 +134,11 @@ const audioBase64 = await synthesizeTextToBase64(textForTTS, {
                   }
                 });
               } catch (err) {
-                console.error("❌ Google TTS error");
+                console.error("❌ Google TTS error:", err);
               }
             }
           } catch (err) {
-            console.error("❌ Translation error");
+            console.error("❌ Translation error:", err);
           }
         }
       });
@@ -326,7 +201,7 @@ const audioBase64 = await synthesizeTextToBase64(textForTTS, {
       });
 
     } catch (err) {
-      console.error("❌ JWT verification failed");
+      console.error("❌ JWT verification failed:", err);
       ws.close();
       return;
     }
@@ -341,7 +216,7 @@ const audioBase64 = await synthesizeTextToBase64(textForTTS, {
       return;
     }
   } catch (err) {
-    console.error("❌ Error checking meeting validity");
+    console.error("❌ Error checking meeting validity:", err);
     ws.close();
     return;
   }
@@ -352,52 +227,29 @@ const audioBase64 = await synthesizeTextToBase64(textForTTS, {
 
     let lastChunkTime = null;
     const getLastChunkTime = () => lastChunkTime;
-    let deepgram = null;
-    let keepAlive = null;
-    let sonioxSocket = null;
-    
-    if (ws.native_language === "Hebrew" || ws.native_language === "Israel (Hebrew)" || ws.native_language === "he") {
-      console.log("🟦 Using Soniox for Hebrew STT & Translate");
-      sonioxSocket = setupSoniox(ws, getLastChunkTime);
-    } else {
-      ({ deepgram, keepAlive } = setupDeepgram(ws, getLastChunkTime));
-    }
+    let { deepgram, keepAlive } = setupDeepgram(ws, getLastChunkTime);
 
-
-ws.on('message', (message) => {
-  if (ws.readyState !== WebSocket.OPEN) return;
-  if (ws.native_language === "Hebrew" || ws.native_language === "עברית" || ws.native_language === "he") {
-    // --- Soniox ---
-    if (sonioxSocket?.soniox?.readyState === WebSocket.OPEN) {
-      sonioxSocket.soniox.send(message);
-    } else {
-      console.log("⚠️ Soniox socket not ready, skipping message");
-    }
-
-  } else {
-    // --- Deepgram ---
-    if (deepgram.getReadyState() === 1) {
-      lastChunkTime = Date.now();
-      deepgram.send(message);
-    } else if (deepgram.getReadyState() >= 2) {
-      console.log("⚠️ WebSocket couldn't send data to Deepgram. Reconnecting...");
-      deepgram.finish();
-      deepgram.removeAllListeners();
-      if (keepAlive) {
-        clearInterval(keepAlive);
-        keepAlive = null;
+    ws.on('message', (message) => {
+      if (deepgram.getReadyState() === 1) {
+        lastChunkTime = Date.now();
+        deepgram.send(message);
+      } else if (deepgram.getReadyState() >= 2) {
+        console.log("⚠️ WebSocket couldn't be sent data to deepgram");
+        console.log("⚠️ WebSocket retrying connection to deepgram");
+        deepgram.finish();
+        deepgram.removeAllListeners();
+        if (keepAlive) {
+          clearInterval(keepAlive);
+          keepAlive = null;
+        }
+        ({ deepgram, keepAlive } = setupDeepgram(ws, getLastChunkTime));
+      } else {
+        console.log("⚠️ WebSocket couldn't be sent data to deepgram");
       }
-      ({ deepgram, keepAlive } = setupDeepgram(ws, getLastChunkTime));
-    } else {
-      console.log("⚠️ Deepgram socket not ready");
-    }
-  }
-});
-
+    });
 
 ws.on('close', () => {
   console.log("❌ Client disconnected from WebSocket");
-
   if (keepAlive) {
     clearInterval(keepAlive);
     keepAlive = null;
@@ -405,13 +257,13 @@ ws.on('close', () => {
 
   // עדכון ספירת התווים אם נשלחו תרגומים
   if (ws.translationCharCount > 0) {
-    const axios = require("axios");
+    const axios = require("axios"); 
     axios.post("https://speech-app-server.onrender.com/api/meetings/updateTranslationCount", {
       meeting_id: ws.meeting_id,
       translation_char_count: ws.translationCharCount
     })
     .then(() => console.log(`✅ Sent translation count for meeting ${ws.meeting_id}: ${ws.translationCharCount}`))
-    .catch(err => console.error("❌ Error sending translation count"));
+    .catch(err => console.error("❌ Error sending translation count:", err));
   }
 
   // ✅ בדיקה אם אין עוד משתתפים בפגישה
@@ -427,34 +279,12 @@ ws.on('close', () => {
       finished_at: new Date().toISOString()
     })
     .then(() => console.log(`✅ Meeting ${ws.meeting_id} finished_at updated`))
-    .catch(err => console.error("❌ Error updating finished_at"));
+    .catch(err => console.error("❌ Error updating finished_at:", err));
   }
 
-  // ✅ סגירת חיבורי STT לפי השפה
-  if (ws.native_language === "Hebrew" || ws.native_language === "עברית" || ws.native_language === "he") {
- if (sonioxSocket) {
-    // ❗ סגירת keepAlive אם קיים
-    if (sonioxSocket.keepAlive) {
-      clearInterval(sonioxSocket.keepAlive);
-      sonioxSocket.keepAlive = null;
-    }
-
-    try {
-      sonioxSocket.soniox.close();
-      console.log("🟦 Soniox socket closed cleanly");
-    } catch (err) {
-      console.error("⚠️ Error closing Soniox socket", err);
-    }
-   sonioxSocket = null; 
-  }
-  } else {
-    if (deepgram) {
-      deepgram.finish();
-      deepgram.removeAllListeners();
-      deepgram = null;
-    }
-  }
+  deepgram.finish();
+  deepgram.removeAllListeners();
+  deepgram = null;
 });
-
   });
 };
